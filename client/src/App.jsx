@@ -23,13 +23,16 @@ export default function App() {
         <Route path="/reservar" element={<Reservar />} />
         <Route path="/confirmacion" element={<Confirmacion />} />
 
-        {/* Rutas admin */}
+        {/* Rutas admin — el layout está dentro de cada página */}
         <Route path="/admin/login" element={<Login />} />
         <Route path="/admin" element={<ProtectedRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="configuracion" element={<Configuracion />} />
         </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Inicio />} />
       </Routes>
     </BrowserRouter>
   )
