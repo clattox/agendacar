@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id         Int        @id @default(autoincrement())
+  nombre     String
+  subdominio String     @unique
+  email      String
+  telefono   String?
+  logoUrl    String?
+  activo     Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  usuarios   Usuario[]
+  servicios  Servicio[]
+  reservas   Reserva[]
+  horarios   Horario[]
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  email     String   @unique
+  password  String
+  rol       String   @default("admin")
+  tenantId  Int
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Servicio {
+  id        Int       @id @default(autoincrement())
+  nombre    String
+  duracion  Int       // minutos
+  activo    Boolean   @default(true)
+  tenantId  Int
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  reservas  Reserva[]
+}
+
+model Horario {
+  id          Int    @id @default(autoincrement())
+  diaSemana   Int    // 0=Domingo, 1=Lunes ... 6=Sábado
+  horaInicio  String // "09:00"
+  horaFin     String // "18:00"
+  activo      Boolean @default(true)
+  tenantId    Int
+  tenant      Tenant  @relation(fields: [tenantId], references: [id])
+}
+
+model Reserva {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  telefono    String
+  email       String?
+  patente     String
+  fecha       DateTime
+  estado      String   @default("confirmada") // confirmada | atendida | cancelada
+  notas       String?
+  tenantId    Int
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  servicioId  Int
+  servicio    Servicio @relation(fields: [servicioId], references: [id])
+  createdAt   DateTime @default(now())
+}

@@ -1,0 +1,194 @@
+const { PrismaClient } = require('@prisma/client')
+const nodemailer = require('nodemailer')
+
+const prisma = new PrismaClient()
+
+// Obtener reservas del día/semana (admin)
+const getReservas = async (req, res) => {
+  const { fecha } = req.query
+  const tenantId = req.user.tenantId
+
+  try {
+    const fechaInicio = fecha ? new Date(fecha) : new Date()
+    fechaInicio.setHours(0, 0, 0, 0)
+    const fechaFin = new Date(fechaInicio)
+    fechaFin.setHours(23, 59, 59, 999)
+
+    const reservas = await prisma.reserva.findMany({
+      where: {
+        tenantId,
+        fecha: { gte: fechaInicio, lte: fechaFin }
+      },
+      include: { servicio: true },
+      orderBy: { fecha: 'asc' }
+    })
+
+    res.json(reservas)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al obtener reservas' })
+  }
+}
+
+// Horas disponibles (público)
+const getHorasDisponibles = async (req, res) => {
+  const { tenantId, fecha, servicioId } = req.query
+
+  try {
+    const servicio = await prisma.servicio.findUnique({
+      where: { id: parseInt(servicioId) }
+    })
+
+    if (!servicio) {
+      return res.status(404).json({ error: 'Servicio no encontrado' })
+    }
+
+    const fechaConsulta = new Date(fecha)
+    const diaSemana = fechaConsulta.getDay()
+
+    const horario = await prisma.horario.findFirst({
+      where: { tenantId: parseInt(tenantId), diaSemana, activo: true }
+    })
+
+    if (!horario) {
+      return res.json({ horasDisponibles: [] })
+    }
+
+    // Generar slots según duración del servicio
+    const slots = generarSlots(horario.horaInicio, horario.horaFin, servicio.duracion)
+
+    // Obtener reservas del día para filtrar ocupadas
+    const fechaInicio = new Date(fecha)
+    fechaInicio.setHours(0, 0, 0, 0)
+    const fechaFin = new Date(fecha)
+    fechaFin.setHours(23, 59, 59, 999)
+
+    const reservasDelDia = await prisma.reserva.findMany({
+      where: {
+        tenantId: parseInt(tenantId),
+        fecha: { gte: fechaInicio, lte: fechaFin },
+        estado: { not: 'cancelada' }
+      },
+      include: { servicio: true }
+    })
+
+    // Filtrar slots ocupados
+    const slotsOcupados = reservasDelDia.map(r => {
+      const h = new Date(r.fecha)
+      return `${String(h.getHours()).padStart(2, '0')}:${String(h.getMinutes()).padStart(2, '0')}`
+    })
+
+    const horasDisponibles = slots.filter(s => !slotsOcupados.includes(s))
+
+    res.json({ horasDisponibles })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al obtener horas disponibles' })
+  }
+}
+
+// Crear reserva (público)
+const createReserva = async (req, res) => {
+  const { tenantId, nombre, telefono, email, patente, fecha, hora, servicioId } = req.body
+
+  try {
+    const fechaReserva = new Date(`${fecha}T${hora}:00`)
+
+    const reserva = await prisma.reserva.create({
+      data: {
+        nombre,
+        telefono,
+        email,
+        patente: patente.toUpperCase(),
+        fecha: fechaReserva,
+        tenantId: parseInt(tenantId),
+        servicioId: parseInt(servicioId)
+      },
+      include: { servicio: true, tenant: true }
+    })
+
+    // Notificar al dueño por email
+    await enviarNotificacion(reserva)
+
+    res.status(201).json(reserva)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al crear reserva' })
+  }
+}
+
+// Actualizar estado (admin)
+const updateEstado = async (req, res) => {
+  const { id } = req.params
+  const { estado } = req.body
+  const tenantId = req.user.tenantId
+
+  try {
+    const reserva = await prisma.reserva.update({
+      where: { id: parseInt(id), tenantId },
+      data: { estado }
+    })
+    res.json(reserva)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al actualizar estado' })
+  }
+}
+
+// Helpers
+const generarSlots = (inicio, fin, duracionMin) => {
+  const slots = []
+  const [hInicio, mInicio] = inicio.split(':').map(Number)
+  const [hFin, mFin] = fin.split(':').map(Number)
+
+  let minutos = hInicio * 60 + mInicio
+  const finMinutos = hFin * 60 + mFin
+
+  while (minutos + duracionMin <= finMinutos) {
+    const h = Math.floor(minutos / 60)
+    const m = minutos % 60
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
+    minutos += duracionMin
+  }
+
+  return slots
+}
+
+const enviarNotificacion = async (reserva) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.MAIL_HOST,
+      port: process.env.MAIL_PORT,
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    })
+
+    const fecha = new Date(reserva.fecha)
+    const fechaFormateada = fecha.toLocaleDateString('es-CL', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    })
+    const horaFormateada = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+
+    await transporter.sendMail({
+      from: process.env.MAIL_USER,
+      to: reserva.tenant.email,
+      subject: `Nueva reserva — ${reserva.nombre} (${reserva.patente})`,
+      html: `
+        <h2>Nueva reserva recibida</h2>
+        <p><strong>Cliente:</strong> ${reserva.nombre}</p>
+        <p><strong>Teléfono:</strong> ${reserva.telefono}</p>
+        <p><strong>Patente:</strong> ${reserva.patente}</p>
+        <p><strong>Servicio:</strong> ${reserva.servicio.nombre}</p>
+        <p><strong>Fecha:</strong> ${fechaFormateada}</p>
+        <p><strong>Hora:</strong> ${horaFormateada}</p>
+      `
+    })
+  } catch (error) {
+    console.error('Error enviando email:', error)
+    // No interrumpir el flujo si falla el email
+  }
+}
+
+module.exports = { getReservas, getHorasDisponibles, createReserva, updateEstado }

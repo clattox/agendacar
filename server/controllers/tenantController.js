@@ -1,0 +1,31 @@
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
+
+const getTenant = async (req, res) => {
+  const { subdominio } = req.query
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { subdominio }
+    })
+    if (!tenant) return res.status(404).json({ error: 'Taller no encontrado' })
+    res.json(tenant)
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener información del taller' })
+  }
+}
+
+const updateTenant = async (req, res) => {
+  const { nombre, telefono, logoUrl } = req.body
+  const tenantId = req.user.tenantId
+  try {
+    const tenant = await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { nombre, telefono, logoUrl }
+    })
+    res.json(tenant)
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar información del taller' })
+  }
+}
+
+module.exports = { getTenant, updateTenant }
