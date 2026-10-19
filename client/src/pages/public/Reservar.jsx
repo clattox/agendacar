@@ -1,263 +1,872 @@
-import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
-import api from '../../lib/api'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  RefreshCw,
+  Wrench
+} from 'lucide-react'
+import useTenant from '../../hooks/useTenant'
+import useDocumentTitle from '../../hooks/useDocumentTitle'
+import { listarServicios } from '../../services/serviciosService'
+import { crearReserva, listarHorasDisponibles } from '../../services/reservasService'
+import { getApiErrorMessage } from '../../lib/errors'
+import {
+  DIAS_CORTOS,
+  formatLongDate,
+  formatMonthYear,
+  startOfDay,
+  toDateKey
+} from '../../lib/dates'
+import TenantHeader from '../../components/public/TenantHeader'
+import PublicFooter from '../../components/public/PublicFooter'
+import StepIndicator from '../../components/public/StepIndicator'
+import { Alert, Button, EmptyState, FormField, Input } from '../../components/ui'
 
-const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+const TITULOS = {
+  1: 'Elige el servicio',
+  2: 'Elige el día',
+  3: 'Elige la hora',
+  4: 'Tus datos',
+  5: 'Confirma tu reserva'
+}
+
+const SUBTITULOS = {
+  1: '¿Qué necesita tu vehículo?',
+  2: 'Selecciona la fecha de tu visita.',
+  3: 'Estos son los horarios disponibles para el día elegido.',
+  4: 'Usaremos estos datos para identificar y contactar tu reserva.',
+  5: 'Revisa que todo esté correcto antes de enviar la reserva al taller.'
+}
+
+const CAMPOS = ['nombre', 'telefono', 'email', 'patente']
+
+function validarCampo(campo, valor) {
+  const texto = String(valor || '').trim()
+
+  if (campo === 'nombre') {
+    if (!texto) return 'Ingresa tu nombre completo.'
+    if (texto.length < 3) return 'El nombre debe tener al menos 3 caracteres.'
+  }
+
+  if (campo === 'telefono') {
+    if (!texto) return 'Ingresa un teléfono de contacto.'
+    if (texto.replace(/\D/g, '').length < 8) return 'Ingresa un teléfono válido (mínimo 8 dígitos).'
+  }
+
+  if (campo === 'email' && texto) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(texto)) return 'Ingresa un email válido.'
+  }
+
+  if (campo === 'patente') {
+    if (!texto) return 'Ingresa la patente del vehículo.'
+    if (texto.replace(/[^A-Za-z0-9]/g, '').length < 4) return 'Ingresa una patente válida.'
+  }
+
+  return ''
+}
+
+function validarFormulario(form) {
+  return CAMPOS.reduce((errores, campo) => {
+    const mensaje = validarCampo(campo, form[campo])
+    if (mensaje) errores[campo] = mensaje
+    return errores
+  }, {})
+}
 
 export default function Reservar() {
   const { state } = useLocation()
   const navigate = useNavigate()
-  const tenant = state?.tenant
 
-  const [paso, setPaso] = useState(1) // 1: servicio, 2: fecha, 3: hora, 4: datos
+  const tenantInicial = state?.tenant || null
+  const servicioIdInicial = state?.servicioId ?? null
+  const { tenant, loading: cargandoTenant, error: tenantError, recargar: recargarTenant } = useTenant(tenantInicial)
+
+  const [paso, setPaso] = useState(1)
   const [servicios, setServicios] = useState([])
+  const [cargandoServicios, setCargandoServicios] = useState(true)
+  const [serviciosError, setServiciosError] = useState('')
+  const [recargaServicios, setRecargaServicios] = useState(0)
+
   const [servicioSeleccionado, setServicioSeleccionado] = useState(null)
   const [fechaSeleccionada, setFechaSeleccionada] = useState(null)
   const [horaSeleccionada, setHoraSeleccionada] = useState(null)
   const [horasDisponibles, setHorasDisponibles] = useState([])
-  const [mesActual, setMesActual] = useState(new Date())
+  const [cargandoHoras, setCargandoHoras] = useState(false)
+  const [horasError, setHorasError] = useState('')
+  const [recargaHoras, setRecargaHoras] = useState(0)
+  const [mesActual, setMesActual] = useState(() => {
+    const hoy = new Date()
+    return new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+  })
+
   const [form, setForm] = useState({ nombre: '', telefono: '', email: '', patente: '' })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [errores, setErrores] = useState({})
+  const [errorEnvio, setErrorEnvio] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  const preseleccionAplicada = useRef(false)
+
+  useDocumentTitle(tenant ? `Reservar hora — ${tenant.nombre}` : 'Reservar hora')
 
   useEffect(() => {
-    if (!tenant) { navigate('/'); return }
-    api.get(`/servicios?tenantId=${tenant.id}`)
-      .then(res => setServicios(res.data))
-  }, [tenant])
+    if (!tenant?.id) return
+
+    let activo = true
+    setCargandoServicios(true)
+    setServiciosError('')
+
+    listarServicios(tenant.id)
+      .then(data => {
+        if (activo) setServicios(data)
+      })
+      .catch(err => {
+        if (activo) {
+          setServicios([])
+          setServiciosError(getApiErrorMessage(err, 'No pudimos cargar los servicios del taller.'))
+        }
+      })
+      .finally(() => {
+        if (activo) setCargandoServicios(false)
+      })
+
+    return () => { activo = false }
+  }, [tenant?.id, recargaServicios])
 
   useEffect(() => {
-    if (!fechaSeleccionada || !servicioSeleccionado) return
-    const fecha = formatFecha(fechaSeleccionada)
-    api.get(`/reservas/disponibles?tenantId=${tenant.id}&fecha=${fecha}&servicioId=${servicioSeleccionado.id}`)
-      .then(res => setHorasDisponibles(res.data.horasDisponibles))
-  }, [fechaSeleccionada, servicioSeleccionado])
+    if (preseleccionAplicada.current || servicioIdInicial == null || servicios.length === 0) return
 
-  const formatFecha = (date) => date.toISOString().split('T')[0]
+    preseleccionAplicada.current = true
+    const encontrado = servicios.find(servicio => servicio.id === Number(servicioIdInicial))
+    if (encontrado) {
+      setServicioSeleccionado(encontrado)
+      setPaso(2)
+    }
+  }, [servicios, servicioIdInicial])
+
+  useEffect(() => {
+    if (!tenant?.id || !fechaSeleccionada || !servicioSeleccionado?.id) {
+      setHorasDisponibles([])
+      setCargandoHoras(false)
+      return
+    }
+
+    let activo = true
+    setCargandoHoras(true)
+    setHorasError('')
+
+    listarHorasDisponibles({
+      tenantId: tenant.id,
+      fecha: toDateKey(fechaSeleccionada),
+      servicioId: servicioSeleccionado.id
+    })
+      .then(data => {
+        if (activo) setHorasDisponibles(data?.horasDisponibles || [])
+      })
+      .catch(err => {
+        if (activo) {
+          setHorasDisponibles([])
+          setHorasError(getApiErrorMessage(err, 'No pudimos consultar la disponibilidad del taller.'))
+        }
+      })
+      .finally(() => {
+        if (activo) setCargandoHoras(false)
+      })
+
+    return () => { activo = false }
+  }, [tenant?.id, fechaSeleccionada, servicioSeleccionado?.id, recargaHoras])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [paso])
+
+
+  const hoy = startOfDay(new Date())
+  const inicioMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+  const puedeRetroceder = mesActual > inicioMesActual
 
   const diasDelMes = () => {
     const año = mesActual.getFullYear()
     const mes = mesActual.getMonth()
     const primerDia = new Date(año, mes, 1).getDay()
     const totalDias = new Date(año, mes + 1, 0).getDate()
-    const hoy = new Date(); hoy.setHours(0,0,0,0)
 
     const dias = []
     for (let i = 0; i < primerDia; i++) dias.push(null)
-    for (let d = 1; d <= totalDias; d++) {
-      const fecha = new Date(año, mes, d)
-      dias.push({ fecha, pasado: fecha < hoy, esDomingo: fecha.getDay() === 0 })
+
+    for (let dia = 1; dia <= totalDias; dia++) {
+      const fecha = new Date(año, mes, dia)
+      dias.push({
+        fecha,
+        pasado: fecha < hoy,
+        esDomingo: fecha.getDay() === 0,
+        esHoy: fecha.getTime() === hoy.getTime()
+      })
     }
+
     return dias
   }
 
-  const cambiarMes = (dir) => {
-    setMesActual(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1))
+  const cambiarMes = direccion => {
+    setMesActual(prev => new Date(prev.getFullYear(), prev.getMonth() + direccion, 1))
   }
 
-  const handleSubmit = async () => {
-    if (!form.nombre || !form.telefono || !form.patente) {
-      setError('Completa nombre, teléfono y patente')
+  const seleccionarServicio = servicio => {
+    if (servicioSeleccionado?.id !== servicio.id) {
+      setHoraSeleccionada(null)
+      setHorasDisponibles([])
+      setHorasError('')
+    }
+    setServicioSeleccionado(servicio)
+    setPaso(2)
+  }
+
+  const seleccionarFecha = fecha => {
+    if (!fechaSeleccionada || toDateKey(fecha) !== toDateKey(fechaSeleccionada)) {
+      setHoraSeleccionada(null)
+      setHorasDisponibles([])
+      setHorasError('')
+    }
+    setFechaSeleccionada(fecha)
+    setErrorEnvio('')
+    setPaso(3)
+  }
+
+  const seleccionarHora = hora => {
+    setHoraSeleccionada(hora)
+    setErrorEnvio('')
+    setPaso(4)
+  }
+
+  const actualizarCampo = (campo, valor) => {
+    const normalizado = campo === 'patente' ? valor.toUpperCase() : valor
+    setForm(prev => ({ ...prev, [campo]: normalizado }))
+    setErrores(prev => ({ ...prev, [campo]: '' }))
+    setErrorEnvio('')
+  }
+
+  const validarAlSalir = campo => {
+    setErrores(prev => ({ ...prev, [campo]: validarCampo(campo, form[campo]) }))
+  }
+
+  const volver = () => {
+    if (enviando) return
+    if (paso > 1) {
+      setErrorEnvio('')
+      setPaso(paso - 1)
+    } else {
+      navigate('/')
+    }
+  }
+
+  const continuarAConfirmar = () => {
+    const nuevosErrores = validarFormulario(form)
+    setErrores(nuevosErrores)
+
+    const primerCampoConError = CAMPOS.find(campo => nuevosErrores[campo])
+    if (primerCampoConError) {
+      document.getElementById(primerCampoConError)?.focus()
       return
     }
-    setLoading(true)
-    setError('')
+
+    setErrorEnvio('')
+    setPaso(5)
+  }
+
+  const confirmarReserva = async () => {
+    if (enviando) return
+
+    if (!servicioSeleccionado || !fechaSeleccionada || !horaSeleccionada) {
+      setErrorEnvio('Faltan datos de la reserva. Revisa los pasos anteriores antes de confirmar.')
+      return
+    }
+
+    setEnviando(true)
+    setErrorEnvio('')
+
     try {
-      const fecha = formatFecha(fechaSeleccionada)
-      const res = await api.post('/reservas/nueva', {
+      // Verificación final: la hora debe seguir disponible justo antes de crear la reserva.
+      const disponibilidad = await listarHorasDisponibles({
         tenantId: tenant.id,
-        ...form,
-        patente: form.patente.toUpperCase(),
-        fecha,
+        fecha: toDateKey(fechaSeleccionada),
+        servicioId: servicioSeleccionado.id
+      })
+      const horas = disponibilidad?.horasDisponibles || []
+      setHorasDisponibles(horas)
+
+      if (!horas.includes(horaSeleccionada)) {
+        setHoraSeleccionada(null)
+        setHorasError('La hora que elegiste acaba de dejar de estar disponible. Selecciona otro horario.')
+        setPaso(3)
+        return
+      }
+
+      const reserva = await crearReserva({
+        tenantId: tenant.id,
+        nombre: form.nombre.trim(),
+        telefono: form.telefono.trim(),
+        email: form.email.trim(),
+        patente: form.patente.toUpperCase().trim(),
+        fecha: toDateKey(fechaSeleccionada),
         hora: horaSeleccionada,
         servicioId: servicioSeleccionado.id
       })
-      navigate('/confirmacion', { state: { reserva: res.data, tenant } })
-    } catch {
-      setError('Hubo un error al reservar. Intenta nuevamente.')
+
+      navigate('/confirmacion', { state: { reserva, tenant } })
+    } catch (err) {
+      setErrorEnvio(getApiErrorMessage(err, 'No pudimos confirmar la reserva. Intenta nuevamente.'))
     } finally {
-      setLoading(false)
+      setEnviando(false)
     }
   }
 
-  if (!tenant) return null
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
-          <button onClick={() => paso > 1 ? setPaso(p => p - 1) : navigate('/')}
-            className="p-1 rounded-lg hover:bg-gray-100">
-            <ChevronLeft className="h-5 w-5 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="font-bold text-gray-900">{tenant.nombre}</h1>
-            <p className="text-xs text-gray-400">
-              {paso === 1 && 'Selecciona el servicio'}
-              {paso === 2 && 'Selecciona la fecha'}
-              {paso === 3 && 'Selecciona la hora'}
-              {paso === 4 && 'Tus datos'}
-            </p>
-          </div>
-        </div>
-        {/* Barra de progreso */}
-        <div className="h-1 bg-gray-100">
-          <div className="h-1 bg-blue-600 transition-all duration-300"
-            style={{ width: `${(paso / 4) * 100}%` }} />
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-6">
-
-        {/* PASO 1: Servicio */}
-        {paso === 1 && (
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">¿Qué necesitas?</h2>
-            <div className="space-y-3">
-              {servicios.map(s => (
-                <button key={s.id}
-                  onClick={() => { setServicioSeleccionado(s); setPaso(2) }}
-                  className="w-full bg-white rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md hover:border-blue-200 border border-transparent transition-all text-left">
-                  <div>
-                    <p className="font-medium text-gray-900">{s.nombre}</p>
-                    <p className="text-sm text-gray-400">{s.duracion} minutos</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </button>
-              ))}
+  if (cargandoTenant) {
+    return (
+      <div className="min-h-screen bg-canvas">
+        <div className="border-b border-line bg-surface">
+          <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
+            <div className="h-11 w-11 animate-pulse rounded-lg bg-graphite-100" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-40 animate-pulse rounded bg-graphite-100" />
+              <div className="h-2.5 w-28 animate-pulse rounded bg-graphite-100" />
             </div>
           </div>
+        </div>
+        <div className="mx-auto max-w-3xl px-4 py-8">
+          <div className="h-3 w-24 animate-pulse rounded bg-graphite-100" />
+          <div className="mt-3 h-7 w-64 animate-pulse rounded bg-graphite-100" />
+          <div className="mt-6 grid gap-2 sm:grid-cols-2">
+            {[0, 1, 2, 3].map(item => (
+              <div key={item} className="h-24 animate-pulse rounded-xl bg-graphite-100" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!tenant) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
+        <div className="w-full max-w-md rounded-xl border border-line bg-surface p-6 shadow-card">
+          <EmptyState
+            icon={Building2}
+            title="Taller no disponible"
+            description={tenantError || 'No pudimos cargar la información del taller para iniciar la reserva.'}
+            action={
+              <Button variant="secondary" leftIcon={RefreshCw} onClick={recargarTenant}>
+                Reintentar
+              </Button>
+            }
+          />
+          <div className="mt-4 text-center">
+            <Link to="/" className="text-sm font-medium text-accent-600 hover:text-accent-700">
+              Volver al inicio
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-canvas">
+      <TenantHeader
+        tenant={tenant}
+        actions={
+          <Link
+            to="/"
+            className="inline-flex h-9 items-center rounded-md border border-line bg-surface px-3 text-xs font-semibold text-ink-muted transition-colors hover:bg-graphite-50 hover:text-ink"
+          >
+            Inicio
+          </Link>
+        }
+      />
+
+      <StepIndicator paso={paso} />
+
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">
+        <div className="mb-5 flex items-start gap-3">
+          <button
+            type="button"
+            onClick={volver}
+            disabled={enviando}
+            aria-label="Volver al paso anterior"
+            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink-muted transition-colors hover:bg-graphite-50 hover:text-ink focus-ring disabled:opacity-50"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <div>
+            <p className="micro-label">Paso {paso} de 5</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">{TITULOS[paso]}</h1>
+            <p className="mt-1 text-sm text-ink-muted">{SUBTITULOS[paso]}</p>
+          </div>
+        </div>
+
+        {paso === 5 && errorEnvio && (
+          <Alert variant="error" title="No pudimos confirmar la reserva" className="mb-4">
+            {errorEnvio}
+          </Alert>
         )}
 
-        {/* PASO 2: Fecha */}
-        {paso === 2 && (
+
+        {paso === 1 && (
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">¿Qué día?</h2>
-            <div className="bg-white rounded-xl shadow-sm p-4">
-              {/* Navegación mes */}
-              <div className="flex items-center justify-between mb-4">
-                <button onClick={() => cambiarMes(-1)} className="p-1 hover:bg-gray-100 rounded-lg">
-                  <ChevronLeft className="h-5 w-5 text-gray-600" />
-                </button>
-                <span className="font-semibold text-gray-900">
-                  {MESES[mesActual.getMonth()]} {mesActual.getFullYear()}
-                </span>
-                <button onClick={() => cambiarMes(1)} className="p-1 hover:bg-gray-100 rounded-lg">
-                  <ChevronRight className="h-5 w-5 text-gray-600" />
-                </button>
-              </div>
-              {/* Días semana */}
-              <div className="grid grid-cols-7 mb-2">
-                {DIAS.map(d => (
-                  <div key={d} className="text-center text-xs text-gray-400 font-medium py-1">{d}</div>
+            {cargandoServicios ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[0, 1, 2, 3].map(item => (
+                  <div key={item} className="h-24 animate-pulse rounded-xl bg-graphite-100" />
                 ))}
               </div>
-              {/* Días mes */}
-              <div className="grid grid-cols-7 gap-1">
-                {diasDelMes().map((dia, i) => {
-                  if (!dia) return <div key={i} />
-                  const seleccionado = fechaSeleccionada?.toDateString() === dia.fecha.toDateString()
+            ) : serviciosError ? (
+              <Alert variant="error" title="No pudimos cargar los servicios">
+                <div className="mt-1 flex flex-wrap items-center gap-3">
+                  <span>{serviciosError}</span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={RefreshCw}
+                    onClick={() => setRecargaServicios(value => value + 1)}
+                  >
+                    Reintentar
+                  </Button>
+                </div>
+              </Alert>
+            ) : servicios.length === 0 ? (
+              <EmptyState
+                icon={Wrench}
+                title="Sin servicios disponibles"
+                description="El taller todavía no tiene servicios publicados para reservar en línea."
+                action={
+                  <Button variant="secondary" onClick={() => navigate('/')}>
+                    Volver al inicio
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {servicios.map(servicio => {
+                  const seleccionado = servicioSeleccionado?.id === servicio.id
                   return (
-                    <button key={i}
-                      disabled={dia.pasado || dia.esDomingo}
-                      onClick={() => { setFechaSeleccionada(dia.fecha); setHoraSeleccionada(null); setPaso(3) }}
-                      className={`
-                        aspect-square rounded-lg text-sm font-medium transition-colors
-                        ${seleccionado ? 'bg-blue-600 text-white' : ''}
-                        ${dia.pasado || dia.esDomingo ? 'text-gray-200 cursor-not-allowed' : 'hover:bg-blue-50 text-gray-900'}
-                      `}>
-                      {dia.fecha.getDate()}
+                    <button
+                      key={servicio.id}
+                      type="button"
+                      onClick={() => seleccionarServicio(servicio)}
+                      aria-pressed={seleccionado}
+                      className={`flex w-full items-start justify-between gap-3 rounded-xl border p-4 text-left transition-colors focus-ring ${
+                        seleccionado
+                          ? 'border-accent-400 bg-accent-50/50'
+                          : 'border-line bg-surface hover:border-graphite-300 hover:bg-graphite-50'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-ink">{servicio.nombre}</p>
+                        <p className="mt-1 text-xs text-ink-muted">{servicio.duracion} minutos</p>
+                        {seleccionado && (
+                          <p className="mt-2 text-xs font-semibold text-accent-700">Servicio seleccionado</p>
+                        )}
+                      </div>
+                      <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-graphite-400" aria-hidden="true" />
                     </button>
                   )
                 })}
               </div>
+            )}
+          </div>
+        )}
+
+
+        {paso === 2 && (
+          <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              <button
+                type="button"
+                onClick={() => cambiarMes(-1)}
+                disabled={!puedeRetroceder}
+                aria-label="Mes anterior"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink focus-ring disabled:pointer-events-none disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <p className="text-sm font-semibold text-ink">{formatMonthYear(mesActual)}</p>
+              <button
+                type="button"
+                onClick={() => cambiarMes(1)}
+                aria-label="Mes siguiente"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink focus-ring"
+              >
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </button>
             </div>
-          </div>
-        )}
 
-        {/* PASO 3: Hora */}
-        {paso === 3 && (
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">¿A qué hora?</h2>
-            <p className="text-sm text-gray-400 mb-4">
-              {fechaSeleccionada?.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-            {horasDisponibles.length === 0
-              ? <div className="bg-white rounded-xl p-6 text-center shadow-sm">
-                  <p className="text-gray-500">No hay horas disponibles para este día.</p>
-                  <button onClick={() => setPaso(2)} className="mt-3 text-blue-600 text-sm font-medium">
-                    Elegir otro día
-                  </button>
-                </div>
-              : <div className="grid grid-cols-3 gap-3">
-                  {horasDisponibles.map(hora => (
-                    <button key={hora}
-                      onClick={() => { setHoraSeleccionada(hora); setPaso(4) }}
-                      className={`
-                        py-3 rounded-xl text-sm font-semibold border transition-colors
-                        ${horaSeleccionada === hora
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-900 border-gray-200 hover:border-blue-400'}
-                      `}>
-                      {hora}
+            <div className="p-4">
+              <div className="mb-1 grid grid-cols-7 gap-1">
+                {DIAS_CORTOS.map(dia => (
+                  <div
+                    key={dia}
+                    className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft"
+                  >
+                    {dia}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {diasDelMes().map((dia, index) => {
+                  if (!dia) return <div key={`vacio-${index}`} aria-hidden="true" />
+
+                  const seleccionado = fechaSeleccionada && toDateKey(fechaSeleccionada) === toDateKey(dia.fecha)
+                  const deshabilitado = dia.pasado || dia.esDomingo
+
+                  return (
+                    <button
+                      key={toDateKey(dia.fecha)}
+                      type="button"
+                      disabled={deshabilitado}
+                      onClick={() => seleccionarFecha(dia.fecha)}
+                      aria-label={`${formatLongDate(dia.fecha)}${dia.esDomingo ? ' (cerrado)' : ''}`}
+                      aria-pressed={Boolean(seleccionado)}
+                      className={`flex h-10 items-center justify-center rounded-md text-sm font-medium transition-colors focus-ring ${
+                        seleccionado
+                          ? 'bg-accent-400 text-white'
+                          : deshabilitado
+                            ? 'cursor-not-allowed text-graphite-300'
+                            : dia.esHoy
+                              ? 'bg-graphite-100 text-ink ring-1 ring-inset ring-graphite-300 hover:bg-accent-50'
+                              : 'text-ink hover:bg-accent-50'
+                      }`}
+                    >
+                      <span className="font-tabular">{dia.fecha.getDate()}</span>
                     </button>
-                  ))}
-                </div>
-            }
-          </div>
-        )}
+                  )
+                })}
+              </div>
 
-        {/* PASO 4: Datos */}
-        {paso === 4 && (
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tus datos</h2>
-
-            {/* Resumen */}
-            <div className="bg-blue-50 rounded-xl p-4 mb-6 text-sm">
-              <p className="font-semibold text-blue-900">{servicioSeleccionado?.nombre}</p>
-              <p className="text-blue-700">
-                {fechaSeleccionada?.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })} — {horaSeleccionada}
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
+                <Clock className="h-3.5 w-3.5 text-graphite-400" aria-hidden="true" />
+                Los domingos el taller permanece cerrado.
               </p>
             </div>
+          </div>
+        )}
 
-            <div className="space-y-4">
-              {[
-                { key: 'nombre', label: 'Nombre completo', placeholder: 'Juan Pérez', required: true },
-                { key: 'telefono', label: 'Teléfono', placeholder: '+56 9 1234 5678', required: true, type: 'tel' },
-                { key: 'email', label: 'Email (opcional)', placeholder: 'juan@email.com', type: 'email' },
-                { key: 'patente', label: 'Patente del vehículo', placeholder: 'ABCD12', required: true, upper: true },
-              ].map(({ key, label, placeholder, required, type, upper }) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {label} {required && <span className="text-red-500">*</span>}
-                  </label>
-                  <input
-                    type={type || 'text'}
-                    placeholder={placeholder}
-                    value={form[key]}
-                    onChange={e => setForm(f => ({ ...f, [key]: upper ? e.target.value.toUpperCase() : e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              ))}
+
+        {paso === 3 && (
+          <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-ink">{formatLongDate(fechaSeleccionada)}</p>
+                <p className="mt-0.5 text-xs text-ink-muted">
+                  {servicioSeleccionado?.nombre} · {servicioSeleccionado?.duracion} minutos
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={CalendarDays}
+                onClick={() => setPaso(2)}
+              >
+                Cambiar día
+              </Button>
             </div>
 
-            {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
+            <div className="p-4">
+              {cargandoHoras ? (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map(item => (
+                    <div key={item} className="h-11 animate-pulse rounded-md bg-graphite-100" />
+                  ))}
+                </div>
+              ) : horasError ? (
+                <Alert variant="warning" title="Disponibilidad no confirmada">
+                  <div className="mt-1 flex flex-wrap items-center gap-3">
+                    <span>{horasError}</span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={RefreshCw}
+                      onClick={() => setRecargaHoras(value => value + 1)}
+                    >
+                      Reintentar
+                    </Button>
+                  </div>
+                </Alert>
+              ) : horasDisponibles.length === 0 ? (
+                <EmptyState
+                  icon={Clock}
+                  title="Sin horas disponibles"
+                  description="No quedan cupos para este día. Prueba con otra fecha."
+                  action={
+                    <Button variant="secondary" onClick={() => setPaso(2)}>
+                      Elegir otro día
+                    </Button>
+                  }
+                />
+              ) : (
+                <>
+                  <p className="mb-3 text-xs text-ink-muted">
+                    Horarios generados según la duración del servicio.
+                  </p>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {horasDisponibles.map(hora => {
+                      const seleccionada = horaSeleccionada === hora
+                      return (
+                        <button
+                          key={hora}
+                          type="button"
+                          onClick={() => seleccionarHora(hora)}
+                          aria-pressed={seleccionada}
+                          className={`h-11 rounded-md border text-sm font-semibold font-tabular transition-colors focus-ring ${
+                            seleccionada
+                              ? 'border-accent-400 bg-accent-400 text-white'
+                              : 'border-line bg-surface text-ink hover:border-accent-300 hover:bg-accent-50'
+                          }`}
+                        >
+                          {hora}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
 
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
-              {loading
-                ? <><Loader2 className="h-5 w-5 animate-spin" /> Reservando...</>
-                : 'Confirmar reserva'}
-            </button>
+              {!cargandoHoras && !horasError && horaSeleccionada && horasDisponibles.includes(horaSeleccionada) && (
+                <div className="mt-4 flex justify-end border-t border-line pt-4">
+                  <Button rightIcon={ArrowRight} onClick={() => setPaso(4)}>
+                    Continuar con las {horaSeleccionada}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+
+        {paso === 4 && (
+          <div className="rounded-xl border border-line bg-surface shadow-card">
+            <div className="grid gap-3 border-b border-line bg-graphite-50 px-4 py-3 sm:grid-cols-3">
+              <div>
+                <p className="micro-label">Servicio</p>
+                <p className="mt-0.5 text-sm font-medium text-ink">{servicioSeleccionado?.nombre}</p>
+              </div>
+              <div>
+                <p className="micro-label">Fecha</p>
+                <p className="mt-0.5 text-sm font-medium text-ink">{formatLongDate(fechaSeleccionada)}</p>
+              </div>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="micro-label">Hora</p>
+                  <p className="mt-0.5 text-sm font-medium text-ink">{horaSeleccionada}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPaso(3)}
+                  className="text-xs font-semibold text-accent-600 transition-colors hover:text-accent-700"
+                >
+                  Cambiar
+                </button>
+              </div>
+            </div>
+
+            <form
+              onSubmit={event => {
+                event.preventDefault()
+                continuarAConfirmar()
+              }}
+              className="p-4 sm:p-5"
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField id="nombre" label="Nombre completo" required error={errores.nombre}>
+                  <Input
+                    id="nombre"
+                    name="nombre"
+                    autoComplete="name"
+                    placeholder="Ej. Juan Pérez"
+                    maxLength={80}
+                    value={form.nombre}
+                    onChange={event => actualizarCampo('nombre', event.target.value)}
+                    onBlur={() => validarAlSalir('nombre')}
+                    invalid={Boolean(errores.nombre)}
+                    aria-invalid={Boolean(errores.nombre) || undefined}
+                    aria-describedby={errores.nombre ? 'nombre-error' : undefined}
+                  />
+                </FormField>
+
+                <FormField id="telefono" label="Teléfono" required error={errores.telefono}>
+                  <Input
+                    id="telefono"
+                    name="telefono"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="+56 9 1234 5678"
+                    maxLength={25}
+                    value={form.telefono}
+                    onChange={event => actualizarCampo('telefono', event.target.value)}
+                    onBlur={() => validarAlSalir('telefono')}
+                    invalid={Boolean(errores.telefono)}
+                    aria-invalid={Boolean(errores.telefono) || undefined}
+                    aria-describedby={errores.telefono ? 'telefono-error' : undefined}
+                  />
+                </FormField>
+
+                <FormField
+                  id="email"
+                  label="Email (opcional)"
+                  hint="Lo usamos solo para el detalle de tu reserva."
+                  error={errores.email}
+                >
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="juan@correo.cl"
+                    maxLength={120}
+                    value={form.email}
+                    onChange={event => actualizarCampo('email', event.target.value)}
+                    onBlur={() => validarAlSalir('email')}
+                    invalid={Boolean(errores.email)}
+                    aria-invalid={Boolean(errores.email) || undefined}
+                    aria-describedby={errores.email ? 'email-error' : 'email-hint'}
+                  />
+                </FormField>
+
+                <FormField
+                  id="patente"
+                  label="Patente del vehículo"
+                  required
+                  hint="Sin puntos ni guiones."
+                  error={errores.patente}
+                >
+                  <Input
+                    id="patente"
+                    name="patente"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    placeholder="ABCD12"
+                    maxLength={8}
+                    className="font-tabular uppercase tracking-wider"
+                    value={form.patente}
+                    onChange={event => actualizarCampo('patente', event.target.value)}
+                    onBlur={() => validarAlSalir('patente')}
+                    invalid={Boolean(errores.patente)}
+                    aria-invalid={Boolean(errores.patente) || undefined}
+                    aria-describedby={errores.patente ? 'patente-error' : 'patente-hint'}
+                  />
+                </FormField>
+              </div>
+
+              <div className="mt-5 flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <Button variant="secondary" onClick={() => setPaso(3)}>
+                  Cambiar hora
+                </Button>
+                <Button type="submit" rightIcon={ArrowRight}>
+                  Revisar reserva
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+
+        {paso === 5 && (
+          <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+              <div className="border-b border-line px-4 py-3">
+                <h2 className="text-sm font-semibold text-ink">Detalle de la cita</h2>
+                <p className="mt-0.5 text-xs text-ink-muted">Estos son los datos que se enviarán al taller.</p>
+              </div>
+
+              <dl className="divide-y divide-line px-4">
+                <Fila
+                  etiqueta="Servicio"
+                  valor={servicioSeleccionado?.nombre}
+                  detalle={`${servicioSeleccionado?.duracion} minutos`}
+                />
+                <Fila etiqueta="Fecha" valor={formatLongDate(fechaSeleccionada)} />
+                <Fila etiqueta="Hora" valor={horaSeleccionada} />
+                <Fila etiqueta="Cliente" valor={form.nombre} />
+                <Fila etiqueta="Teléfono" valor={form.telefono} />
+                <Fila etiqueta="Email" valor={form.email || 'No informado'} />
+                <Fila etiqueta="Patente" valor={form.patente} />
+              </dl>
+
+              <div className="border-t border-line p-4">
+                <Button
+                  variant="secondary"
+                  leftIcon={ArrowLeft}
+                  onClick={() => setPaso(4)}
+                  disabled={enviando}
+                >
+                  Editar datos
+                </Button>
+              </div>
+            </div>
+
+            <aside className="self-start rounded-xl border border-line bg-surface p-4 shadow-card">
+              <p className="micro-label">Antes de confirmar</p>
+
+              <ul className="mt-3 space-y-2.5">
+                {[
+                  'Revisa que el servicio, la fecha y la hora sean correctos.',
+                  'La reserva quedará confirmada al enviarla.',
+                  'Si necesitas cambiarla, contacta directamente al taller.'
+                ].map(texto => (
+                  <li key={texto} className="flex items-start gap-2 text-sm text-ink-muted">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400" aria-hidden="true" />
+                    {texto}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-4 rounded-lg border border-line bg-graphite-50 px-3 py-2.5">
+                <p className="text-xs leading-relaxed text-ink-muted">
+                  La reserva se registra a nombre de <span className="font-medium text-ink">{form.nombre}</span> para{' '}
+                  <span className="font-medium text-ink">{tenant.nombre}</span>.
+                </p>
+              </div>
+
+              <Button
+                size="lg"
+                className="mt-4 w-full"
+                loading={enviando}
+                disabled={enviando}
+                onClick={confirmarReserva}
+              >
+                {enviando ? 'Confirmando reserva…' : 'Confirmar reserva'}
+              </Button>
+              <p className="mt-2 text-center text-xs text-ink-soft">
+                No cierres esta página mientras enviamos tu reserva.
+              </p>
+            </aside>
           </div>
         )}
       </main>
+
+      <PublicFooter tenant={tenant} />
     </div>
   )
 }
+
+function Fila({ etiqueta, valor, detalle }) {
+  return (
+    <div className="grid gap-1 py-3 sm:grid-cols-[120px_1fr] sm:gap-4">
+      <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft">
+        {etiqueta}
+      </dt>
+      <dd className="text-sm font-medium text-ink">
+        {valor}
+        {detalle && <span className="mt-0.5 block text-xs font-normal text-ink-muted">{detalle}</span>}
+      </dd>
+    </div>
+  )
+}
+

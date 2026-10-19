@@ -12,7 +12,7 @@ import Agenda from './pages/admin/Agenda'
 import Configuracion from './pages/admin/Configuracion'
 
 // Componentes
-import ProtectedRoute from './components/ProtectedRoute'
+import ProtectedRoute from './components/admin/ProtectedRoute'
 
 export default function App() {
   return (

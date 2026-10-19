@@ -1,156 +1,364 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Loader2, Check } from 'lucide-react'
-import AdminLayout from '../../components/AdminLayout'
-import api from '../../lib/api'
+import {
+  Check,
+  Clock,
+  Plus,
+  Save,
+  Trash2,
+  Wrench
+} from 'lucide-react'
+import useDocumentTitle from '../../hooks/useDocumentTitle'
+import { DIAS_SEMANA } from '../../lib/dates'
+import { getUsuario } from '../../lib/auth'
+import { getApiErrorMessage } from '../../lib/errors'
+import {
+  actualizarHorarios,
+  listarHorarios
+} from '../../services/horariosService'
+import {
+  crearServicio,
+  eliminarServicio,
+  listarServicios
+} from '../../services/serviciosService'
+import AdminLayout from '../../components/admin/AdminLayout'
+import {
+  Alert,
+  Badge,
+  Button,
+  ConfirmDialog,
+  Input,
+  Select,
+  Skeleton
+} from '../../components/ui'
 
-const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const DURACIONES = [15, 20, 30, 45, 60, 90, 120]
 
 export default function Configuracion() {
   const [servicios, setServicios] = useState([])
   const [horarios, setHorarios] = useState([])
   const [nuevoServicio, setNuevoServicio] = useState({ nombre: '', duracion: 30 })
-  const [guardandoServicios, setGuardandoServicios] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [errorServicio, setErrorServicio] = useState('')
+  const [guardandoServicio, setGuardandoServicio] = useState(false)
+  const [eliminando, setEliminando] = useState(null)
+  const [aEliminar, setAEliminar] = useState(null)
   const [guardandoHorarios, setGuardandoHorarios] = useState(false)
-  const [okServicios, setOkServicios] = useState(false)
   const [okHorarios, setOkHorarios] = useState(false)
 
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}')
-  const tenantId = usuario.tenant?.id
+  const tenantId = getUsuario()?.tenant?.id
+
+  useDocumentTitle('Configuración — AgendaCar')
 
   useEffect(() => {
-    api.get(`/servicios?tenantId=${tenantId}`).then(res => setServicios(res.data))
-    api.get(`/horarios?tenantId=${tenantId}`).then(res => {
-      // Construir array con los 7 días, marcando activos
-      const activos = res.data
-      const todos = DIAS_SEMANA.map((nombre, i) => {
-        const existente = activos.find(h => h.diaSemana === i)
-        return existente || { diaSemana: i, horaInicio: '09:00', horaFin: '18:00', activo: false }
+    let activo = true
+    setLoading(true)
+    setError('')
+
+    Promise.all([listarServicios(tenantId), listarHorarios(tenantId)])
+      .then(([serviciosData, horariosData]) => {
+        if (!activo) return
+        setServicios(serviciosData)
+        const todos = DIAS_SEMANA.map((nombre, index) => {
+          const existente = horariosData.find(horario => horario.diaSemana === index)
+          return existente || {
+            diaSemana: index,
+            horaInicio: '09:00',
+            horaFin: '18:00',
+            activo: false
+          }
+        })
+        setHorarios(todos)
       })
-      setHorarios(todos)
-    })
+      .catch(err => {
+        if (activo) setError(getApiErrorMessage(err, 'No pudimos cargar la configuración.'))
+      })
+      .finally(() => {
+        if (activo) setLoading(false)
+      })
+
+    return () => { activo = false }
   }, [tenantId])
 
-  const agregarServicio = async () => {
-    if (!nuevoServicio.nombre) return
-    const res = await api.post('/servicios', nuevoServicio)
-    setServicios(prev => [...prev, res.data])
-    setNuevoServicio({ nombre: '', duracion: 30 })
+  const agregarServicio = async (event) => {
+    event?.preventDefault()
+    const nombre = nuevoServicio.nombre.trim()
+    if (!nombre) {
+      setErrorServicio('Escribe el nombre del servicio.')
+      return
+    }
+    if (guardandoServicio) return
+
+    setGuardandoServicio(true)
+    setErrorServicio('')
+    try {
+      const servicio = await crearServicio({ nombre, duracion: nuevoServicio.duracion })
+      setServicios(prev => [...prev, servicio])
+      setNuevoServicio({ nombre: '', duracion: 30 })
+    } catch (err) {
+      setErrorServicio(getApiErrorMessage(err, 'No pudimos agregar el servicio.'))
+    } finally {
+      setGuardandoServicio(false)
+    }
   }
 
-  const eliminarServicio = async (id) => {
-    await api.delete(`/servicios/${id}`)
-    setServicios(prev => prev.filter(s => s.id !== id))
+  const confirmarEliminar = async () => {
+    if (!aEliminar || eliminando) return
+    setEliminando(aEliminar.id)
+    setError('')
+    try {
+      await eliminarServicio(aEliminar.id)
+      setServicios(prev => prev.filter(servicio => servicio.id !== aEliminar.id))
+      setAEliminar(null)
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No pudimos eliminar el servicio.'))
+      setAEliminar(null)
+    } finally {
+      setEliminando(null)
+    }
   }
 
   const guardarHorarios = async () => {
+    if (guardandoHorarios) return
     setGuardandoHorarios(true)
+    setOkHorarios(false)
+    setError('')
     try {
-      await api.put('/horarios', { horarios: horarios.filter(h => h.activo) })
+      await actualizarHorarios(horarios.filter(horario => horario.activo))
       setOkHorarios(true)
-      setTimeout(() => setOkHorarios(false), 2000)
+      window.setTimeout(() => setOkHorarios(false), 2500)
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No pudimos guardar los horarios.'))
     } finally {
       setGuardandoHorarios(false)
     }
   }
 
-  const toggleDia = (i) => {
-    setHorarios(prev => prev.map((h, idx) => idx === i ? { ...h, activo: !h.activo } : h))
+  const toggleDia = (index) => {
+    setHorarios(prev => prev.map((horario, idx) => (
+      idx === index ? { ...horario, activo: !horario.activo } : horario
+    )))
   }
 
-  const updateHorario = (i, campo, valor) => {
-    setHorarios(prev => prev.map((h, idx) => idx === i ? { ...h, [campo]: valor } : h))
+  const updateHorario = (index, campo, valor) => {
+    setHorarios(prev => prev.map((horario, idx) => (
+      idx === index ? { ...horario, [campo]: valor } : horario
+    )))
   }
 
   return (
     <AdminLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-xl font-bold text-gray-900">Configuración</h1>
+      <header>
+        <p className="micro-label">Ajustes del taller</p>
+        <h1 className="mt-1 text-xl font-bold tracking-tight text-ink sm:text-2xl">Configuración</h1>
+        <p className="mt-1 text-sm text-ink-muted">
+          Define los servicios que ofreces y los días de atención disponibles para reservar.
+        </p>
+      </header>
 
-        {/* Servicios */}
-        <section className="bg-white rounded-2xl shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Servicios</h2>
+      {error && (
+        <Alert variant="error" className="mt-5" onDismiss={() => setError('')}>
+          {error}
+        </Alert>
+      )}
 
-          <div className="space-y-2 mb-4">
-            {servicios.map(s => (
-              <div key={s.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div>
-                  <p className="font-medium text-gray-900 text-sm">{s.nombre}</p>
-                  <p className="text-xs text-gray-400">{s.duracion} minutos</p>
-                </div>
-                <button onClick={() => eliminarServicio(s.id)}
-                  className="p-1.5 text-gray-300 hover:text-red-400 transition-colors">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+      <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
+        <section className="rounded-xl border border-line bg-surface shadow-card">
+          <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-4">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
+                <Wrench className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-ink">Servicios</h2>
+                <p className="mt-0.5 text-xs text-ink-muted">
+                  Definen la duración de cada bloque de reserva.
+                </p>
               </div>
-            ))}
+            </div>
+            {!loading && <Badge variant="neutral" size="sm">{servicios.length}</Badge>}
           </div>
 
-          {/* Agregar servicio */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Nombre del servicio"
-              value={nuevoServicio.nombre}
-              onChange={e => setNuevoServicio(p => ({ ...p, nombre: e.target.value }))}
-              onKeyDown={e => e.key === 'Enter' && agregarServicio()}
-              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <select
-              value={nuevoServicio.duracion}
-              onChange={e => setNuevoServicio(p => ({ ...p, duracion: Number(e.target.value) }))}
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              {[15, 20, 30, 45, 60, 90, 120].map(d => (
-                <option key={d} value={d}>{d} min</option>
-              ))}
-            </select>
-            <button onClick={agregarServicio}
-              className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors">
-              <Plus className="h-5 w-5" />
-            </button>
+          <div className="px-4 py-4">
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton key={index} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : servicios.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-ink-muted">
+                Aún no hay servicios. Agrega el primero para habilitar reservas.
+              </p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {servicios.map(servicio => (
+                  <li key={servicio.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{servicio.nombre}</p>
+                      <p className="text-xs text-ink-muted">{servicio.duracion} minutos</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAEliminar(servicio)}
+                      className="rounded-md p-2 text-ink-soft transition-colors hover:bg-danger-50 hover:text-danger-600 focus-ring"
+                      aria-label={`Eliminar ${servicio.nombre}`}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <form onSubmit={agregarServicio} className="mt-4 border-t border-line pt-4">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  value={nuevoServicio.nombre}
+                  onChange={event => setNuevoServicio(prev => ({ ...prev, nombre: event.target.value }))}
+                  placeholder="Nombre del servicio"
+                  aria-label="Nombre del nuevo servicio"
+                  invalid={Boolean(errorServicio)}
+                  maxLength={80}
+                />
+                <div className="flex gap-2">
+                  <Select
+                    value={nuevoServicio.duracion}
+                    onChange={event => setNuevoServicio(prev => ({ ...prev, duracion: Number(event.target.value) }))}
+                    aria-label="Duración del servicio"
+                    className="sm:w-28"
+                  >
+                    {DURACIONES.map(duracion => (
+                      <option key={duracion} value={duracion}>{duracion} min</option>
+                    ))}
+                  </Select>
+                  <Button
+                    type="submit"
+                    variant="dark"
+                    leftIcon={Plus}
+                    loading={guardandoServicio}
+                    aria-label="Agregar servicio"
+                    className="shrink-0"
+                  >
+                    Agregar
+                  </Button>
+                </div>
+              </div>
+              {errorServicio && (
+                <p role="alert" className="mt-2 text-sm text-danger-600">{errorServicio}</p>
+              )}
+            </form>
           </div>
         </section>
 
-        {/* Horarios */}
-        <section className="bg-white rounded-2xl shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Horarios de atención</h2>
-
-          <div className="space-y-3">
-            {horarios.map((h, i) => (
-              <div key={i} className={`flex items-center gap-3 py-2 ${!h.activo ? 'opacity-40' : ''}`}>
-                <button onClick={() => toggleDia(i)}
-                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    h.activo ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
-                  }`}>
-                  {h.activo && <Check className="h-3 w-3 text-white" />}
-                </button>
-                <span className="text-sm font-medium text-gray-700 w-20 shrink-0">{DIAS_SEMANA[i]}</span>
-                <input type="time" value={h.horaInicio}
-                  disabled={!h.activo}
-                  onChange={e => updateHorario(i, 'horaInicio', e.target.value)}
-                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed" />
-                <span className="text-gray-400 text-sm">a</span>
-                <input type="time" value={h.horaFin}
-                  disabled={!h.activo}
-                  onChange={e => updateHorario(i, 'horaFin', e.target.value)}
-                  className="border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed" />
-              </div>
-            ))}
+        <section className="rounded-xl border border-line bg-surface shadow-card">
+          <div className="flex items-start gap-3 border-b border-line px-4 py-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-graphite-100 text-graphite-600">
+              <Clock className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-sm font-semibold text-ink">Horarios de atención</h2>
+              <p className="mt-0.5 text-xs text-ink-muted">
+                Solo los días activos aparecen disponibles en el sitio público.
+              </p>
+            </div>
           </div>
 
-          <button onClick={guardarHorarios} disabled={guardandoHorarios}
-            className={`mt-5 w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors ${
-              okHorarios
-                ? 'bg-green-500 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-300'
-            }`}>
-            {guardandoHorarios
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> Guardando...</>
-              : okHorarios
-              ? <><Check className="h-4 w-4" /> Guardado</>
-              : 'Guardar horarios'}
-          </button>
+          <div className="px-4 py-4">
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 7 }).map((_, index) => (
+                  <Skeleton key={index} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {horarios.map((horario, index) => (
+                  <div
+                    key={DIAS_SEMANA[index]}
+                    className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md px-2 py-2 transition-colors ${
+                      horario.activo ? 'bg-graphite-50' : ''
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleDia(index)}
+                      role="switch"
+                      aria-checked={horario.activo}
+                      aria-label={`Activar ${DIAS_SEMANA[index]}`}
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors focus-ring ${
+                        horario.activo
+                          ? 'border-accent-400 bg-accent-400 text-white'
+                          : 'border-graphite-300 bg-surface'
+                      }`}
+                    >
+                      {horario.activo && <Check className="h-3 w-3" aria-hidden="true" />}
+                    </button>
+
+                    <span
+                      className={`w-24 shrink-0 text-sm font-medium ${
+                        horario.activo ? 'text-ink' : 'text-ink-soft'
+                      }`}
+                    >
+                      {DIAS_SEMANA[index]}
+                    </span>
+
+                    <div className={`ml-auto flex items-center gap-2 ${horario.activo ? '' : 'opacity-50'}`}>
+                      <input
+                        type="time"
+                        value={horario.horaInicio}
+                        disabled={!horario.activo}
+                        onChange={event => updateHorario(index, 'horaInicio', event.target.value)}
+                        aria-label={`Hora de inicio de ${DIAS_SEMANA[index]}`}
+                        className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
+                      />
+                      <span className="text-xs text-ink-soft">a</span>
+                      <input
+                        type="time"
+                        value={horario.horaFin}
+                        disabled={!horario.activo}
+                        onChange={event => updateHorario(index, 'horaFin', event.target.value)}
+                        aria-label={`Hora de término de ${DIAS_SEMANA[index]}`}
+                        className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 border-t border-line pt-4">
+              {okHorarios && (
+                <Alert variant="success" className="mb-3">
+                  Horarios guardados correctamente.
+                </Alert>
+              )}
+              <Button
+                variant={okHorarios ? 'success' : 'dark'}
+                size="lg"
+                className="w-full"
+                onClick={guardarHorarios}
+                loading={guardandoHorarios}
+                disabled={loading}
+                leftIcon={okHorarios ? Check : Save}
+              >
+                {guardandoHorarios ? 'Guardando…' : okHorarios ? 'Guardado' : 'Guardar horarios'}
+              </Button>
+            </div>
+          </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(aEliminar)}
+        onClose={() => { if (!eliminando) setAEliminar(null) }}
+        onConfirm={confirmarEliminar}
+        title="Eliminar servicio"
+        description={aEliminar ? `“${aEliminar.nombre}” dejará de mostrarse en el sitio público.` : undefined}
+        confirmLabel="Eliminar"
+        loading={Boolean(eliminando)}
+      />
     </AdminLayout>
   )
 }
+

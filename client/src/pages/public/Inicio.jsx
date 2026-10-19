@@ -1,89 +1,333 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, Car, ChevronRight } from 'lucide-react'
-import api from '../../lib/api'
+import { Link, useNavigate } from 'react-router-dom'
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Mail,
+  Phone,
+  RefreshCw,
+  Wrench
+} from 'lucide-react'
+import useTenant from '../../hooks/useTenant'
+import useDocumentTitle from '../../hooks/useDocumentTitle'
+import { listarServicios } from '../../services/serviciosService'
+import { listarHorarios } from '../../services/horariosService'
+import { getApiErrorMessage } from '../../lib/errors'
+import { DIAS_SEMANA } from '../../lib/dates'
+import TenantHeader from '../../components/public/TenantHeader'
+import PublicFooter from '../../components/public/PublicFooter'
+import { Alert, Button, EmptyState, SkeletonText } from '../../components/ui'
+
+const PASOS = [
+  { icon: Wrench, title: 'Elige el servicio', detail: 'Según lo que necesita tu vehículo' },
+  { icon: CalendarDays, title: 'Fecha y hora', detail: 'Solo horarios disponibles' },
+  { icon: CheckCircle2, title: 'Confirma', detail: 'Recibe el detalle de tu cita' }
+]
 
 export default function Inicio() {
-  const [tenant, setTenant] = useState(null)
-  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const { tenant, loading, error, recargar } = useTenant()
+  const [servicios, setServicios] = useState([])
+  const [horarios, setHorarios] = useState([])
+  const [datosLoading, setDatosLoading] = useState(true)
+  const [serviciosError, setServiciosError] = useState('')
+  const [horariosError, setHorariosError] = useState('')
+  const [recargaDatos, setRecargaDatos] = useState(0)
 
-  // Obtener subdominio del hostname
-  const hostname = window.location.hostname; const parts = hostname.split('.'); const subdominio = parts.length > 2 && parts[0] !== 'www' && !hostname.includes('hostingersite.com') && !hostname.includes('localhost') ? parts[0] : 'demo'
+  useDocumentTitle(tenant ? `${tenant.nombre} — Reserva tu hora` : 'AgendaCar')
 
   useEffect(() => {
-    api.get(`/tenant?subdominio=${subdominio}`)
-      .then(res => setTenant(res.data))
-      .catch(() => setTenant(null))
-      .finally(() => setLoading(false))
-  }, [subdominio])
+    if (!tenant?.id) return
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-    </div>
-  )
+    let activo = true
+    setDatosLoading(true)
+    setServiciosError('')
+    setHorariosError('')
 
-  if (!tenant) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <p className="text-gray-500">Taller no encontrado.</p>
-    </div>
-  )
+    Promise.allSettled([
+      listarServicios(tenant.id),
+      listarHorarios(tenant.id)
+    ]).then(([serviciosResult, horariosResult]) => {
+      if (!activo) return
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-lg mx-auto px-4 py-5 flex items-center gap-3">
-          {tenant.logoUrl
-            ? <img src={tenant.logoUrl} alt={tenant.nombre} className="h-10 w-10 rounded-full object-cover" />
-            : <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
-                {tenant.nombre[0]}
-              </div>
-          }
-          <div>
-            <h1 className="font-bold text-gray-900 text-lg leading-tight">{tenant.nombre}</h1>
-            {tenant.telefono && (
-              <p className="text-sm text-gray-500">{tenant.telefono}</p>
-            )}
+      if (serviciosResult.status === 'fulfilled') {
+        setServicios(serviciosResult.value)
+      } else {
+        setServicios([])
+        setServiciosError(getApiErrorMessage(serviciosResult.reason, 'No pudimos cargar los servicios.'))
+      }
+
+      if (horariosResult.status === 'fulfilled') {
+        setHorarios(horariosResult.value)
+      } else {
+        setHorarios([])
+        setHorariosError('No pudimos cargar los horarios de atención.')
+      }
+    }).finally(() => {
+      if (activo) setDatosLoading(false)
+    })
+
+    return () => { activo = false }
+  }, [tenant?.id, recargaDatos])
+
+  const reservar = servicioId => navigate('/reservar', {
+    state: servicioId ? { tenant, servicioId } : { tenant }
+  })
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-canvas">
+        <div className="border-b border-line bg-surface">
+          <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
+            <div className="h-11 w-11 animate-pulse rounded-lg bg-graphite-100" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-40 animate-pulse rounded bg-graphite-100" />
+              <div className="h-2.5 w-28 animate-pulse rounded bg-graphite-100" />
+            </div>
           </div>
         </div>
-      </header>
-
-      {/* Hero */}
-      <main className="max-w-lg mx-auto px-4 py-10">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Agenda tu hora en línea
-          </h2>
-          <p className="text-gray-500">
-            Sin llamadas, sin esperas. Elige el servicio y la hora que más te acomode.
-          </p>
+        <div className="mx-auto max-w-3xl px-4 py-12">
+          <div className="h-3 w-24 animate-pulse rounded bg-graphite-100" />
+          <div className="mt-4 h-9 w-3/4 animate-pulse rounded bg-graphite-100" />
+          <div className="mt-3 h-9 w-2/3 animate-pulse rounded bg-graphite-100" />
+          <SkeletonText lines={3} className="mt-6 max-w-md" />
         </div>
+      </div>
+    )
+  }
 
-        {/* Features */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
-          {[
-            { icon: Calendar, label: 'Elige tu día' },
-            { icon: Clock, label: 'Elige tu hora' },
-            { icon: Car, label: 'Llegа y listo' },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="bg-white rounded-xl p-4 text-center shadow-sm">
-              <Icon className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-              <p className="text-xs text-gray-600 font-medium">{label}</p>
+  if (!tenant) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
+        <div className="w-full max-w-md rounded-xl border border-line bg-surface p-6 shadow-card">
+          <EmptyState
+            icon={Building2}
+            title="Taller no disponible"
+            description={error || 'No encontramos información para este taller. Revisa la dirección e intenta nuevamente.'}
+            action={
+              <Button variant="secondary" leftIcon={RefreshCw} onClick={recargar}>
+                Reintentar
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    )
+  }
+
+  const horariosOrdenados = [...horarios].sort((a, b) => a.diaSemana - b.diaSemana)
+
+  return (
+    <div className="flex min-h-screen flex-col bg-canvas">
+      <TenantHeader
+        tenant={tenant}
+        actions={
+          <Link
+            to="/admin/login"
+            className="hidden h-9 items-center rounded-md border border-line bg-surface px-3 text-xs font-semibold text-ink-muted transition-colors hover:bg-graphite-50 hover:text-ink sm:inline-flex"
+          >
+            Acceso taller
+          </Link>
+        }
+      />
+      <main className="flex-1">
+        <section className="border-b border-line bg-surface">
+          <div className="mx-auto grid max-w-3xl gap-8 px-4 py-10 sm:py-14 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
+            <div>
+              <span className="micro-label inline-flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
+                Reserva online
+              </span>
+
+              <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-ink sm:text-4xl">
+                Agenda tu hora en {tenant.nombre}
+              </h1>
+              <p className="mt-3 max-w-lg text-base leading-relaxed text-ink-muted">
+                Elige el servicio, revisa la disponibilidad del taller y confirma tu cita en pocos pasos.
+              </p>
+
+              <div className="mt-7 flex flex-col gap-2 sm:flex-row">
+                <Button size="lg" rightIcon={ArrowRight} onClick={() => reservar()}>
+                  Reservar hora
+                </Button>
+                {tenant.telefono && (
+                  <a
+                    href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-line bg-surface px-5 text-base font-semibold text-ink transition-colors hover:bg-graphite-50"
+                  >
+                    <Phone className="h-4 w-4" aria-hidden="true" />
+                    Llamar al taller
+                  </a>
+                )}
+              </div>
+
+              <div className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {PASOS.map(({ icon: Icon, title, detail }, index) => (
+                  <div key={title} className="border-l-2 border-accent-400 pl-3">
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="h-3.5 w-3.5 text-accent-500" aria-hidden="true" />
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+                        0{index + 1}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-semibold text-ink">{title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">{detail}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* CTA */}
-        <button
-          onClick={() => navigate('/reservar', { state: { tenant } })}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors text-lg shadow-md"
-        >
-          Reservar hora
-          <ChevronRight className="h-5 w-5" />
-        </button>
+            <aside className="rounded-xl border border-line bg-canvas p-5">
+              <p className="micro-label">Datos del taller</p>
+
+              <dl className="mt-3 space-y-2.5 text-sm">
+                {tenant.telefono && (
+                  <div className="flex items-start gap-2.5">
+                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-graphite-400" aria-hidden="true" />
+                    <div>
+                      <dt className="text-xs text-ink-muted">Teléfono</dt>
+                      <dd>
+                        <a
+                          href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
+                          className="font-medium text-ink transition-colors hover:text-accent-600"
+                        >
+                          {tenant.telefono}
+                        </a>
+                      </dd>
+                    </div>
+                  </div>
+                )}
+                {tenant.email && (
+                  <div className="flex items-start gap-2.5">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-graphite-400" aria-hidden="true" />
+                    <div className="min-w-0">
+                      <dt className="text-xs text-ink-muted">Email</dt>
+                      <dd className="truncate">
+                        <a
+                          href={`mailto:${tenant.email}`}
+                          className="font-medium text-ink transition-colors hover:text-accent-600"
+                        >
+                          {tenant.email}
+                        </a>
+                      </dd>
+                    </div>
+                  </div>
+                )}
+              </dl>
+
+              <div className="mt-5 border-t border-line pt-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-graphite-400" aria-hidden="true" />
+                  <p className="micro-label">Horario de atención</p>
+                </div>
+
+                {datosLoading ? (
+                  <SkeletonText lines={4} className="mt-3" />
+                ) : horariosError ? (
+                  <p className="mt-2 text-xs leading-relaxed text-ink-muted">{horariosError}</p>
+                ) : horariosOrdenados.length === 0 ? (
+                  <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+                    El taller aún no tiene horarios publicados.
+                  </p>
+                ) : (
+                  <ul className="mt-2.5 space-y-1.5">
+                    {horariosOrdenados.map(horario => (
+                      <li
+                        key={`${horario.diaSemana}-${horario.horaInicio}-${horario.horaFin}`}
+                        className="flex items-center justify-between gap-3 text-xs"
+                      >
+                        <span className="text-ink-muted">{DIAS_SEMANA[horario.diaSemana]}</span>
+                        <span className="font-tabular font-medium text-ink">
+                          {horario.horaInicio} – {horario.horaFin}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-3xl px-4 py-10">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="micro-label">Servicios</p>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight text-ink">
+                Qué puedes reservar
+              </h2>
+            </div>
+            {servicios.length > 0 && (
+              <Button variant="secondary" size="sm" onClick={() => reservar()}>
+                Ver disponibilidad
+              </Button>
+            )}
+          </div>
+
+          {datosLoading ? (
+            <div className="space-y-1 rounded-xl border border-line bg-surface p-4">
+              {[0, 1, 2].map(item => (
+                <div key={item} className="flex items-center justify-between py-3">
+                  <div className="w-1/2 space-y-2">
+                    <div className="h-3 animate-pulse rounded bg-graphite-100" />
+                    <div className="h-2.5 w-1/2 animate-pulse rounded bg-graphite-100" />
+                  </div>
+                  <div className="h-3 w-16 animate-pulse rounded bg-graphite-100" />
+                </div>
+              ))}
+            </div>
+          ) : serviciosError ? (
+            <Alert variant="error" title="No pudimos cargar los servicios">
+              <div className="mt-1 flex flex-wrap items-center gap-3">
+                <span>{serviciosError}</span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={RefreshCw}
+                  onClick={() => setRecargaDatos(value => value + 1)}
+                >
+                  Reintentar
+                </Button>
+              </div>
+            </Alert>
+          ) : servicios.length === 0 ? (
+            <EmptyState
+              icon={Wrench}
+              title="Servicios no publicados"
+              description="El taller todavía no tiene servicios disponibles para reservar en línea."
+            />
+          ) : (
+            <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+              {servicios.map(servicio => (
+                <button
+                  key={servicio.id}
+                  type="button"
+                  onClick={() => reservar(servicio.id)}
+                  className="group flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-graphite-50 focus-ring"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-ink">{servicio.nombre}</p>
+                    <p className="mt-0.5 text-xs text-ink-muted">
+                      Duración estimada: {servicio.duracion} minutos
+                    </p>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-accent-600 transition-colors group-hover:text-accent-700">
+                    Reservar
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
+
+      <PublicFooter tenant={tenant} />
     </div>
   )
 }
+
