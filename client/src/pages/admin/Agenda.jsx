@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
+  CalendarClock,
   CalendarDays,
   CalendarRange,
   Car,
@@ -21,6 +22,7 @@ import {
   formatFullDate,
   formatTimeFromISO,
   formatWeekRange,
+  getDateKeyInTimeZone,
   isSameDay,
   startOfWeek,
   toDateKey,
@@ -30,7 +32,8 @@ import { getApiErrorMessage } from '../../lib/errors'
 import {
   actualizarEstadoReserva,
   eliminarReserva,
-  listarReservasPorFecha
+  listarReservasPorFecha,
+  reagendarReserva
 } from '../../services/reservasService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import EstadoBadge from '../../components/admin/EstadoBadge'
@@ -40,6 +43,7 @@ import {
   ConfirmDialog,
   Dialog,
   EmptyState,
+  FormField,
   Input,
   SegmentedControl,
   Select,
@@ -70,6 +74,7 @@ export default function Agenda() {
   const [actualizando, setActualizando] = useState(null)
   const [reservaAEliminar, setReservaAEliminar] = useState(null)
   const [eliminando, setEliminando] = useState(false)
+  const [reservaAReagendar, setReservaAReagendar] = useState(null)
 
   useDocumentTitle('Agenda — AgendaCar')
 
@@ -124,6 +129,18 @@ export default function Agenda() {
     if (!detalle || eliminando) return
     setReservaAEliminar(detalle)
     setDetalle(null)
+  }
+
+  const pedirReagendar = () => {
+    if (!detalle || actualizando !== null || eliminando) return
+    setReservaAReagendar(detalle)
+    setDetalle(null)
+  }
+
+  const confirmarReagenda = async actualizada => {
+    setReservaAReagendar(null)
+    setDetalle(actualizada)
+    await cargar()
   }
 
   const confirmarEliminar = async () => {
@@ -410,6 +427,14 @@ export default function Agenda() {
               >
                 Eliminar
               </Button>
+              <Button
+                variant="secondary"
+                leftIcon={CalendarClock}
+                onClick={pedirReagendar}
+                disabled={actualizando !== null || eliminando}
+              >
+                Reagendar
+              </Button>
               {detalle.estado === 'confirmada' && (
                 <>
                   <Button
@@ -452,11 +477,112 @@ export default function Agenda() {
         confirmLabel="Eliminar"
         loading={eliminando}
       />
+
+      {reservaAReagendar && (
+        <ReagendarReservaDialog
+          reserva={reservaAReagendar}
+          onClose={() => setReservaAReagendar(null)}
+          onSaved={confirmarReagenda}
+        />
+      )}
     </AdminLayout>
   )
 }
 
+function ReagendarReservaDialog({ reserva, onClose, onSaved }) {
+  const formId = useId()
+  const [fecha, setFecha] = useState(() => toReservationDateKey(reserva.fecha))
+  const [hora, setHora] = useState(() => formatTimeFromISO(reserva.fecha))
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState('')
 
+  const cerrar = () => {
+    if (!guardando) onClose()
+  }
+
+  const guardar = async event => {
+    event.preventDefault()
+    if (guardando) return
+
+    if (!fecha || !hora) {
+      setError('Selecciona una fecha y una hora.')
+      return
+    }
+
+    setGuardando(true)
+    setError('')
+    try {
+      const actualizada = await reagendarReserva(reserva.id, { fecha, hora })
+      onSaved(actualizada)
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No pudimos reagendar la reserva.'))
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <Dialog
+      open
+      onClose={cerrar}
+      title="Reagendar reserva"
+      description={reserva.servicio?.nombre}
+      footer={
+        <>
+          <Button variant="secondary" onClick={cerrar} disabled={guardando}>
+            Cancelar
+          </Button>
+          <Button type="submit" form={formId} loading={guardando}>
+            Guardar cambios
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={guardar} className="space-y-4">
+        <div className="rounded-lg border border-line bg-graphite-50 p-4">
+          <p className="micro-label">Reserva actual</p>
+          <p className="mt-1 text-sm font-semibold text-ink">
+            {formatDateFromISO(reserva.fecha)} · {formatTimeFromISO(reserva.fecha)}
+          </p>
+          <p className="mt-1 text-xs text-ink-muted">
+            {reserva.nombre} · {reserva.patente}
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField id={`${formId}-fecha`} label="Nueva fecha" required>
+            <Input
+              id={`${formId}-fecha`}
+              type="date"
+              value={fecha}
+              min={getDateKeyInTimeZone()}
+              onChange={event => setFecha(event.target.value)}
+              required
+              disabled={guardando}
+            />
+          </FormField>
+
+          <FormField id={`${formId}-hora`} label="Nueva hora" required>
+            <Input
+              id={`${formId}-hora`}
+              type="time"
+              value={hora}
+              onChange={event => setHora(event.target.value)}
+              required
+              disabled={guardando}
+            />
+          </FormField>
+        </div>
+
+        <p className="text-xs text-ink-muted">
+          El servicio, el cliente y la patente se mantienen sin cambios.
+        </p>
+
+        {error && <Alert variant="error">{error}</Alert>}
+      </form>
+    </Dialog>
+  )
+}
 
 function ReservaCard({ reserva, onOpen, onEstado, actualizando }) {
   return (

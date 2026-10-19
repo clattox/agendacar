@@ -5,6 +5,7 @@ const {
   getReservas,
   getReservasPublicas,
   createReserva,
+  reagendarReserva,
   updateEstado,
   deleteReserva,
   getHorasDisponibles
@@ -17,6 +18,7 @@ router.post('/nueva', createReserva)
 // Rutas privadas (admin)
 router.get('/', auth, getReservas)
 router.patch('/:id/estado', auth, updateEstado)
+router.patch('/:id', auth, reagendarReserva)
 router.delete('/:id', auth, deleteReserva)
 
 module.exports = router

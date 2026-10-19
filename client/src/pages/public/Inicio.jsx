@@ -17,6 +17,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { listarServicios } from '../../services/serviciosService'
 import { listarHorarios } from '../../services/horariosService'
 import { getApiErrorMessage } from '../../lib/errors'
+import { getTenantFromQuery } from '../../lib/tenant'
 import { DIAS_SEMANA } from '../../lib/dates'
 import TenantHeader from '../../components/public/TenantHeader'
 import PublicFooter from '../../components/public/PublicFooter'
@@ -74,7 +75,13 @@ export default function Inicio() {
     return () => { activo = false }
   }, [tenant?.id, recargaDatos])
 
-  const reservar = servicioId => navigate('/reservar', {
+  // Conserva el tenant de prueba al navegar para que un refresh no vuelva a "demo".
+  const tenantQuery = getTenantFromQuery()
+  const rutaReservar = tenantQuery
+    ? `/reservar?tenant=${encodeURIComponent(tenantQuery)}`
+    : '/reservar'
+
+  const reservar = servicioId => navigate(rutaReservar, {
     state: servicioId ? { tenant, servicioId } : { tenant }
   })
 

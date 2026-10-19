@@ -148,6 +148,39 @@ const deleteReserva = async (req, res) => {
   }
 }
 
+// Reagendar reserva (admin): cambia fecha y hora sin modificar cliente,
+// patente ni servicio.
+const reagendarReserva = async (req, res) => {
+  const { id } = req.params
+  const { fecha, hora } = req.body
+  const tenantId = req.user.tenantId
+  const reservaId = parseInt(id)
+
+  if (Number.isNaN(reservaId)) {
+    return res.status(400).json({ error: 'Reserva inválida' })
+  }
+
+  if (!esFechaHoraValida(fecha, hora)) {
+    return res.status(400).json({ error: 'Fecha y hora inválidas' })
+  }
+
+  try {
+    const reserva = await prisma.reserva.update({
+      where: { id: reservaId, tenantId },
+      data: { fecha: construirFechaReserva(fecha, hora) },
+      include: { servicio: true }
+    })
+
+    res.json(reserva)
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Reserva no encontrada' })
+    }
+    console.error(error)
+    res.status(500).json({ error: 'Error al reagendar reserva' })
+  }
+}
+
 // Actualizar estado (admin)
 const updateEstado = async (req, res) => {
   const { id } = req.params
@@ -183,6 +216,28 @@ const generarSlots = (inicio, fin, duracionMin) => {
   }
 
   return slots
+}
+
+const esFechaHoraValida = (fecha, hora) => {
+  const fechaMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fecha || ''))
+  const horaMatch = /^(\d{2}):(\d{2})$/.exec(String(hora || ''))
+
+  if (!fechaMatch || !horaMatch) return false
+
+  const anio = Number(fechaMatch[1])
+  const mes = Number(fechaMatch[2])
+  const dia = Number(fechaMatch[3])
+  const horas = Number(horaMatch[1])
+  const minutos = Number(horaMatch[2])
+  const fechaReserva = new Date(Date.UTC(anio, mes - 1, dia, horas, minutos, 0, 0))
+
+  return (
+    fechaReserva.getUTCFullYear() === anio &&
+    fechaReserva.getUTCMonth() === mes - 1 &&
+    fechaReserva.getUTCDate() === dia &&
+    fechaReserva.getUTCHours() === horas &&
+    fechaReserva.getUTCMinutes() === minutos
+  )
 }
 
 const enviarNotificacion = async (reserva) => {
@@ -224,4 +279,11 @@ const enviarNotificacion = async (reserva) => {
   }
 }
 
-module.exports = { getReservas, getHorasDisponibles, createReserva, updateEstado, deleteReserva }
+module.exports = {
+  getReservas,
+  getHorasDisponibles,
+  createReserva,
+  reagendarReserva,
+  updateEstado,
+  deleteReserva
+}

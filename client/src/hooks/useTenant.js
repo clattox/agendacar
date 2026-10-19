@@ -3,8 +3,9 @@ import { getSubdominio } from '../lib/tenant'
 import { obtenerTenant } from '../services/tenantService'
 import { getApiErrorMessage } from '../lib/errors'
 
-// Obtiene el tenant del subdominio actual. Si la navegación ya trae el tenant
-// (por ejemplo, desde la portada), se reutiliza para evitar una llamada extra.
+// Obtiene el tenant del subdominio actual o de ?tenant= (desarrollo). Si la
+// navegación ya trae el tenant (por ejemplo, desde la portada), se reutiliza
+// para evitar una llamada extra.
 export default function useTenant(initialTenant = null) {
   const subdominio = useMemo(() => getSubdominio(), [])
   const [tenant, setTenant] = useState(initialTenant)

@@ -22,6 +22,11 @@ export async function actualizarEstadoReserva(id, estado) {
   return data
 }
 
+export async function reagendarReserva(id, { fecha, hora }) {
+  const { data } = await api.patch(`/reservas/${id}`, { fecha, hora })
+  return data
+}
+
 export async function eliminarReserva(id) {
   const { data } = await api.delete(`/reservas/${id}`)
   return data
