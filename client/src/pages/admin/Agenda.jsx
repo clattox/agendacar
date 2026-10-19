@@ -10,6 +10,7 @@ import {
   Phone,
   RefreshCw,
   Search,
+  Trash2,
   UserRound,
   XCircle
 } from 'lucide-react'
@@ -28,6 +29,7 @@ import {
 import { getApiErrorMessage } from '../../lib/errors'
 import {
   actualizarEstadoReserva,
+  eliminarReserva,
   listarReservasPorFecha
 } from '../../services/reservasService'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -35,6 +37,7 @@ import EstadoBadge from '../../components/admin/EstadoBadge'
 import {
   Alert,
   Button,
+  ConfirmDialog,
   Dialog,
   EmptyState,
   Input,
@@ -65,6 +68,8 @@ export default function Agenda() {
   const [busqueda, setBusqueda] = useState('')
   const [detalle, setDetalle] = useState(null)
   const [actualizando, setActualizando] = useState(null)
+  const [reservaAEliminar, setReservaAEliminar] = useState(null)
+  const [eliminando, setEliminando] = useState(false)
 
   useDocumentTitle('Agenda — AgendaCar')
 
@@ -112,6 +117,29 @@ export default function Agenda() {
       setError(getApiErrorMessage(err, 'No pudimos actualizar la reserva.'))
     } finally {
       setActualizando(null)
+    }
+  }
+
+  const pedirEliminar = () => {
+    if (!detalle || eliminando) return
+    setReservaAEliminar(detalle)
+    setDetalle(null)
+  }
+
+  const confirmarEliminar = async () => {
+    if (!reservaAEliminar || eliminando) return
+
+    setEliminando(true)
+    setError('')
+    try {
+      await eliminarReserva(reservaAEliminar.id)
+      setReservaAEliminar(null)
+      await cargar()
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No pudimos eliminar la reserva.'))
+      setReservaAEliminar(null)
+    } finally {
+      setEliminando(false)
     }
   }
 
@@ -370,9 +398,17 @@ export default function Agenda() {
         description={detalle ? detalle.servicio?.nombre : undefined}
         footer={
           detalle && (
-            <>
+            <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
               <Button variant="secondary" onClick={() => setDetalle(null)}>
                 Cerrar
+              </Button>
+              <Button
+                variant="danger-ghost"
+                leftIcon={Trash2}
+                onClick={pedirEliminar}
+                disabled={actualizando !== null || eliminando}
+              >
+                Eliminar
               </Button>
               {detalle.estado === 'confirmada' && (
                 <>
@@ -381,7 +417,7 @@ export default function Agenda() {
                     leftIcon={XCircle}
                     onClick={() => cambiarEstado(detalle.id, 'cancelada')}
                     loading={actualizando === detalle.id}
-                    disabled={actualizando !== null}
+                    disabled={actualizando !== null || eliminando}
                   >
                     Cancelar reserva
                   </Button>
@@ -390,18 +426,32 @@ export default function Agenda() {
                     leftIcon={CheckCircle2}
                     onClick={() => cambiarEstado(detalle.id, 'atendida')}
                     loading={actualizando === detalle.id}
-                    disabled={actualizando !== null}
+                    disabled={actualizando !== null || eliminando}
                   >
                     Marcar atendida
                   </Button>
                 </>
               )}
-            </>
+            </div>
           )
         }
       >
         {detalle && <DetalleReserva reserva={detalle} />}
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(reservaAEliminar)}
+        onClose={() => { if (!eliminando) setReservaAEliminar(null) }}
+        onConfirm={confirmarEliminar}
+        title="Eliminar reserva"
+        description={
+          reservaAEliminar
+            ? `Se eliminará definitivamente la reserva de ${reservaAEliminar.nombre} del ${formatDateFromISO(reservaAEliminar.fecha)} a las ${formatTimeFromISO(reservaAEliminar.fecha)}.`
+            : undefined
+        }
+        confirmLabel="Eliminar"
+        loading={eliminando}
+      />
     </AdminLayout>
   )
 }

@@ -6,6 +6,7 @@ const {
   getReservasPublicas,
   createReserva,
   updateEstado,
+  deleteReserva,
   getHorasDisponibles
 } = require('../controllers/reservasController')
 
@@ -16,5 +17,6 @@ router.post('/nueva', createReserva)
 // Rutas privadas (admin)
 router.get('/', auth, getReservas)
 router.patch('/:id/estado', auth, updateEstado)
+router.delete('/:id', auth, deleteReserva)
 
 module.exports = router

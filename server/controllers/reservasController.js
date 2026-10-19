@@ -127,6 +127,27 @@ const createReserva = async (req, res) => {
   }
 }
 
+// Eliminar reserva definitivamente (admin)
+const deleteReserva = async (req, res) => {
+  const { id } = req.params
+  const tenantId = req.user.tenantId
+
+  try {
+    const resultado = await prisma.reserva.deleteMany({
+      where: { id: parseInt(id), tenantId }
+    })
+
+    if (resultado.count === 0) {
+      return res.status(404).json({ error: 'Reserva no encontrada' })
+    }
+
+    res.json({ ok: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al eliminar reserva' })
+  }
+}
+
 // Actualizar estado (admin)
 const updateEstado = async (req, res) => {
   const { id } = req.params
@@ -203,4 +224,4 @@ const enviarNotificacion = async (reserva) => {
   }
 }
 
-module.exports = { getReservas, getHorasDisponibles, createReserva, updateEstado }
+module.exports = { getReservas, getHorasDisponibles, createReserva, updateEstado, deleteReserva }

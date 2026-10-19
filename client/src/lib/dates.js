@@ -11,6 +11,51 @@ const pad = value => String(value).padStart(2, '0')
 // Se lee siempre en UTC para no desplazarla a la zona del navegador.
 const RESERVATION_TIME_ZONE = 'UTC'
 
+// Zona horaria de referencia para la atención del taller.
+export const WORKSHOP_TIME_ZONE = 'America/Santiago'
+
+const timeZoneFormatters = new Map()
+
+function getTimeZoneFormatter(timeZone) {
+  if (!timeZoneFormatters.has(timeZone)) {
+    timeZoneFormatters.set(timeZone, new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    }))
+  }
+  return timeZoneFormatters.get(timeZone)
+}
+
+export function getDateTimePartsInTimeZone(date = new Date(), timeZone = WORKSHOP_TIME_ZONE) {
+  const parts = getTimeZoneFormatter(timeZone).formatToParts(date)
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    hour: Number(values.hour),
+    minute: Number(values.minute)
+  }
+}
+
+// Clave YYYY-MM-DD del calendario del taller (por defecto America/Santiago).
+export function getDateKeyInTimeZone(date = new Date(), timeZone = WORKSHOP_TIME_ZONE) {
+  const { year, month, day } = getDateTimePartsInTimeZone(date, timeZone)
+  return `${year}-${pad(month)}-${pad(day)}`
+}
+
+// Minutos transcurridos del día en la zona horaria indicada.
+export function getTimeInMinutesInTimeZone(date = new Date(), timeZone = WORKSHOP_TIME_ZONE) {
+  const { hour, minute } = getDateTimePartsInTimeZone(date, timeZone)
+  return hour * 60 + minute
+}
+
 // Clave local YYYY-MM-DD (evita el desfase UTC de toISOString).
 export function toDateKey(date = new Date()) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`

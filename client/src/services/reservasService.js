@@ -21,3 +21,8 @@ export async function actualizarEstadoReserva(id, estado) {
   const { data } = await api.patch(`/reservas/${id}/estado`, { estado })
   return data
 }
+
+export async function eliminarReserva(id) {
+  const { data } = await api.delete(`/reservas/${id}`)
+  return data
+}

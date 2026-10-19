@@ -14,13 +14,16 @@ import {
 import useTenant from '../../hooks/useTenant'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { listarServicios } from '../../services/serviciosService'
+import { listarHorarios } from '../../services/horariosService'
 import { crearReserva, listarHorasDisponibles } from '../../services/reservasService'
 import { getApiErrorMessage } from '../../lib/errors'
 import {
   DIAS_CORTOS,
   formatLongDate,
   formatMonthYear,
-  startOfDay,
+  fromDateKey,
+  getDateKeyInTimeZone,
+  getTimeInMinutesInTimeZone,
   toDateKey
 } from '../../lib/dates'
 import TenantHeader from '../../components/public/TenantHeader'
@@ -45,6 +48,29 @@ const SUBTITULOS = {
 }
 
 const CAMPOS = ['nombre', 'telefono', 'email', 'patente']
+
+function minutosDeHora(hora) {
+  const [horas, minutos] = String(hora).split(':').map(Number)
+  return horas * 60 + minutos
+}
+
+function ultimoSlotDeHorario(horario, duracion) {
+  if (!horario || !duracion || duracion <= 0) return null
+
+  const inicio = minutosDeHora(horario.horaInicio)
+  const fin = minutosDeHora(horario.horaFin)
+  if (!Number.isFinite(inicio) || !Number.isFinite(fin) || inicio + duracion > fin) return null
+
+  return inicio + Math.floor((fin - inicio - duracion) / duracion) * duracion
+}
+
+// Oculta los horarios que ya comenzaron cuando la fecha elegida es hoy.
+function filtrarHorasVigentes(horas, fechaKey, referencia = new Date()) {
+  if (!fechaKey || fechaKey !== getDateKeyInTimeZone(referencia)) return horas
+
+  const minutosActuales = getTimeInMinutesInTimeZone(referencia)
+  return horas.filter(hora => minutosDeHora(hora) > minutosActuales)
+}
 
 function validarCampo(campo, valor) {
   const texto = String(valor || '').trim()
@@ -100,8 +126,10 @@ export default function Reservar() {
   const [cargandoHoras, setCargandoHoras] = useState(false)
   const [horasError, setHorasError] = useState('')
   const [recargaHoras, setRecargaHoras] = useState(0)
+  const [horarios, setHorarios] = useState(null)
+  const [ahora, setAhora] = useState(() => new Date())
   const [mesActual, setMesActual] = useState(() => {
-    const hoy = new Date()
+    const hoy = fromDateKey(getDateKeyInTimeZone())
     return new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   })
 
@@ -113,6 +141,33 @@ export default function Reservar() {
   const preseleccionAplicada = useRef(false)
 
   useDocumentTitle(tenant ? `Reservar hora — ${tenant.nombre}` : 'Reservar hora')
+
+  useEffect(() => {
+    const intervalo = window.setInterval(() => setAhora(new Date()), 30_000)
+    return () => window.clearInterval(intervalo)
+  }, [])
+
+  useEffect(() => {
+    if (!tenant?.id) {
+      setHorarios(null)
+      return
+    }
+
+    let activo = true
+    setHorarios(null)
+
+    listarHorarios(tenant.id)
+      .then(data => {
+        if (activo) setHorarios(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        // Si no se pudo leer el horario, no bloqueamos el día completo:
+        // los slots vencidos se siguen filtrando con la hora actual.
+        if (activo) setHorarios(null)
+      })
+
+    return () => { activo = false }
+  }, [tenant?.id])
 
   useEffect(() => {
     if (!tenant?.id) return
@@ -186,9 +241,22 @@ export default function Reservar() {
   }, [paso])
 
 
-  const hoy = startOfDay(new Date())
+  const hoyKey = getDateKeyInTimeZone(ahora)
+  const hoy = fromDateKey(hoyKey)
+  const minutosAhora = getTimeInMinutesInTimeZone(ahora)
+  const horarioHoy = (horarios || []).find(
+    horario => horario.diaSemana === hoy.getDay() && horario.activo
+  )
+  const ultimoSlotHoy = ultimoSlotDeHorario(horarioHoy, servicioSeleccionado?.duracion)
+  const hoySinDisponibilidad = horarios !== null && (
+    !horarioHoy || ultimoSlotHoy === null || minutosAhora >= ultimoSlotHoy
+  )
   const inicioMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   const puedeRetroceder = mesActual > inicioMesActual
+
+  const fechaSeleccionadaKey = fechaSeleccionada ? toDateKey(fechaSeleccionada) : ''
+  const esHoySeleccionado = Boolean(fechaSeleccionadaKey) && fechaSeleccionadaKey === hoyKey
+  const horasDelDia = filtrarHorasVigentes(horasDisponibles, fechaSeleccionadaKey, ahora)
 
   const diasDelMes = () => {
     const año = mesActual.getFullYear()
@@ -201,11 +269,13 @@ export default function Reservar() {
 
     for (let dia = 1; dia <= totalDias; dia++) {
       const fecha = new Date(año, mes, dia)
+      const esHoy = fecha.getTime() === hoy.getTime()
       dias.push({
         fecha,
         pasado: fecha < hoy,
         esDomingo: fecha.getDay() === 0,
-        esHoy: fecha.getTime() === hoy.getTime()
+        esHoy,
+        sinCuposHoy: esHoy && hoySinDisponibilidad
       })
     }
 
@@ -299,9 +369,10 @@ export default function Reservar() {
       const horas = disponibilidad?.horasDisponibles || []
       setHorasDisponibles(horas)
 
-      if (!horas.includes(horaSeleccionada)) {
+      const horasVigentes = filtrarHorasVigentes(horas, toDateKey(fechaSeleccionada), new Date())
+      if (!horasVigentes.includes(horaSeleccionada)) {
         setHoraSeleccionada(null)
-        setHorasError('La hora que elegiste acaba de dejar de estar disponible. Selecciona otro horario.')
+        setHorasError('La hora que elegiste ya pasó o acaba de dejar de estar disponible. Selecciona otro horario.')
         setPaso(3)
         return
       }
@@ -522,7 +593,12 @@ export default function Reservar() {
                   if (!dia) return <div key={`vacio-${index}`} aria-hidden="true" />
 
                   const seleccionado = fechaSeleccionada && toDateKey(fechaSeleccionada) === toDateKey(dia.fecha)
-                  const deshabilitado = dia.pasado || dia.esDomingo
+                  const deshabilitado = dia.pasado || dia.esDomingo || dia.sinCuposHoy
+                  const motivo = dia.esDomingo
+                    ? ' (cerrado)'
+                    : dia.sinCuposHoy
+                      ? ' (sin horarios disponibles)'
+                      : ''
 
                   return (
                     <button
@@ -530,7 +606,8 @@ export default function Reservar() {
                       type="button"
                       disabled={deshabilitado}
                       onClick={() => seleccionarFecha(dia.fecha)}
-                      aria-label={`${formatLongDate(dia.fecha)}${dia.esDomingo ? ' (cerrado)' : ''}`}
+                      aria-label={`${formatLongDate(dia.fecha)}${motivo}`}
+                      title={dia.sinCuposHoy ? 'Ya no quedan horarios disponibles para hoy' : undefined}
                       aria-pressed={Boolean(seleccionado)}
                       className={`flex h-10 items-center justify-center rounded-md text-sm font-medium transition-colors focus-ring ${
                         seleccionado
@@ -597,11 +674,15 @@ export default function Reservar() {
                     </Button>
                   </div>
                 </Alert>
-              ) : horasDisponibles.length === 0 ? (
+              ) : horasDelDia.length === 0 ? (
                 <EmptyState
                   icon={Clock}
                   title="Sin horas disponibles"
-                  description="No quedan cupos para este día. Prueba con otra fecha."
+                  description={
+                    esHoySeleccionado
+                      ? 'Ya pasó el último horario disponible para hoy. Prueba con otra fecha.'
+                      : 'No quedan cupos para este día. Prueba con otra fecha.'
+                  }
                   action={
                     <Button variant="secondary" onClick={() => setPaso(2)}>
                       Elegir otro día
@@ -614,7 +695,7 @@ export default function Reservar() {
                     Horarios generados según la duración del servicio.
                   </p>
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {horasDisponibles.map(hora => {
+                    {horasDelDia.map(hora => {
                       const seleccionada = horaSeleccionada === hora
                       return (
                         <button
@@ -636,7 +717,7 @@ export default function Reservar() {
                 </>
               )}
 
-              {!cargandoHoras && !horasError && horaSeleccionada && horasDisponibles.includes(horaSeleccionada) && (
+              {!cargandoHoras && !horasError && horaSeleccionada && horasDelDia.includes(horaSeleccionada) && (
                 <div className="mt-4 flex justify-end border-t border-line pt-4">
                   <Button rightIcon={ArrowRight} onClick={() => setPaso(4)}>
                     Continuar con las {horaSeleccionada}
