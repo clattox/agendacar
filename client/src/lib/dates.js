@@ -7,6 +7,10 @@ export const MESES = [
 
 const pad = value => String(value).padStart(2, '0')
 
+// Las reservas guardan la hora de taller (wall-clock) codificada en UTC.
+// Se lee siempre en UTC para no desplazarla a la zona del navegador.
+const RESERVATION_TIME_ZONE = 'UTC'
+
 // Clave local YYYY-MM-DD (evita el desfase UTC de toISOString).
 export function toDateKey(date = new Date()) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -77,9 +81,34 @@ export function formatWeekRange(startDate) {
   return `${start} – ${end} de ${endDate.getFullYear()}`
 }
 
-// Se mantiene el formato de hora que ya usaba el proyecto (zona local del navegador).
+// Clave YYYY-MM-DD de una reserva, leída en UTC (misma convención que el backend).
+export function toReservationDateKey(iso) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`
+}
+
+// Reloj local actual expresado en la misma convención de las reservas.
+// Permite comparar "ahora" contra una hora de taller sin desfase UTC.
+export function nowAsReservationDate(date = new Date()) {
+  return new Date(Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+    date.getMilliseconds()
+  ))
+}
+
 export function formatTimeFromISO(iso) {
-  return new Date(iso).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('es-CL', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: RESERVATION_TIME_ZONE
+  })
 }
 
 export function formatDateFromISO(iso) {
@@ -87,7 +116,8 @@ export function formatDateFromISO(iso) {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
-    year: 'numeric'
+    year: 'numeric',
+    timeZone: RESERVATION_TIME_ZONE
   }))
 }
 
@@ -97,7 +127,9 @@ export function formatDateTimeFromISO(iso) {
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: RESERVATION_TIME_ZONE
   })
 }
 

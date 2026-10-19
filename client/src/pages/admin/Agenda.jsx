@@ -22,7 +22,8 @@ import {
   formatWeekRange,
   isSameDay,
   startOfWeek,
-  toDateKey
+  toDateKey,
+  toReservationDateKey
 } from '../../lib/dates'
 import { getApiErrorMessage } from '../../lib/errors'
 import {
@@ -142,7 +143,7 @@ export default function Agenda() {
   const reservasPorDia = useMemo(() => {
     const mapa = new Map(diasSemana.map(dia => [toDateKey(dia), []]))
     filtradas.forEach(reserva => {
-      const clave = toDateKey(new Date(reserva.fecha))
+      const clave = toReservationDateKey(reserva.fecha)
       if (mapa.has(clave)) mapa.get(clave).push(reserva)
     })
     return mapa

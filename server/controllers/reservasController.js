@@ -9,10 +9,11 @@ const getReservas = async (req, res) => {
   const tenantId = req.user.tenantId
 
   try {
-    const fechaInicio = fecha ? new Date(fecha) : new Date()
-    fechaInicio.setHours(0, 0, 0, 0)
+    const fechaInicio = fecha
+      ? new Date(`${fecha}T00:00:00.000Z`)
+      : new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`)
     const fechaFin = new Date(fechaInicio)
-    fechaFin.setHours(23, 59, 59, 999)
+    fechaFin.setUTCHours(23, 59, 59, 999)
 
     const reservas = await prisma.reserva.findMany({
       where: {
@@ -87,12 +88,21 @@ const getHorasDisponibles = async (req, res) => {
   }
 }
 
+// Construye el timestamp de la reserva como "hora de taller" (wall-clock)
+// codificada en UTC. Así "10:00" se guarda y se lee como 10:00, sin que la
+// zona horaria del servidor o del navegador altere la hora elegida.
+const construirFechaReserva = (fecha, hora) => {
+  const [anio, mes, dia] = String(fecha).split('-').map(Number)
+  const [horas, minutos] = String(hora).split(':').map(Number)
+  return new Date(Date.UTC(anio, mes - 1, dia, horas, minutos, 0, 0))
+}
+
 // Crear reserva (público)
 const createReserva = async (req, res) => {
   const { tenantId, nombre, telefono, email, patente, fecha, hora, servicioId } = req.body
 
   try {
-    const fechaReserva = new Date(`${fecha}T${hora}:00`)
+    const fechaReserva = construirFechaReserva(fecha, hora)
 
     const reserva = await prisma.reserva.create({
       data: {
@@ -167,9 +177,11 @@ const enviarNotificacion = async (reserva) => {
 
     const fecha = new Date(reserva.fecha)
     const fechaFormateada = fecha.toLocaleDateString('es-CL', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
     })
-    const horaFormateada = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    const horaFormateada = fecha.toLocaleTimeString('es-CL', {
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC'
+    })
 
     await transporter.sendMail({
       from: process.env.MAIL_USER,

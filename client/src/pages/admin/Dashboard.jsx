@@ -11,7 +11,12 @@ import {
   RefreshCw
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
-import { formatLongDate, formatTimeFromISO, toDateKey } from '../../lib/dates'
+import {
+  formatLongDate,
+  formatTimeFromISO,
+  nowAsReservationDate,
+  toDateKey
+} from '../../lib/dates'
 import { getApiErrorMessage } from '../../lib/errors'
 import {
   actualizarEstadoReserva,
@@ -63,7 +68,9 @@ export default function Dashboard() {
   const confirmadas = reservas.filter(reserva => reserva.estado === 'confirmada')
   const atendidas = reservas.filter(reserva => reserva.estado === 'atendida')
   const canceladas = reservas.filter(reserva => reserva.estado === 'cancelada')
-  const proxima = confirmadas.find(reserva => new Date(reserva.fecha) >= new Date())
+  const proxima = confirmadas.find(
+    reserva => new Date(reserva.fecha) >= nowAsReservationDate(hoy)
+  )
 
   return (
     <AdminLayout>
