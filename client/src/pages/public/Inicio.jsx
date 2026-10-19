@@ -9,7 +9,7 @@ export default function Inicio() {
   const navigate = useNavigate()
 
   // Obtener subdominio del hostname
-  const subdominio = window.location.hostname.split('.')[0]
+  const hostname = window.location.hostname; const parts = hostname.split('.'); const subdominio = parts.length > 1 && parts[0] !== 'www' ? parts[0] : 'demo'
 
   useEffect(() => {
     api.get(`/tenant?subdominio=${subdominio}`)
