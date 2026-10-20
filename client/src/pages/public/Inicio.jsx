@@ -141,121 +141,132 @@ export default function Inicio() {
         }
       />
       <main className="flex-1">
-        <section className="border-b border-line bg-surface">
-          <div className="mx-auto grid max-w-3xl gap-8 px-4 py-10 sm:py-14 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
-            <div>
-              <span className="micro-label inline-flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
-                Reserva online
-              </span>
+        <section className="mx-auto w-full max-w-3xl px-4 pt-6 sm:pt-8">
+          <div className="rounded-xl bg-graphite-900 p-6 sm:p-8 lg:p-10">
+            <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-10">
+              <div className="min-w-0">
+                <span className="micro-label inline-flex items-center gap-2 text-graphite-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
+                  Reserva online
+                </span>
 
-              <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-ink sm:text-4xl">
-                Agenda tu hora en {tenant.nombre}
-              </h1>
-              <p className="mt-3 max-w-lg text-base leading-relaxed text-ink-muted">
-                Elige el servicio, revisa la disponibilidad del taller y confirma tu cita en pocos pasos.
-              </p>
+                <h1 className="mt-3 break-words text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
+                  Agenda tu hora en{' '}
+                  <span className="text-accent-400">{tenant.nombre}</span>
+                </h1>
+                <p className="mt-3 max-w-lg text-base leading-relaxed text-graphite-300">
+                  Elige el servicio, revisa la disponibilidad del taller y confirma tu cita en pocos pasos.
+                </p>
 
-              <div className="mt-7 flex flex-col gap-2 sm:flex-row">
-                <Button size="lg" rightIcon={ArrowRight} onClick={() => reservar()}>
-                  Reservar hora
-                </Button>
-                {tenant.telefono && (
-                  <a
-                    href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-line bg-surface px-5 text-base font-semibold text-ink transition-colors hover:bg-graphite-50"
+                <div className="mt-7 flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    size="lg"
+                    rightIcon={ArrowRight}
+                    className="w-full whitespace-nowrap sm:w-auto"
+                    onClick={() => reservar()}
                   >
-                    <Phone className="h-4 w-4" aria-hidden="true" />
-                    Llamar al taller
-                  </a>
-                )}
-              </div>
-
-              <div className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {PASOS.map(({ icon: Icon, title, detail }, index) => (
-                  <div key={title} className="border-l-2 border-accent-400 pl-3">
-                    <div className="flex items-center gap-1.5">
-                      <Icon className="h-3.5 w-3.5 text-accent-500" aria-hidden="true" />
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                        0{index + 1}
-                      </span>
-                    </div>
-                    <p className="mt-1.5 text-sm font-semibold text-ink">{title}</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">{detail}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <aside className="rounded-xl border border-line bg-canvas p-5">
-              <p className="micro-label">Datos del taller</p>
-
-              <dl className="mt-3 space-y-2.5 text-sm">
-                {tenant.telefono && (
-                  <div className="flex items-start gap-2.5">
-                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-graphite-400" aria-hidden="true" />
-                    <div>
-                      <dt className="text-xs text-ink-muted">Teléfono</dt>
-                      <dd>
-                        <a
-                          href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
-                          className="font-medium text-ink transition-colors hover:text-accent-600"
-                        >
-                          {tenant.telefono}
-                        </a>
-                      </dd>
-                    </div>
-                  </div>
-                )}
-                {tenant.email && (
-                  <div className="flex items-start gap-2.5">
-                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-graphite-400" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <dt className="text-xs text-ink-muted">Email</dt>
-                      <dd className="truncate">
-                        <a
-                          href={`mailto:${tenant.email}`}
-                          className="font-medium text-ink transition-colors hover:text-accent-600"
-                        >
-                          {tenant.email}
-                        </a>
-                      </dd>
-                    </div>
-                  </div>
-                )}
-              </dl>
-
-              <div className="mt-5 border-t border-line pt-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-graphite-400" aria-hidden="true" />
-                  <p className="micro-label">Horario de atención</p>
+                    Reservar hora
+                  </Button>
+                  {tenant.telefono && (
+                    <a
+                      href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
+                      className="focus-ring inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md border border-white/25 bg-white/5 px-5 text-base font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/10 sm:w-auto"
+                    >
+                      <Phone className="h-4 w-4" aria-hidden="true" />
+                      Llamar al taller
+                    </a>
+                  )}
                 </div>
 
-                {datosLoading ? (
-                  <SkeletonText lines={4} className="mt-3" />
-                ) : horariosError ? (
-                  <p className="mt-2 text-xs leading-relaxed text-ink-muted">{horariosError}</p>
-                ) : horariosOrdenados.length === 0 ? (
-                  <p className="mt-2 text-xs leading-relaxed text-ink-muted">
-                    El taller aún no tiene horarios publicados.
-                  </p>
-                ) : (
-                  <ul className="mt-2.5 space-y-1.5">
-                    {horariosOrdenados.map(horario => (
-                      <li
-                        key={`${horario.diaSemana}-${horario.horaInicio}-${horario.horaFin}`}
-                        className="flex items-center justify-between gap-3 text-xs"
-                      >
-                        <span className="text-ink-muted">{DIAS_SEMANA[horario.diaSemana]}</span>
-                        <span className="font-tabular font-medium text-ink">
-                          {horario.horaInicio} – {horario.horaFin}
+                <div className="mt-9 grid grid-cols-1 sm:grid-cols-3">
+                  {PASOS.map(({ icon: Icon, title, detail }, index) => (
+                    <div
+                      key={title}
+                      className="border-t border-white/10 py-4 first:border-t-0 first:pt-0 sm:border-l sm:border-t-0 sm:px-4 sm:py-0 sm:first:border-l-0 sm:first:pl-0"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-accent-400" aria-hidden="true" />
+                        <span className="font-tabular text-[11px] font-semibold text-graphite-400">
+                          0{index + 1}
                         </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                      </div>
+                      <p className="mt-1.5 text-sm font-semibold text-white">{title}</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-graphite-300">{detail}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </aside>
+
+              <aside className="min-w-0 rounded-lg border border-white/10 bg-graphite-50 p-5">
+                <p className="micro-label">Datos del taller</p>
+
+                <dl className="mt-3 space-y-2.5 text-sm">
+                  {tenant.telefono && (
+                    <div className="flex items-start gap-2.5">
+                      <Phone className="mt-0.5 h-4 w-4 shrink-0 text-graphite-400" aria-hidden="true" />
+                      <div>
+                        <dt className="text-xs text-ink-muted">Teléfono</dt>
+                        <dd>
+                          <a
+                            href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
+                            className="font-medium text-ink transition-colors hover:text-accent-600"
+                          >
+                            {tenant.telefono}
+                          </a>
+                        </dd>
+                      </div>
+                    </div>
+                  )}
+                  {tenant.email && (
+                    <div className="flex items-start gap-2.5">
+                      <Mail className="mt-0.5 h-4 w-4 shrink-0 text-graphite-400" aria-hidden="true" />
+                      <div className="min-w-0">
+                        <dt className="text-xs text-ink-muted">Email</dt>
+                        <dd className="truncate">
+                          <a
+                            href={`mailto:${tenant.email}`}
+                            className="font-medium text-ink transition-colors hover:text-accent-600"
+                          >
+                            {tenant.email}
+                          </a>
+                        </dd>
+                      </div>
+                    </div>
+                  )}
+                </dl>
+
+                <div className="mt-5 border-t border-line pt-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-graphite-400" aria-hidden="true" />
+                    <p className="micro-label">Horario de atención</p>
+                  </div>
+
+                  {datosLoading ? (
+                    <SkeletonText lines={4} className="mt-3" />
+                  ) : horariosError ? (
+                    <p className="mt-2 text-xs leading-relaxed text-ink-muted">{horariosError}</p>
+                  ) : horariosOrdenados.length === 0 ? (
+                    <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+                      El taller aún no tiene horarios publicados.
+                    </p>
+                  ) : (
+                    <ul className="mt-2.5 space-y-1.5">
+                      {horariosOrdenados.map(horario => (
+                        <li
+                          key={`${horario.diaSemana}-${horario.horaInicio}-${horario.horaFin}`}
+                          className="flex items-center justify-between gap-3 text-xs"
+                        >
+                          <span className="text-ink-muted">{DIAS_SEMANA[horario.diaSemana]}</span>
+                          <span className="font-tabular font-medium text-ink">
+                            {horario.horaInicio} – {horario.horaFin}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </aside>
+            </div>
           </div>
         </section>
 
