@@ -662,7 +662,11 @@ function IndicadorOperativo({ icon: Icon, label, value, detail }) {
 
 function ReservaCard({ reserva, onOpen, onEstado, actualizando }) {
   return (
-    <article className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+    <article className={`overflow-hidden rounded-xl border bg-surface shadow-card ${
+      reserva.estado === 'atendida'  ? 'border-l-4 border-l-green-500 border-line' :
+      reserva.estado === 'cancelada' ? 'border-l-4 border-l-graphite-400 border-line' :
+                                       'border-l-4 border-l-accent-500 border-line'
+    }`}>
       <button
         type="button"
         onClick={onOpen}
