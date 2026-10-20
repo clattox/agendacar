@@ -73,11 +73,12 @@ export default function SuperadminDashboard() {
     setVencInput(t.vencimiento ? t.vencimiento.split('T')[0] : '')
   }
 
-  const guardarVenc = async (id) => {
+  const guardarVenc = async (id, valorOverride) => {
     if (guardandoVenc) return
     setGuardandoVenc(true)
+    const valor = valorOverride !== undefined ? valorOverride : vencInput
     try {
-      const actualizado = await actualizarVencimiento(id, vencInput || null)
+      const actualizado = await actualizarVencimiento(id, valor || null)
       setTenants(prev => prev.map(t => t.id === id ? actualizado : t))
       setEditandoVenc(null)
     } catch {
@@ -233,6 +234,11 @@ export default function SuperadminDashboard() {
                         <button onClick={() => guardarVenc(t.id)} disabled={guardandoVenc}
                           className="rounded px-2 py-1 text-xs bg-accent-600 text-white hover:bg-accent-700 disabled:opacity-50">
                           OK
+                        </button>
+                        <button onClick={() => guardarVenc(t.id, '')} disabled={guardandoVenc}
+                          title="Quitar fecha"
+                          className="rounded px-1.5 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50">
+                          Sin fecha
                         </button>
                         <button onClick={() => setEditandoVenc(null)}
                           className="rounded px-1.5 py-1 text-xs text-ink-soft hover:bg-graphite-100">
