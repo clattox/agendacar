@@ -8,6 +8,10 @@ const getReservas = async (req, res) => {
   const { fecha } = req.query
   const tenantId = req.usuario.tenantId
 
+  if (!tenantId) {
+    return res.status(403).json({ error: 'Sin acceso a reservas: usuario sin tenant asignado.' })
+  }
+
   try {
     const fechaInicio = fecha
       ? new Date(`${fecha}T00:00:00.000Z`)
