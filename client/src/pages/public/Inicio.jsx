@@ -28,9 +28,9 @@ const PASOS = [
   { icon: CheckCircle2, title: 'Confirma', detail: 'Recibe el detalle de tu cita' }
 ]
 
-export default function Inicio() {
+export default function Inicio({ slugOverride = null }) {
   const navigate = useNavigate()
-  const { tenant, loading, error, recargar } = useTenant()
+  const { tenant, loading, error, recargar } = useTenant(null, slugOverride)
   const [servicios, setServicios] = useState([])
   const [horarios, setHorarios] = useState([])
   const [datosLoading, setDatosLoading] = useState(true)

@@ -6,8 +6,8 @@ import { getApiErrorMessage } from '../lib/errors'
 // Obtiene el tenant del subdominio actual o de ?tenant= (desarrollo). Si la
 // navegación ya trae el tenant (por ejemplo, desde la portada), se reutiliza
 // para evitar una llamada extra.
-export default function useTenant(initialTenant = null) {
-  const subdominio = useMemo(() => getSubdominio(), [])
+export default function useTenant(initialTenant = null, slugOverride = null) {
+  const subdominio = useMemo(() => slugOverride || getSubdominio(), [slugOverride])
   const [tenant, setTenant] = useState(initialTenant)
   const [loading, setLoading] = useState(!initialTenant)
   const [error, setError] = useState('')

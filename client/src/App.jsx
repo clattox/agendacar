@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 // Páginas públicas
 import Inicio from './pages/public/Inicio'
+import TenantPage from './pages/public/TenantPage'
 import Reservar from './pages/public/Reservar'
 import Confirmacion from './pages/public/Confirmacion'
 import Privacidad from './pages/public/Privacidad'
@@ -45,6 +46,9 @@ export default function App() {
         <Route path="/superadmin" element={<SuperadminRoute />}>
           <Route index element={<SuperadminDashboard />} />
         </Route>
+
+        {/* Ruta por slug: agendacar.cl/ewert */}
+        <Route path="/:slug" element={<TenantPage />} />
 
         {/* Fallback */}
         <Route path="*" element={<Inicio />} />
