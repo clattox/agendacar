@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   CalendarDays,
@@ -9,6 +10,57 @@ import {
 } from 'lucide-react'
 import { clearSession, getUsuario } from '../../lib/auth'
 import TenantAvatar from '../public/TenantAvatar'
+import { obtenerTenant } from '../../services/tenantService'
+
+function BannerSuscripcion({ subdominio }) {
+  const [venc, setVenc] = useState(undefined) // undefined = cargando
+
+  useEffect(() => {
+    if (!subdominio) return
+    obtenerTenant(subdominio)
+      .then(t => setVenc(t.vencimiento ?? null))
+      .catch(() => setVenc(null))
+  }, [subdominio])
+
+  if (venc === undefined) return null // sin banner mientras carga
+  if (venc === null) {
+    // Sin fecha asignada = activo sin restricción
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs font-medium text-green-700">
+        <span>(^_^)</span>
+        <span>Suscripción activa</span>
+      </div>
+    )
+  }
+
+  const hoy = new Date(); hoy.setHours(0,0,0,0)
+  const fecha = new Date(venc)
+  const diff = Math.ceil((fecha - hoy) / (1000 * 60 * 60 * 24))
+  const fechaStr = fecha.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+
+  if (diff < 0) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs font-medium text-red-700">
+        <span>(T_T)</span>
+        <span>Suscripción vencida — contacta a soporte</span>
+      </div>
+    )
+  }
+  if (diff <= 7) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 text-xs font-medium text-orange-700">
+        <span>(o_o)</span>
+        <span>Tu suscripción vence en {diff} {diff === 1 ? 'día' : 'días'} ({fechaStr})</span>
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs font-medium text-green-700">
+      <span>(^_^)</span>
+      <span>Suscripción activa hasta el {fechaStr}</span>
+    </div>
+  )
+}
 
 const nav = [
   { to: '/admin', icon: LayoutDashboard, label: 'Panel', exact: true },
@@ -125,6 +177,11 @@ export default function AdminLayout({ children }) {
 
       <div className="md:pl-60">
         <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-5 sm:px-6 md:pb-10 md:pt-8">
+          {tenant?.subdominio && (
+            <div className="mb-5">
+              <BannerSuscripcion subdominio={tenant.subdominio} />
+            </div>
+          )}
           {children}
         </main>
       </div>
