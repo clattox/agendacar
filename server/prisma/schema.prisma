@@ -22,6 +22,7 @@ model Tenant {
   reservas   Reserva[]
   horarios   Horario[]
   vehiculos  Vehiculo[]
+  bloqueos   Bloqueo[]
 }
 
 model Usuario {
@@ -53,6 +54,17 @@ model Horario {
   activo     Boolean @default(true)
   tenantId   Int
   tenant     Tenant  @relation(fields: [tenantId], references: [id])
+}
+
+model Bloqueo {
+  id          Int      @id @default(autoincrement())
+  fecha       DateTime // fecha del bloqueo (día completo o parcial)
+  horaInicio  String?  // null = día completo bloqueado
+  horaFin     String?  // null = día completo bloqueado
+  motivo      String?
+  tenantId    Int
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt   DateTime @default(now())
 }
 
 model Vehiculo {

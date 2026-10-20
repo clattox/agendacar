@@ -31,7 +31,7 @@ app.use('/api/horarios', require('./routes/horarios'))
 app.use('/api/tenant', require('./routes/tenant'))
 app.use('/api/vehiculos', require('./routes/vehiculos'))
 app.use('/api/estadisticas', require('./routes/estadisticas'))
-app.use('/api/vehiculos', require('./routes/vehiculos'))
+app.use('/api/bloqueos', require('./routes/bloqueos'))
 
 // Health check
 app.get('/api/health', (req, res) => {

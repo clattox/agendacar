@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  Ban,
   Check,
   Clock,
   Plus,
@@ -20,6 +21,11 @@ import {
   eliminarServicio,
   listarServicios
 } from '../../services/serviciosService'
+import {
+  crearBloqueo,
+  eliminarBloqueo,
+  listarBloqueos
+} from '../../services/bloqueosService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
   Alert,
@@ -46,6 +52,13 @@ export default function Configuracion() {
   const [guardandoHorarios, setGuardandoHorarios] = useState(false)
   const [okHorarios, setOkHorarios] = useState(false)
 
+  // Bloqueos
+  const [bloqueos, setBloqueos] = useState([])
+  const [nuevoBloqueo, setNuevoBloqueo] = useState({ fecha: '', horaInicio: '', horaFin: '', motivo: '' })
+  const [errorBloqueo, setErrorBloqueo] = useState('')
+  const [guardandoBloqueo, setGuardandoBloqueo] = useState(false)
+  const [eliminandoBloqueo, setEliminandoBloqueo] = useState(null)
+
   const tenantId = getUsuario()?.tenant?.id
 
   useDocumentTitle('Configuración — AgendaCar')
@@ -55,8 +68,8 @@ export default function Configuracion() {
     setLoading(true)
     setError('')
 
-    Promise.all([listarServicios(tenantId), listarHorarios(tenantId)])
-      .then(([serviciosData, horariosData]) => {
+    Promise.all([listarServicios(tenantId), listarHorarios(tenantId), listarBloqueos()])
+      .then(([serviciosData, horariosData, bloqueosData]) => {
         if (!activo) return
         setServicios(serviciosData)
         const todos = DIAS_SEMANA.map((nombre, index) => {
@@ -69,6 +82,7 @@ export default function Configuracion() {
           }
         })
         setHorarios(todos)
+        setBloqueos(bloqueosData)
       })
       .catch(err => {
         if (activo) setError(getApiErrorMessage(err, 'No pudimos cargar la configuración.'))
@@ -144,6 +158,46 @@ export default function Configuracion() {
     setHorarios(prev => prev.map((horario, idx) => (
       idx === index ? { ...horario, [campo]: valor } : horario
     )))
+  }
+
+  const agregarBloqueo = async (e) => {
+    e?.preventDefault()
+    const { fecha, horaInicio, horaFin, motivo } = nuevoBloqueo
+    if (!fecha) { setErrorBloqueo('Selecciona una fecha.'); return }
+    if ((horaInicio && !horaFin) || (!horaInicio && horaFin)) {
+      setErrorBloqueo('Debes indicar tanto la hora de inicio como la hora de fin, o dejar ambas vacías para bloquear el día completo.')
+      return
+    }
+    if (guardandoBloqueo) return
+    setGuardandoBloqueo(true)
+    setErrorBloqueo('')
+    try {
+      const bloqueo = await crearBloqueo({ fecha, horaInicio: horaInicio || null, horaFin: horaFin || null, motivo: motivo || null })
+      setBloqueos(prev => [...prev, bloqueo].sort((a, b) => new Date(a.fecha) - new Date(b.fecha)))
+      setNuevoBloqueo({ fecha: '', horaInicio: '', horaFin: '', motivo: '' })
+    } catch (err) {
+      setErrorBloqueo(getApiErrorMessage(err, 'No pudimos crear el bloqueo.'))
+    } finally {
+      setGuardandoBloqueo(false)
+    }
+  }
+
+  const quitarBloqueo = async (id) => {
+    if (eliminandoBloqueo) return
+    setEliminandoBloqueo(id)
+    try {
+      await eliminarBloqueo(id)
+      setBloqueos(prev => prev.filter(b => b.id !== id))
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No pudimos eliminar el bloqueo.'))
+    } finally {
+      setEliminandoBloqueo(null)
+    }
+  }
+
+  const formatearFechaBloqueo = (fechaISO) => {
+    const d = new Date(fechaISO)
+    return d.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
   }
 
   return (
@@ -348,6 +402,107 @@ export default function Configuracion() {
           </div>
         </section>
       </div>
+
+      {/* Sección bloqueos */}
+      <section className="mt-4 rounded-xl border border-line bg-surface shadow-card">
+        <div className="flex items-start gap-3 border-b border-line px-4 py-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-500">
+            <Ban className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Bloqueos y excepciones</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Bloquea un día completo o una franja horaria específica. Los clientes no podrán reservar en esos horarios.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {errorBloqueo && (
+            <Alert variant="error" onDismiss={() => setErrorBloqueo('')}>{errorBloqueo}</Alert>
+          )}
+
+          {/* Formulario nuevo bloqueo */}
+          <form onSubmit={agregarBloqueo} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="block text-xs font-medium text-ink-muted mb-1">Fecha *</label>
+              <Input
+                type="date"
+                value={nuevoBloqueo.fecha}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={e => setNuevoBloqueo(prev => ({ ...prev, fecha: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-ink-muted mb-1">Desde (opcional)</label>
+              <Input
+                type="time"
+                value={nuevoBloqueo.horaInicio}
+                onChange={e => setNuevoBloqueo(prev => ({ ...prev, horaInicio: e.target.value }))}
+                placeholder="08:00"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-ink-muted mb-1">Hasta (opcional)</label>
+              <Input
+                type="time"
+                value={nuevoBloqueo.horaFin}
+                onChange={e => setNuevoBloqueo(prev => ({ ...prev, horaFin: e.target.value }))}
+                placeholder="12:00"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-ink-muted mb-1">Motivo (opcional)</label>
+              <Input
+                type="text"
+                value={nuevoBloqueo.motivo}
+                onChange={e => setNuevoBloqueo(prev => ({ ...prev, motivo: e.target.value }))}
+                placeholder="Mantención de equipos"
+                maxLength={80}
+              />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
+              <Button
+                type="submit"
+                size="sm"
+                leftIcon={Plus}
+                loading={guardandoBloqueo}
+              >
+                Agregar bloqueo
+              </Button>
+            </div>
+          </form>
+
+          {/* Lista de bloqueos */}
+          {bloqueos.length === 0 ? (
+            <p className="text-sm text-ink-muted text-center py-4">No hay bloqueos programados.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {bloqueos.map(b => (
+                <li key={b.id} className="flex items-center justify-between gap-3 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-ink capitalize">{formatearFechaBloqueo(b.fecha)}</p>
+                    <p className="text-xs text-ink-muted">
+                      {b.horaInicio && b.horaFin
+                        ? `${b.horaInicio} – ${b.horaFin}`
+                        : 'Día completo'}
+                      {b.motivo && ` · ${b.motivo}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => quitarBloqueo(b.id)}
+                    disabled={eliminandoBloqueo === b.id}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-soft hover:bg-red-50 hover:text-red-500 disabled:opacity-50 transition-colors"
+                    aria-label="Eliminar bloqueo"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       <ConfirmDialog
         open={Boolean(aEliminar)}

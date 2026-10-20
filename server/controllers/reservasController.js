@@ -73,13 +73,35 @@ const getHorasDisponibles = async (req, res) => {
       include: { servicio: true }
     })
 
-    // Filtrar slots ocupados
-    const slotsOcupados = reservasDelDia.map(r => {
-      const h = new Date(r.fecha)
-      return `${String(h.getHours()).padStart(2, '0')}:${String(h.getMinutes()).padStart(2, '0')}`
+    // Obtener bloqueos del día
+    const bloqueosDia = await prisma.bloqueo.findMany({
+      where: {
+        tenantId: parseInt(tenantId),
+        fecha: { gte: fechaInicio, lte: fechaFin }
+      }
     })
 
-    const horasDisponibles = slots.filter(s => !slotsOcupados.includes(s))
+    // Si hay un bloqueo de día completo (sin horas), no hay slots disponibles
+    const bloqueoTotal = bloqueosDia.some(b => !b.horaInicio && !b.horaFin)
+    if (bloqueoTotal) {
+      return res.json({ horasDisponibles: [] })
+    }
+
+    // Filtrar slots ocupados por reservas
+    const slotsOcupados = reservasDelDia.map(r => {
+      const h = new Date(r.fecha)
+      return `${String(h.getUTCHours()).padStart(2, '0')}:${String(h.getUTCMinutes()).padStart(2, '0')}`
+    })
+
+    // Filtrar slots que caen dentro de algún bloqueo parcial
+    const slotBloqueado = (slot) => {
+      return bloqueosDia.some(b => {
+        if (!b.horaInicio || !b.horaFin) return false
+        return slot >= b.horaInicio && slot < b.horaFin
+      })
+    }
+
+    const horasDisponibles = slots.filter(s => !slotsOcupados.includes(s) && !slotBloqueado(s))
 
     res.json({ horasDisponibles })
   } catch (error) {
