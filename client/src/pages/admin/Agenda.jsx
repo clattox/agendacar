@@ -692,10 +692,16 @@ function ReservaCard({ reserva, onOpen, onEstado, actualizando }) {
             {reserva.servicio?.nombre || 'Servicio sin nombre'}
           </p>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-ink-soft">
-            <span className="inline-flex items-center gap-1">
+            <a
+              href={`https://wa.me/${normalizarTelefonoWhatsApp(reserva.telefono)}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-green-700 hover:underline"
+            >
               <Phone className="h-3 w-3" aria-hidden="true" />
               {reserva.telefono}
-            </span>
+            </a>
             {reserva.email && (
               <span className="inline-flex min-w-0 items-center gap-1">
                 <Mail className="h-3 w-3 shrink-0" aria-hidden="true" />
