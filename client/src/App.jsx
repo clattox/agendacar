@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Inicio from './pages/public/Inicio'
 import Reservar from './pages/public/Reservar'
 import Confirmacion from './pages/public/Confirmacion'
+import Privacidad from './pages/public/Privacidad'
+import Terminos from './pages/public/Terminos'
 
 // Páginas admin
 import Login from './pages/admin/Login'
@@ -27,6 +29,8 @@ export default function App() {
         <Route path="/" element={<Inicio />} />
         <Route path="/reservar" element={<Reservar />} />
         <Route path="/confirmacion" element={<Confirmacion />} />
+        <Route path="/privacidad" element={<Privacidad />} />
+        <Route path="/terminos" element={<Terminos />} />
 
         {/* Rutas admin — el layout está dentro de cada página */}
         <Route path="/admin/login" element={<Login />} />

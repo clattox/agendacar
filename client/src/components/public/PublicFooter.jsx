@@ -29,8 +29,16 @@ export default function PublicFooter({ tenant }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs text-ink-soft">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-ink-soft">
           <span>Reservas online con AgendaCar</span>
+          <span aria-hidden="true">·</span>
+          <Link to="/privacidad" className="transition-colors hover:text-ink">
+            Privacidad
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/terminos" className="transition-colors hover:text-ink">
+            Términos
+          </Link>
           <span aria-hidden="true">·</span>
           <Link to="/admin/login" className="transition-colors hover:text-ink">
             Acceso taller
