@@ -10,7 +10,9 @@ import {
   ClipboardList,
   Clock,
   Mail,
+  MessageCircle,
   Phone,
+  Printer,
   RefreshCw,
   Search,
   Trash2,
@@ -802,6 +804,71 @@ function DetalleReserva({ reserva }) {
   )
 }
 
+function imprimirHistorial(vehiculo) {
+  const descripcionVehiculo = [vehiculo.marca, vehiculo.modelo, vehiculo.anio].filter(Boolean).join(' ')
+  const filas = vehiculo.reservas.map(r => `
+    <tr>
+      <td>${formatDateFromISO(r.fecha)}</td>
+      <td>${formatTimeFromISO(r.fecha)}</td>
+      <td>${r.servicio?.nombre ?? '—'}</td>
+      <td>${r.kilometraje ? Number(r.kilometraje).toLocaleString('es-CL') + ' km' : '—'}</td>
+      <td>${r.estado}</td>
+    </tr>`).join('')
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Historial — ${vehiculo.patente}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #222; padding: 32px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .sub { color: #555; margin-bottom: 24px; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f4f4f4; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #ddd; }
+    td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+    tr:last-child td { border-bottom: none; }
+    .footer { margin-top: 24px; font-size: 11px; color: #888; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <h1>Historial del vehículo</h1>
+  <p class="sub">
+    Patente: <strong>${vehiculo.patente}</strong>
+    ${descripcionVehiculo ? ` &nbsp;·&nbsp; ${descripcionVehiculo}` : ''}
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th><th>Hora</th><th>Servicio</th><th>Kilometraje</th><th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>${filas}</tbody>
+  </table>
+  <p class="footer">Generado el ${new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+</body>
+</html>`
+
+  const ventana = window.open('', '_blank', 'width=800,height=600')
+  ventana.document.write(html)
+  ventana.document.close()
+  ventana.focus()
+  setTimeout(() => ventana.print(), 500)
+}
+
+function compartirWhatsApp(vehiculo) {
+  const descripcionVehiculo = [vehiculo.marca, vehiculo.modelo, vehiculo.anio].filter(Boolean).join(' ')
+  const encabezado = `🚗 *Historial de atenciones*\nPatente: *${vehiculo.patente}*${descripcionVehiculo ? `\nVehículo: ${descripcionVehiculo}` : ''}\n\n`
+  const filas = vehiculo.reservas.map(r => {
+    const km = r.kilometraje ? ` · ${Number(r.kilometraje).toLocaleString('es-CL')} km` : ''
+    return `• ${formatDateFromISO(r.fecha)} ${formatTimeFromISO(r.fecha)} — ${r.servicio?.nombre ?? '—'}${km}`
+  }).join('\n')
+  const texto = encabezado + filas
+  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank')
+}
+
 function HistorialVehiculo({ patente }) {
   const [abierto, setAbierto] = useState(false)
   const [cargando, setCargando] = useState(false)
@@ -854,22 +921,42 @@ function HistorialVehiculo({ patente }) {
           {vehiculo.reservas.length === 0 ? (
             <p className="text-xs text-ink-muted">Sin atenciones registradas.</p>
           ) : (
-            <div className="space-y-1.5">
-              {vehiculo.reservas.map(r => (
-                <div key={r.id} className="flex items-center justify-between rounded-md bg-surface px-3 py-2 text-xs">
-                  <div>
-                    <span className="font-medium text-ink">{formatDateFromISO(r.fecha)} {formatTimeFromISO(r.fecha)}</span>
-                    <span className="ml-2 text-ink-muted">{r.servicio?.nombre}</span>
-                    {r.kilometraje && <span className="ml-2 text-ink-soft">{Number(r.kilometraje).toLocaleString('es-CL')} km</span>}
+            <>
+              <div className="space-y-1.5">
+                {vehiculo.reservas.map(r => (
+                  <div key={r.id} className="flex items-center justify-between rounded-md bg-surface px-3 py-2 text-xs">
+                    <div>
+                      <span className="font-medium text-ink">{formatDateFromISO(r.fecha)} {formatTimeFromISO(r.fecha)}</span>
+                      <span className="ml-2 text-ink-muted">{r.servicio?.nombre}</span>
+                      {r.kilometraje && <span className="ml-2 text-ink-soft">{Number(r.kilometraje).toLocaleString('es-CL')} km</span>}
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      r.estado === 'atendida' ? 'bg-green-100 text-green-700' :
+                      r.estado === 'cancelada' ? 'bg-red-100 text-red-700' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>{r.estado}</span>
                   </div>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                    r.estado === 'atendida' ? 'bg-green-100 text-green-700' :
-                    r.estado === 'cancelada' ? 'bg-red-100 text-red-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>{r.estado}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => imprimirHistorial(vehiculo)}
+                  className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink hover:bg-graphite-100 transition-colors"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  Imprimir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => compartirWhatsApp(vehiculo)}
+                  className="flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Compartir por WhatsApp
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
