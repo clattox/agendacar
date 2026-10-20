@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Clock,
   Mail,
   Phone,
@@ -37,6 +38,7 @@ import {
   listarReservasPorFecha,
   reagendarReserva
 } from '../../services/reservasService'
+import { obtenerHistorialVehiculo } from '../../services/vehiculosService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import EstadoBadge from '../../components/admin/EstadoBadge'
 import {
@@ -780,7 +782,97 @@ function DetalleReserva({ reserva }) {
           label="Patente"
           value={<span className="font-mono uppercase">{reserva.patente}</span>}
         />
+        {reserva.vehiculo && (reserva.vehiculo.marca || reserva.vehiculo.modelo || reserva.vehiculo.anio) && (
+          <FilaDetalle
+            icon={Car}
+            label="Vehículo"
+            value={[reserva.vehiculo.marca, reserva.vehiculo.modelo, reserva.vehiculo.anio].filter(Boolean).join(' ')}
+          />
+        )}
+        {reserva.kilometraje && (
+          <FilaDetalle
+            icon={Car}
+            label="Kilometraje"
+            value={`${Number(reserva.kilometraje).toLocaleString('es-CL')} km`}
+          />
+        )}
       </dl>
+      <HistorialVehiculo patente={reserva.patente} />
+    </div>
+  )
+}
+
+function HistorialVehiculo({ patente }) {
+  const [abierto, setAbierto] = useState(false)
+  const [cargando, setCargando] = useState(false)
+  const [vehiculo, setVehiculo] = useState(null)
+  const [error, setError] = useState('')
+
+  const cargar = async () => {
+    if (cargando) return
+    setCargando(true)
+    setError('')
+    try {
+      const data = await obtenerHistorialVehiculo(patente)
+      setVehiculo(data)
+      setAbierto(true)
+    } catch (e) {
+      setError(e?.response?.status === 404 ? 'No hay historial registrado para esta patente.' : 'Error al cargar el historial.')
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  return (
+    <div className="border-t border-line px-4 py-3">
+      <Button
+        variant="secondary"
+        size="sm"
+        leftIcon={ClipboardList}
+        onClick={cargar}
+        disabled={cargando}
+      >
+        {cargando ? 'Cargando…' : 'Ver historial del vehículo'}
+      </Button>
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+
+      {abierto && vehiculo && (
+        <div className="mt-3 rounded-lg border border-line bg-graphite-50 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-ink">
+              Historial — <span className="font-mono uppercase">{patente}</span>
+              {vehiculo.marca && <span className="font-normal text-ink-muted"> · {[vehiculo.marca, vehiculo.modelo, vehiculo.anio].filter(Boolean).join(' ')}</span>}
+            </p>
+            <button
+              type="button"
+              onClick={() => setAbierto(false)}
+              className="text-xs text-ink-muted hover:text-ink"
+            >
+              Cerrar
+            </button>
+          </div>
+          {vehiculo.reservas.length === 0 ? (
+            <p className="text-xs text-ink-muted">Sin atenciones registradas.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {vehiculo.reservas.map(r => (
+                <div key={r.id} className="flex items-center justify-between rounded-md bg-surface px-3 py-2 text-xs">
+                  <div>
+                    <span className="font-medium text-ink">{formatDateFromISO(r.fecha)} {formatTimeFromISO(r.fecha)}</span>
+                    <span className="ml-2 text-ink-muted">{r.servicio?.nombre}</span>
+                    {r.kilometraje && <span className="ml-2 text-ink-soft">{Number(r.kilometraje).toLocaleString('es-CL')} km</span>}
+                  </div>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    r.estado === 'atendida' ? 'bg-green-100 text-green-700' :
+                    r.estado === 'cancelada' ? 'bg-red-100 text-red-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>{r.estado}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

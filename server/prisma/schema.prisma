@@ -21,6 +21,7 @@ model Tenant {
   servicios  Servicio[]
   reservas   Reserva[]
   horarios   Horario[]
+  vehiculos  Vehiculo[]
 }
 
 model Usuario {
@@ -55,17 +56,35 @@ model Horario {
 }
 
 model Reserva {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   nombre      String
   telefono    String
   email       String?
   patente     String
   fecha       DateTime
-  estado      String   @default("confirmada") // confirmada | atendida | cancelada
+  estado      String    @default("confirmada") // confirmada | atendida | cancelada
   notas       String?
+  kilometraje Int?
   tenantId    Int
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
   servicioId  Int
-  servicio    Servicio @relation(fields: [servicioId], references: [id])
-  createdAt   DateTime @default(now())
+  servicio    Servicio  @relation(fields: [servicioId], references: [id])
+  vehiculoId  Int?
+  vehiculo    Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model Vehiculo {
+  id        Int       @id @default(autoincrement())
+  patente   String
+  marca     String?
+  modelo    String?
+  anio      Int?
+  tenantId  Int
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  reservas  Reserva[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([patente, tenantId])
 }

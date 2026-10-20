@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 // Obtener reservas del día/semana (admin)
 const getReservas = async (req, res) => {
   const { fecha } = req.query
-  const tenantId = req.user.tenantId
+  const tenantId = req.usuario.tenantId
 
   try {
     const fechaInicio = fecha
@@ -20,7 +20,7 @@ const getReservas = async (req, res) => {
         tenantId,
         fecha: { gte: fechaInicio, lte: fechaFin }
       },
-      include: { servicio: true },
+      include: { servicio: true, vehiculo: true },
       orderBy: { fecha: 'asc' }
     })
 
@@ -99,22 +99,47 @@ const construirFechaReserva = (fecha, hora) => {
 
 // Crear reserva (público)
 const createReserva = async (req, res) => {
-  const { tenantId, nombre, telefono, email, patente, fecha, hora, servicioId } = req.body
+  const { tenantId, nombre, telefono, email, patente, fecha, hora, servicioId, kilometraje, marca, modelo, anio } = req.body
 
   try {
     const fechaReserva = construirFechaReserva(fecha, hora)
+    const patenteUpper = patente.toUpperCase()
+    const tid = parseInt(tenantId)
+
+    // Upsert del vehículo si viene al menos marca, modelo o año
+    let vehiculoId = null
+    if (marca || modelo || anio || kilometraje) {
+      const vehiculo = await prisma.vehiculo.upsert({
+        where: { patente_tenantId: { patente: patenteUpper, tenantId: tid } },
+        update: {
+          ...(marca && { marca }),
+          ...(modelo && { modelo }),
+          ...(anio && { anio: parseInt(anio) })
+        },
+        create: {
+          patente: patenteUpper,
+          tenantId: tid,
+          marca: marca || null,
+          modelo: modelo || null,
+          anio: anio ? parseInt(anio) : null
+        }
+      })
+      vehiculoId = vehiculo.id
+    }
 
     const reserva = await prisma.reserva.create({
       data: {
         nombre,
         telefono,
         email,
-        patente: patente.toUpperCase(),
+        patente: patenteUpper,
         fecha: fechaReserva,
-        tenantId: parseInt(tenantId),
-        servicioId: parseInt(servicioId)
+        tenantId: tid,
+        servicioId: parseInt(servicioId),
+        ...(kilometraje && { kilometraje: parseInt(kilometraje) }),
+        ...(vehiculoId && { vehiculoId })
       },
-      include: { servicio: true, tenant: true }
+      include: { servicio: true, tenant: true, vehiculo: true }
     })
 
     // Notificar al dueño por email
@@ -130,7 +155,7 @@ const createReserva = async (req, res) => {
 // Eliminar reserva definitivamente (admin)
 const deleteReserva = async (req, res) => {
   const { id } = req.params
-  const tenantId = req.user.tenantId
+  const tenantId = req.usuario.tenantId
 
   try {
     const resultado = await prisma.reserva.deleteMany({
@@ -153,7 +178,7 @@ const deleteReserva = async (req, res) => {
 const reagendarReserva = async (req, res) => {
   const { id } = req.params
   const { fecha, hora } = req.body
-  const tenantId = req.user.tenantId
+  const tenantId = req.usuario.tenantId
   const reservaId = parseInt(id)
 
   if (Number.isNaN(reservaId)) {
@@ -185,7 +210,7 @@ const reagendarReserva = async (req, res) => {
 const updateEstado = async (req, res) => {
   const { id } = req.params
   const { estado } = req.body
-  const tenantId = req.user.tenantId
+  const tenantId = req.usuario.tenantId
 
   try {
     const reserva = await prisma.reserva.update({
