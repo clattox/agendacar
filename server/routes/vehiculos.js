@@ -1,8 +1,8 @@
 const express = require('express')
 const router = express.Router()
 const auth = require('../middleware/auth')
-const { getHistorial } = require('../controllers/vehiculosController')
+const { obtenerHistorialVehiculo } = require('../controllers/vehiculosController')
 
-router.get('/:patente', auth, getHistorial)
+router.get('/:patente', auth, obtenerHistorialVehiculo)
 
 module.exports = router

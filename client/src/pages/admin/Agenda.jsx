@@ -7,8 +7,8 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
   Clock,
+  History,
   Mail,
   MessageCircle,
   Phone,
@@ -42,7 +42,7 @@ import {
 } from '../../services/reservasService'
 import { obtenerHistorialVehiculo } from '../../services/vehiculosService'
 import AdminLayout from '../../components/admin/AdminLayout'
-import EstadoBadge from '../../components/admin/EstadoBadge'
+import EstadoBadge, { ESTADOS_RESERVA } from '../../components/admin/EstadoBadge'
 import {
   Alert,
   Button,
@@ -735,6 +735,22 @@ function ReservaCard({ reserva, onOpen, onEstado, actualizando }) {
 }
 
 function DetalleReserva({ reserva }) {
+  const [historialAbierto, setHistorialAbierto] = useState(false)
+  const vehiculo = reserva.vehiculo
+  const kilometraje = reserva.kilometraje ?? vehiculo?.kilometraje
+  const datosVehiculo = [
+    { label: 'Patente', value: <span className="font-mono uppercase">{reserva.patente}</span> },
+    { label: 'Marca', value: vehiculo?.marca },
+    { label: 'Modelo', value: vehiculo?.modelo },
+    { label: 'Año', value: vehiculo?.anio },
+    {
+      label: 'Kilometraje',
+      value: kilometraje !== null && kilometraje !== undefined
+        ? `${kilometraje.toLocaleString('es-CL')} km`
+        : null
+    }
+  ].filter(item => item.value !== null && item.value !== undefined && item.value !== '')
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-graphite-50 p-4">
@@ -779,189 +795,365 @@ function DetalleReserva({ reserva }) {
           label="Servicio"
           value={reserva.servicio?.nombre || 'Servicio sin nombre'}
         />
-        <FilaDetalle
-          icon={Car}
-          label="Patente"
-          value={<span className="font-mono uppercase">{reserva.patente}</span>}
-        />
-        {reserva.vehiculo && (reserva.vehiculo.marca || reserva.vehiculo.modelo || reserva.vehiculo.anio) && (
-          <FilaDetalle
-            icon={Car}
-            label="Vehículo"
-            value={[reserva.vehiculo.marca, reserva.vehiculo.modelo, reserva.vehiculo.anio].filter(Boolean).join(' ')}
-          />
-        )}
-        {reserva.kilometraje && (
-          <FilaDetalle
-            icon={Car}
-            label="Kilometraje"
-            value={`${Number(reserva.kilometraje).toLocaleString('es-CL')} km`}
-          />
-        )}
       </dl>
-      <HistorialVehiculo patente={reserva.patente} />
-    </div>
-  )
-}
 
-function imprimirHistorial(vehiculo) {
-  const descripcionVehiculo = [vehiculo.marca, vehiculo.modelo, vehiculo.anio].filter(Boolean).join(' ')
-  const filas = vehiculo.reservas.map(r => `
-    <tr>
-      <td>${formatDateFromISO(r.fecha)}</td>
-      <td>${formatTimeFromISO(r.fecha)}</td>
-      <td>${r.servicio?.nombre ?? '—'}</td>
-      <td>${r.kilometraje ? Number(r.kilometraje).toLocaleString('es-CL') + ' km' : '—'}</td>
-      <td>${r.estado}</td>
-    </tr>`).join('')
-
-  const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Historial — ${vehiculo.patente}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 13px; color: #222; padding: 32px; }
-    h1 { font-size: 20px; margin-bottom: 4px; }
-    .sub { color: #555; margin-bottom: 24px; font-size: 13px; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #f4f4f4; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #ddd; }
-    td { padding: 7px 10px; border-bottom: 1px solid #eee; }
-    tr:last-child td { border-bottom: none; }
-    .footer { margin-top: 24px; font-size: 11px; color: #888; }
-    @media print { body { padding: 0; } }
-  </style>
-</head>
-<body>
-  <h1>Historial del vehículo</h1>
-  <p class="sub">
-    Patente: <strong>${vehiculo.patente}</strong>
-    ${descripcionVehiculo ? ` &nbsp;·&nbsp; ${descripcionVehiculo}` : ''}
-  </p>
-  <table>
-    <thead>
-      <tr>
-        <th>Fecha</th><th>Hora</th><th>Servicio</th><th>Kilometraje</th><th>Estado</th>
-      </tr>
-    </thead>
-    <tbody>${filas}</tbody>
-  </table>
-  <p class="footer">Generado el ${new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-</body>
-</html>`
-
-  const ventana = window.open('', '_blank', 'width=800,height=600')
-  ventana.document.write(html)
-  ventana.document.close()
-  ventana.focus()
-  setTimeout(() => ventana.print(), 500)
-}
-
-function compartirWhatsApp(vehiculo) {
-  const descripcionVehiculo = [vehiculo.marca, vehiculo.modelo, vehiculo.anio].filter(Boolean).join(' ')
-  const encabezado = `🚗 *Historial de atenciones*\nPatente: *${vehiculo.patente}*${descripcionVehiculo ? `\nVehículo: ${descripcionVehiculo}` : ''}\n\n`
-  const filas = vehiculo.reservas.map(r => {
-    const km = r.kilometraje ? ` · ${Number(r.kilometraje).toLocaleString('es-CL')} km` : ''
-    return `• ${formatDateFromISO(r.fecha)} ${formatTimeFromISO(r.fecha)} — ${r.servicio?.nombre ?? '—'}${km}`
-  }).join('\n')
-  const texto = encabezado + filas
-  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank')
-}
-
-function HistorialVehiculo({ patente }) {
-  const [abierto, setAbierto] = useState(false)
-  const [cargando, setCargando] = useState(false)
-  const [vehiculo, setVehiculo] = useState(null)
-  const [error, setError] = useState('')
-
-  const cargar = async () => {
-    if (cargando) return
-    setCargando(true)
-    setError('')
-    try {
-      const data = await obtenerHistorialVehiculo(patente)
-      setVehiculo(data)
-      setAbierto(true)
-    } catch (e) {
-      setError(e?.response?.status === 404 ? 'No hay historial registrado para esta patente.' : 'Error al cargar el historial.')
-    } finally {
-      setCargando(false)
-    }
-  }
-
-  return (
-    <div className="border-t border-line px-4 py-3">
-      <Button
-        variant="secondary"
-        size="sm"
-        leftIcon={ClipboardList}
-        onClick={cargar}
-        disabled={cargando}
-      >
-        {cargando ? 'Cargando…' : 'Ver historial del vehículo'}
-      </Button>
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-
-      {abierto && vehiculo && (
-        <div className="mt-3 rounded-lg border border-line bg-graphite-50 p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold text-ink">
-              Historial — <span className="font-mono uppercase">{patente}</span>
-              {vehiculo.marca && <span className="font-normal text-ink-muted"> · {[vehiculo.marca, vehiculo.modelo, vehiculo.anio].filter(Boolean).join(' ')}</span>}
-            </p>
-            <button
-              type="button"
-              onClick={() => setAbierto(false)}
-              className="text-xs text-ink-muted hover:text-ink"
-            >
-              Cerrar
-            </button>
+      <section className="mt-5 overflow-hidden rounded-lg border border-line">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-graphite-50 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Car className="h-4 w-4 text-ink-soft" aria-hidden="true" />
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Vehículo</h3>
+              <p className="text-xs text-ink-muted">Datos registrados para esta patente</p>
+            </div>
           </div>
-          {vehiculo.reservas.length === 0 ? (
-            <p className="text-xs text-ink-muted">Sin atenciones registradas.</p>
-          ) : (
-            <>
-              <div className="space-y-1.5">
-                {vehiculo.reservas.map(r => (
-                  <div key={r.id} className="flex items-center justify-between rounded-md bg-surface px-3 py-2 text-xs">
-                    <div>
-                      <span className="font-medium text-ink">{formatDateFromISO(r.fecha)} {formatTimeFromISO(r.fecha)}</span>
-                      <span className="ml-2 text-ink-muted">{r.servicio?.nombre}</span>
-                      {r.kilometraje && <span className="ml-2 text-ink-soft">{Number(r.kilometraje).toLocaleString('es-CL')} km</span>}
-                    </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                      r.estado === 'atendida' ? 'bg-green-100 text-green-700' :
-                      r.estado === 'cancelada' ? 'bg-red-100 text-red-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>{r.estado}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => imprimirHistorial(vehiculo)}
-                  className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink hover:bg-graphite-100 transition-colors"
-                >
-                  <Printer className="h-3.5 w-3.5" />
-                  Imprimir
-                </button>
-                <button
-                  type="button"
-                  onClick={() => compartirWhatsApp(vehiculo)}
-                  className="flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
-                >
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  Compartir por WhatsApp
-                </button>
-              </div>
-            </>
-          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={History}
+            onClick={() => setHistorialAbierto(true)}
+          >
+            Ver historial
+          </Button>
         </div>
+
+        <dl className="grid gap-x-4 gap-y-3 px-4 py-3 sm:grid-cols-2">
+          {datosVehiculo.map(dato => (
+            <div key={dato.label}>
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft">
+                {dato.label}
+              </dt>
+              <dd className="mt-0.5 break-words text-sm font-medium text-ink">{dato.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {historialAbierto && (
+        <HistorialVehiculoDialog
+          patente={reserva.patente}
+          telefono={reserva.telefono}
+          onClose={() => setHistorialAbierto(false)}
+        />
       )}
     </div>
   )
+}
+
+function HistorialVehiculoDialog({ patente, telefono, onClose }) {
+  const [vehiculo, setVehiculo] = useState(null)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [errorAccion, setErrorAccion] = useState('')
+
+  useEffect(() => {
+    let activo = true
+    setCargando(true)
+    setError('')
+    setErrorAccion('')
+    setVehiculo(null)
+
+    obtenerHistorialVehiculo(patente)
+      .then(data => {
+        if (activo) setVehiculo(data)
+      })
+      .catch(err => {
+        if (!activo) return
+
+        if (err.response?.status === 404) {
+          setVehiculo({ patente, reservas: [] })
+        } else {
+          setError(getApiErrorMessage(err, 'No pudimos cargar el historial del vehículo.'))
+        }
+      })
+      .finally(() => {
+        if (activo) setCargando(false)
+      })
+
+    return () => { activo = false }
+  }, [patente])
+
+  const reservas = vehiculo?.reservas || []
+  const detalle = [vehiculo?.marca, vehiculo?.modelo, vehiculo?.anio]
+    .filter(Boolean)
+    .join(' · ')
+  const kilometraje = vehiculo?.kilometraje
+  const accionesDeshabilitadas = cargando || Boolean(error)
+
+  const imprimir = () => {
+    setErrorAccion('')
+    const ventana = abrirVistaImpresionHistorial({
+      patente,
+      detalle,
+      kilometraje,
+      reservas
+    })
+
+    if (!ventana) {
+      setErrorAccion('El navegador bloqueó la ventana de impresión. Permite las ventanas emergentes e inténtalo nuevamente.')
+    }
+  }
+
+  const compartirPorWhatsApp = () => {
+    setErrorAccion('')
+    abrirWhatsAppHistorial({
+      patente,
+      telefono,
+      detalle,
+      kilometraje,
+      reservas
+    })
+  }
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      size="lg"
+      title={`Historial · ${patente}`}
+      description={detalle || 'Últimas atenciones registradas en el taller'}
+      footer={
+        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+          <Button variant="secondary" onClick={onClose}>
+            Cerrar
+          </Button>
+          <Button
+            variant="secondary"
+            leftIcon={Printer}
+            onClick={imprimir}
+            disabled={accionesDeshabilitadas}
+          >
+            Imprimir
+          </Button>
+          <Button
+            variant="success"
+            leftIcon={MessageCircle}
+            onClick={compartirPorWhatsApp}
+            disabled={accionesDeshabilitadas}
+          >
+            Compartir por WhatsApp
+          </Button>
+        </div>
+      }
+    >
+      {errorAccion && (
+        <div className="mb-4">
+          <Alert variant="error">{errorAccion}</Alert>
+        </div>
+      )}
+      {cargando ? (
+        <div className="space-y-2" aria-label="Cargando historial">
+          {[0, 1, 2].map(item => (
+            <Skeleton key={item} className="h-16 w-full" />
+          ))}
+        </div>
+      ) : error ? (
+        <Alert variant="error">{error}</Alert>
+      ) : reservas.length === 0 ? (
+        <EmptyState
+          icon={History}
+          title="Sin atenciones registradas"
+          description={`No encontramos atenciones anteriores para la patente ${patente}.`}
+        />
+      ) : (
+        <>
+          <p className="mb-3 text-xs text-ink-muted">
+            {reservas.length === 1
+              ? '1 atención registrada'
+              : `${reservas.length} atenciones registradas`}
+          </p>
+          <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line">
+            {reservas.map(reserva => (
+              <li
+                key={reserva.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">
+                    {reserva.servicio?.nombre || 'Servicio sin nombre'}
+                  </p>
+                  <p className="mt-0.5 text-xs capitalize text-ink-muted">
+                    {formatDateFromISO(reserva.fecha)} · {formatTimeFromISO(reserva.fecha)}
+                  </p>
+                </div>
+                <EstadoBadge estado={reserva.estado} size="sm" />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </Dialog>
+  )
+}
+
+const HTML_ESCAPES = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, caracter => HTML_ESCAPES[caracter])
+}
+
+function labelEstadoVehiculo(estado) {
+  return ESTADOS_RESERVA[estado]?.label || estado || 'Sin estado'
+}
+
+function textoReservaHistorial(reserva) {
+  const servicio = reserva.servicio?.nombre || 'Servicio sin nombre'
+  return `${formatDateFromISO(reserva.fecha)} · ${formatTimeFromISO(reserva.fecha)} — ${servicio} (${labelEstadoVehiculo(reserva.estado)})`
+}
+
+function normalizarTelefonoWhatsApp(telefono) {
+  const texto = String(telefono || '').trim()
+  const digitos = texto.replace(/\D/g, '')
+
+  if (!digitos) return ''
+  if (texto.startsWith('+')) return digitos
+  if (digitos.length === 9) return `56${digitos}`
+
+  return digitos
+}
+
+function construirMensajeHistorial({ patente, detalle, kilometraje, reservas }) {
+  const lineas = [
+    `Historial del vehículo ${patente}`,
+    detalle || null,
+    kilometraje !== null && kilometraje !== undefined
+      ? `Kilometraje: ${Number(kilometraje).toLocaleString('es-CL')} km`
+      : null,
+    '',
+    reservas.length === 0
+      ? 'Sin atenciones registradas.'
+      : reservas.map(reserva => `• ${textoReservaHistorial(reserva)}`).join('\n')
+  ]
+
+  return lineas.filter(linea => linea !== null).join('\n')
+}
+
+function abrirWhatsAppHistorial(datos) {
+  const mensaje = construirMensajeHistorial(datos)
+  const numero = normalizarTelefonoWhatsApp(datos.telefono)
+  const url = numero
+    ? `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`
+    : `https://wa.me/?text=${encodeURIComponent(mensaje)}`
+  const enlace = document.createElement('a')
+
+  enlace.href = url
+  enlace.target = '_blank'
+  enlace.rel = 'noopener noreferrer'
+  document.body.appendChild(enlace)
+  enlace.click()
+  enlace.remove()
+}
+
+function abrirVistaImpresionHistorial({ patente, detalle, kilometraje, reservas }) {
+  const ventana = window.open('', '_blank', 'width=900,height=700')
+  if (!ventana) return null
+
+  ventana.opener = null
+
+  const filas = reservas.length
+    ? reservas.map(reserva => `
+        <tr>
+          <td>${escapeHtml(formatDateFromISO(reserva.fecha))}</td>
+          <td class="hora">${escapeHtml(formatTimeFromISO(reserva.fecha))}</td>
+          <td>${escapeHtml(reserva.servicio?.nombre || 'Servicio sin nombre')}</td>
+          <td>${escapeHtml(labelEstadoVehiculo(reserva.estado))}</td>
+        </tr>`).join('')
+    : '<tr><td colspan="4" class="vacio">Sin atenciones registradas.</td></tr>'
+
+  const kilometrajeHtml = kilometraje !== null && kilometraje !== undefined
+    ? `<p class="meta">Kilometraje registrado: <strong>${Number(kilometraje).toLocaleString('es-CL')} km</strong></p>`
+    : ''
+
+  const html = `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Historial ${escapeHtml(patente)}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px;
+      color: #24272b;
+      background: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 2px solid #24272b;
+      padding-bottom: 18px;
+    }
+    h1 { margin: 0; font-size: 22px; }
+    .patente {
+      margin: 8px 0 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+    .meta { margin: 6px 0 0; color: #69717b; font-size: 13px; }
+    .resumen {
+      margin: 0;
+      color: #69717b;
+      font-size: 12px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    table { width: 100%; margin-top: 24px; border-collapse: collapse; font-size: 13px; }
+    th {
+      padding: 10px 12px;
+      border-bottom: 1px solid #24272b;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    td { padding: 11px 12px; border-bottom: 1px solid #e1e3e6; vertical-align: top; }
+    .hora { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .vacio { padding: 28px 12px; color: #69717b; text-align: center; }
+    footer { margin-top: 28px; color: #69717b; font-size: 11px; }
+    @media print {
+      body { padding: 0; }
+      thead { display: table-header-group; }
+      tr { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Historial del vehículo</h1>
+      <p class="patente">${escapeHtml(patente)}</p>
+      ${detalle ? `<p class="meta">${escapeHtml(detalle)}</p>` : ''}
+      ${kilometrajeHtml}
+    </div>
+    <p class="resumen">${reservas.length} ${reservas.length === 1 ? 'atención' : 'atenciones'}</p>
+  </header>
+  <table>
+    <thead>
+      <tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Estado</th></tr>
+    </thead>
+    <tbody>${filas}</tbody>
+  </table>
+  <footer>Historial generado por AgendaCar el ${escapeHtml(formatFullDate(new Date()))}.</footer>
+</body>
+</html>`
+
+  ventana.document.open()
+  ventana.document.write(html)
+  ventana.document.close()
+  ventana.focus()
+  ventana.onafterprint = () => ventana.close()
+  ventana.setTimeout(() => ventana.print(), 200)
+
+  return ventana
 }
 
 function FilaDetalle({ icon: Icon, label, value }) {

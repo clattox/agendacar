@@ -137,7 +137,16 @@ export default function Reservar() {
     return new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   })
 
-  const [form, setForm] = useState({ nombre: '', telefono: '', email: '', patente: '', kilometraje: '', marca: '', modelo: '', anio: '' })
+  const [form, setForm] = useState({
+    nombre: '',
+    telefono: '',
+    email: '',
+    patente: '',
+    kilometraje: '',
+    marca: '',
+    modelo: '',
+    anio: ''
+  })
   const [errores, setErrores] = useState({})
   const [errorEnvio, setErrorEnvio] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -385,13 +394,13 @@ export default function Reservar() {
         telefono: form.telefono.trim(),
         email: form.email.trim(),
         patente: form.patente.toUpperCase().trim(),
+        kilometraje: form.kilometraje === '' ? undefined : Number(form.kilometraje),
+        marca: form.marca.trim() || undefined,
+        modelo: form.modelo.trim() || undefined,
+        anio: form.anio === '' ? undefined : Number(form.anio),
         fecha: toDateKey(fechaSeleccionada),
         hora: horaSeleccionada,
-        servicioId: servicioSeleccionado.id,
-        ...(form.kilometraje && { kilometraje: form.kilometraje }),
-        ...(form.marca && { marca: form.marca.trim() }),
-        ...(form.modelo && { modelo: form.modelo.trim() }),
-        ...(form.anio && { anio: form.anio })
+        servicioId: servicioSeleccionado.id
       })
 
       navigate('/confirmacion', { state: { reserva, tenant } })
@@ -842,57 +851,63 @@ export default function Reservar() {
                     aria-describedby={errores.patente ? 'patente-error' : 'patente-hint'}
                   />
                 </FormField>
-              </div>
 
-              <div className="mt-5 border-t border-line pt-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">Datos del vehículo <span className="font-normal normal-case">(opcional)</span></p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField id="marca" label="Marca">
-                    <Input
-                      id="marca"
-                      name="marca"
-                      placeholder="Ej. Toyota"
-                      maxLength={40}
-                      value={form.marca}
-                      onChange={event => actualizarCampo('marca', event.target.value)}
-                    />
-                  </FormField>
-                  <FormField id="modelo" label="Modelo">
-                    <Input
-                      id="modelo"
-                      name="modelo"
-                      placeholder="Ej. Corolla"
-                      maxLength={40}
-                      value={form.modelo}
-                      onChange={event => actualizarCampo('modelo', event.target.value)}
-                    />
-                  </FormField>
-                  <FormField id="anio" label="Año">
-                    <Input
-                      id="anio"
-                      name="anio"
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="Ej. 2019"
-                      min={1950}
-                      max={new Date().getFullYear() + 1}
-                      value={form.anio}
-                      onChange={event => actualizarCampo('anio', event.target.value)}
-                    />
-                  </FormField>
-                  <FormField id="kilometraje" label="Kilometraje actual" hint="En kilómetros">
-                    <Input
-                      id="kilometraje"
-                      name="kilometraje"
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="Ej. 75000"
-                      min={0}
-                      value={form.kilometraje}
-                      onChange={event => actualizarCampo('kilometraje', event.target.value)}
-                    />
-                  </FormField>
-                </div>
+                <FormField
+                  id="kilometraje"
+                  label="Kilometraje (opcional)"
+                  hint="Ayuda a mantener el historial de mantenciones."
+                >
+                  <Input
+                    id="kilometraje"
+                    name="kilometraje"
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    step="1"
+                    placeholder="Ej: 85000"
+                    value={form.kilometraje}
+                    onChange={event => actualizarCampo('kilometraje', event.target.value)}
+                  />
+                </FormField>
+
+                <FormField id="marca" label="Marca (opcional)">
+                  <Input
+                    id="marca"
+                    name="marca"
+                    autoComplete="off"
+                    placeholder="Ej: Toyota"
+                    maxLength={60}
+                    value={form.marca}
+                    onChange={event => actualizarCampo('marca', event.target.value)}
+                  />
+                </FormField>
+
+                <FormField id="modelo" label="Modelo (opcional)">
+                  <Input
+                    id="modelo"
+                    name="modelo"
+                    autoComplete="off"
+                    placeholder="Ej: Corolla"
+                    maxLength={60}
+                    value={form.modelo}
+                    onChange={event => actualizarCampo('modelo', event.target.value)}
+                  />
+                </FormField>
+
+                <FormField id="anio" label="Año (opcional)">
+                  <Input
+                    id="anio"
+                    name="anio"
+                    type="number"
+                    inputMode="numeric"
+                    min="1900"
+                    max="2100"
+                    step="1"
+                    placeholder="Ej: 2019"
+                    value={form.anio}
+                    onChange={event => actualizarCampo('anio', event.target.value)}
+                  />
+                </FormField>
               </div>
 
               <div className="mt-5 flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -928,9 +943,15 @@ export default function Reservar() {
                 <Fila etiqueta="Teléfono" valor={form.telefono} />
                 <Fila etiqueta="Email" valor={form.email || 'No informado'} />
                 <Fila etiqueta="Patente" valor={form.patente} />
-                {form.marca && <Fila etiqueta="Marca / Modelo" valor={[form.marca, form.modelo].filter(Boolean).join(' ')} />}
-                {form.anio && <Fila etiqueta="Año" valor={form.anio} />}
-                {form.kilometraje && <Fila etiqueta="Kilometraje" valor={`${Number(form.kilometraje).toLocaleString('es-CL')} km`} />}
+                {form.marca.trim() && <Fila etiqueta="Marca" valor={form.marca.trim()} />}
+                {form.modelo.trim() && <Fila etiqueta="Modelo" valor={form.modelo.trim()} />}
+                {form.anio !== '' && <Fila etiqueta="Año" valor={form.anio} />}
+                {form.kilometraje !== '' && (
+                  <Fila
+                    etiqueta="Kilometraje"
+                    valor={`${Number(form.kilometraje).toLocaleString('es-CL')} km`}
+                  />
+                )}
               </dl>
 
               <div className="border-t border-line p-4">

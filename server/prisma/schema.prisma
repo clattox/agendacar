@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
- provider = "postgresql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -36,23 +36,39 @@ model Usuario {
 }
 
 model Servicio {
-  id        Int       @id @default(autoincrement())
-  nombre    String
-  duracion  Int       // minutos
-  activo    Boolean   @default(true)
-  tenantId  Int
-  tenant    Tenant    @relation(fields: [tenantId], references: [id])
-  reservas  Reserva[]
+  id       Int       @id @default(autoincrement())
+  nombre   String
+  duracion Int // minutos
+  activo   Boolean   @default(true)
+  tenantId Int
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  reservas Reserva[]
 }
 
 model Horario {
-  id          Int    @id @default(autoincrement())
-  diaSemana   Int    // 0=Domingo, 1=Lunes ... 6=Sábado
-  horaInicio  String // "09:00"
-  horaFin     String // "18:00"
-  activo      Boolean @default(true)
+  id         Int     @id @default(autoincrement())
+  diaSemana  Int // 0=Domingo, 1=Lunes ... 6=Sábado
+  horaInicio String // "09:00"
+  horaFin    String // "18:00"
+  activo     Boolean @default(true)
+  tenantId   Int
+  tenant     Tenant  @relation(fields: [tenantId], references: [id])
+}
+
+model Vehiculo {
+  id          Int       @id @default(autoincrement())
+  patente     String
+  marca       String?
+  modelo      String?
+  anio        Int?
+  kilometraje Int?
   tenantId    Int
-  tenant      Tenant  @relation(fields: [tenantId], references: [id])
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  reservas    Reserva[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([patente, tenantId])
 }
 
 model Reserva {
@@ -64,27 +80,12 @@ model Reserva {
   fecha       DateTime
   estado      String    @default("confirmada") // confirmada | atendida | cancelada
   notas       String?
-  kilometraje Int?
   tenantId    Int
   tenant      Tenant    @relation(fields: [tenantId], references: [id])
   servicioId  Int
   servicio    Servicio  @relation(fields: [servicioId], references: [id])
   vehiculoId  Int?
   vehiculo    Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  kilometraje Int?
   createdAt   DateTime  @default(now())
-}
-
-model Vehiculo {
-  id        Int       @id @default(autoincrement())
-  patente   String
-  marca     String?
-  modelo    String?
-  anio      Int?
-  tenantId  Int
-  tenant    Tenant    @relation(fields: [tenantId], references: [id])
-  reservas  Reserva[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@unique([patente, tenantId])
 }

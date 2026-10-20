@@ -1,6 +1,6 @@
 import api from '../lib/api'
 
-export const obtenerHistorialVehiculo = async (patente) => {
+export async function obtenerHistorialVehiculo(patente) {
   const { data } = await api.get(`/vehiculos/${encodeURIComponent(patente)}`)
   return data
 }

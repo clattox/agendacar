@@ -99,47 +99,73 @@ const construirFechaReserva = (fecha, hora) => {
 
 // Crear reserva (público)
 const createReserva = async (req, res) => {
-  const { tenantId, nombre, telefono, email, patente, fecha, hora, servicioId, kilometraje, marca, modelo, anio } = req.body
+  const {
+    tenantId,
+    nombre,
+    telefono,
+    email,
+    patente,
+    fecha,
+    hora,
+    servicioId,
+    kilometraje,
+    marca,
+    modelo,
+    anio
+  } = req.body
+  const tenantIdNumerico = parseInt(tenantId)
+  const patenteNormalizada = normalizarPatente(patente)
+  const kilometrajeNumerico = parseEnteroOpcional(kilometraje)
+  const anioNumerico = parseEnteroOpcional(anio)
+  const marcaNormalizada = normalizarTextoOpcional(marca)
+  const modeloNormalizado = normalizarTextoOpcional(modelo)
+
+  if (Number.isNaN(tenantIdNumerico) || !patenteNormalizada) {
+    return res.status(400).json({ error: 'Tenant y patente son obligatorios' })
+  }
 
   try {
     const fechaReserva = construirFechaReserva(fecha, hora)
-    const patenteUpper = patente.toUpperCase()
-    const tid = parseInt(tenantId)
 
-    // Upsert del vehículo si viene al menos marca, modelo o año
-    let vehiculoId = null
-    if (marca || modelo || anio || kilometraje) {
-      const vehiculo = await prisma.vehiculo.upsert({
-        where: { patente_tenantId: { patente: patenteUpper, tenantId: tid } },
+    const reserva = await prisma.$transaction(async tx => {
+      const vehiculo = await tx.vehiculo.upsert({
+        where: {
+          patente_tenantId: {
+            patente: patenteNormalizada,
+            tenantId: tenantIdNumerico
+          }
+        },
         update: {
-          ...(marca && { marca }),
-          ...(modelo && { modelo }),
-          ...(anio && { anio: parseInt(anio) })
+          ...(kilometrajeNumerico !== null ? { kilometraje: kilometrajeNumerico } : {}),
+          ...(marcaNormalizada !== null ? { marca: marcaNormalizada } : {}),
+          ...(modeloNormalizado !== null ? { modelo: modeloNormalizado } : {}),
+          ...(anioNumerico !== null ? { anio: anioNumerico } : {}),
+          updatedAt: new Date()
         },
         create: {
-          patente: patenteUpper,
-          tenantId: tid,
-          marca: marca || null,
-          modelo: modelo || null,
-          anio: anio ? parseInt(anio) : null
+          patente: patenteNormalizada,
+          marca: marcaNormalizada,
+          modelo: modeloNormalizado,
+          anio: anioNumerico,
+          kilometraje: kilometrajeNumerico,
+          tenantId: tenantIdNumerico
         }
       })
-      vehiculoId = vehiculo.id
-    }
 
-    const reserva = await prisma.reserva.create({
-      data: {
-        nombre,
-        telefono,
-        email,
-        patente: patenteUpper,
-        fecha: fechaReserva,
-        tenantId: tid,
-        servicioId: parseInt(servicioId),
-        ...(kilometraje && { kilometraje: parseInt(kilometraje) }),
-        ...(vehiculoId && { vehiculoId })
-      },
-      include: { servicio: true, tenant: true, vehiculo: true }
+      return tx.reserva.create({
+        data: {
+          nombre,
+          telefono,
+          email,
+          patente: patenteNormalizada,
+          fecha: fechaReserva,
+          tenantId: tenantIdNumerico,
+          servicioId: parseInt(servicioId),
+          vehiculoId: vehiculo.id,
+          kilometraje: kilometrajeNumerico
+        },
+        include: { servicio: true, tenant: true, vehiculo: true }
+      })
     })
 
     // Notificar al dueño por email
@@ -193,7 +219,7 @@ const reagendarReserva = async (req, res) => {
     const reserva = await prisma.reserva.update({
       where: { id: reservaId, tenantId },
       data: { fecha: construirFechaReserva(fecha, hora) },
-      include: { servicio: true }
+      include: { servicio: true, vehiculo: true }
     })
 
     res.json(reserva)
@@ -215,7 +241,8 @@ const updateEstado = async (req, res) => {
   try {
     const reserva = await prisma.reserva.update({
       where: { id: parseInt(id), tenantId },
-      data: { estado }
+      data: { estado },
+      include: { servicio: true, vehiculo: true }
     })
     res.json(reserva)
   } catch (error) {
@@ -225,6 +252,20 @@ const updateEstado = async (req, res) => {
 }
 
 // Helpers
+const normalizarPatente = patente => String(patente || '').trim().toUpperCase()
+
+const normalizarTextoOpcional = valor => {
+  if (valor === undefined || valor === null) return null
+  const texto = String(valor).trim()
+  return texto || null
+}
+
+const parseEnteroOpcional = valor => {
+  if (valor === undefined || valor === null || valor === '') return null
+  const numero = Number(valor)
+  return Number.isInteger(numero) && numero >= 0 ? numero : null
+}
+
 const generarSlots = (inicio, fin, duracionMin) => {
   const slots = []
   const [hInicio, mInicio] = inicio.split(':').map(Number)
