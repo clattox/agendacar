@@ -3,6 +3,7 @@ import {
   Ban,
   Check,
   Clock,
+  KeyRound,
   Plus,
   Save,
   Trash2,
@@ -26,6 +27,7 @@ import {
   eliminarBloqueo,
   listarBloqueos
 } from '../../services/bloqueosService'
+import { cambiarPassword } from '../../services/authService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
   Alert,
@@ -58,6 +60,12 @@ export default function Configuracion() {
   const [errorBloqueo, setErrorBloqueo] = useState('')
   const [guardandoBloqueo, setGuardandoBloqueo] = useState(false)
   const [eliminandoBloqueo, setEliminandoBloqueo] = useState(null)
+
+  // Cambio de contraseña
+  const [formPassword, setFormPassword] = useState({ actual: '', nueva: '', confirmar: '' })
+  const [errorPassword, setErrorPassword] = useState('')
+  const [okPassword, setOkPassword] = useState(false)
+  const [guardandoPassword, setGuardandoPassword] = useState(false)
 
   const tenantId = getUsuario()?.tenant?.id
 
@@ -192,6 +200,38 @@ export default function Configuracion() {
       setError(getApiErrorMessage(err, 'No pudimos eliminar el bloqueo.'))
     } finally {
       setEliminandoBloqueo(null)
+    }
+  }
+
+  const handleCambiarPassword = async (e) => {
+    e?.preventDefault()
+    setErrorPassword('')
+    setOkPassword(false)
+
+    if (!formPassword.actual) {
+      setErrorPassword('Ingresa tu contraseña actual.')
+      return
+    }
+    if (formPassword.nueva.length < 8) {
+      setErrorPassword('La nueva contraseña debe tener al menos 8 caracteres.')
+      return
+    }
+    if (formPassword.nueva !== formPassword.confirmar) {
+      setErrorPassword('Las contraseñas nuevas no coinciden.')
+      return
+    }
+    if (guardandoPassword) return
+
+    setGuardandoPassword(true)
+    try {
+      await cambiarPassword({ passwordActual: formPassword.actual, passwordNueva: formPassword.nueva })
+      setOkPassword(true)
+      setFormPassword({ actual: '', nueva: '', confirmar: '' })
+      window.setTimeout(() => setOkPassword(false), 3000)
+    } catch (err) {
+      setErrorPassword(getApiErrorMessage(err, 'No pudimos cambiar la contraseña.'))
+    } finally {
+      setGuardandoPassword(false)
     }
   }
 
@@ -501,6 +541,86 @@ export default function Configuracion() {
               ))}
             </ul>
           )}
+        </div>
+      </section>
+
+      {/* Sección cambio de contraseña */}
+      <section className="mt-4 rounded-xl border border-line bg-surface shadow-card">
+        <div className="flex items-start gap-3 border-b border-line px-4 py-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-graphite-100 text-graphite-600">
+            <KeyRound className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Cambiar contraseña</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Actualiza la contraseña de tu cuenta de administrador.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-4">
+          {errorPassword && (
+            <Alert variant="error" className="mb-4" onDismiss={() => setErrorPassword('')}>
+              {errorPassword}
+            </Alert>
+          )}
+          {okPassword && (
+            <Alert variant="success" className="mb-4">
+              Contraseña actualizada correctamente.
+            </Alert>
+          )}
+
+          <form onSubmit={handleCambiarPassword} className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label htmlFor="pwd-actual" className="block text-xs font-medium text-ink-muted mb-1">
+                Contraseña actual *
+              </label>
+              <Input
+                id="pwd-actual"
+                type="password"
+                autoComplete="current-password"
+                value={formPassword.actual}
+                onChange={e => setFormPassword(prev => ({ ...prev, actual: e.target.value }))}
+                placeholder="••••••••"
+              />
+            </div>
+            <div>
+              <label htmlFor="pwd-nueva" className="block text-xs font-medium text-ink-muted mb-1">
+                Nueva contraseña *
+              </label>
+              <Input
+                id="pwd-nueva"
+                type="password"
+                autoComplete="new-password"
+                value={formPassword.nueva}
+                onChange={e => setFormPassword(prev => ({ ...prev, nueva: e.target.value }))}
+                placeholder="Mínimo 8 caracteres"
+              />
+            </div>
+            <div>
+              <label htmlFor="pwd-confirmar" className="block text-xs font-medium text-ink-muted mb-1">
+                Confirmar nueva contraseña *
+              </label>
+              <Input
+                id="pwd-confirmar"
+                type="password"
+                autoComplete="new-password"
+                value={formPassword.confirmar}
+                onChange={e => setFormPassword(prev => ({ ...prev, confirmar: e.target.value }))}
+                placeholder="Repite la contraseña"
+              />
+            </div>
+            <div className="sm:col-span-3 flex justify-end">
+              <Button
+                type="submit"
+                variant={okPassword ? 'success' : 'dark'}
+                leftIcon={okPassword ? Check : KeyRound}
+                loading={guardandoPassword}
+              >
+                {guardandoPassword ? 'Guardando…' : okPassword ? 'Actualizada' : 'Cambiar contraseña'}
+              </Button>
+            </div>
+          </form>
         </div>
       </section>
 

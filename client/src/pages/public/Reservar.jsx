@@ -48,6 +48,34 @@ const SUBTITULOS = {
 
 const CAMPOS = ['nombre', 'telefono', 'email', 'patente']
 
+// Marcas comunes en Chile con sus modelos principales
+const MARCAS_MODELOS = {
+  'Chevrolet': ['Spark', 'Sail', 'Aveo', 'Cruze', 'Tracker', 'Captiva', 'S10', 'D-Max', 'Silverado', 'Blazer', 'Equinox', 'Trax', 'Onix'],
+  'Citroën': ['C3', 'C4', 'C5', 'C-Elysée', 'Berlingo', 'Jumpy', 'Jumper', 'Picasso'],
+  'Ford': ['Fiesta', 'Focus', 'Fusion', 'Escape', 'Explorer', 'Ranger', 'F-150', 'EcoSport', 'Maverick', 'Bronco', 'Puma'],
+  'Honda': ['City', 'Civic', 'Accord', 'CR-V', 'HR-V', 'Pilot', 'Fit', 'Jazz', 'WR-V'],
+  'Hyundai': ['Accent', 'Elantra', 'Sonata', 'Tucson', 'Santa Fe', 'Creta', 'Kona', 'Ioniq', 'i10', 'i20', 'i30'],
+  'Kia': ['Picanto', 'Rio', 'Cerato', 'Optima', 'Sportage', 'Sorento', 'Seltos', 'Stonic', 'Stinger', 'Soul', 'EV6'],
+  'Mazda': ['2', '3', '6', 'CX-3', 'CX-30', 'CX-5', 'CX-9', 'BT-50', 'MX-5'],
+  'Mercedes-Benz': ['Clase A', 'Clase B', 'Clase C', 'Clase E', 'Clase S', 'GLA', 'GLC', 'GLE', 'GLS', 'Sprinter', 'Vito'],
+  'Mitsubishi': ['Lancer', 'Eclipse Cross', 'ASX', 'Outlander', 'L200', 'Montero', 'Galant'],
+  'Nissan': ['March', 'Tiida', 'Sentra', 'Altima', 'X-Trail', 'Qashqai', 'Kicks', 'Frontier', 'Patrol', 'Navara', 'Leaf'],
+  'Peugeot': ['208', '308', '408', '2008', '3008', '5008', 'Partner', 'Expert', 'Boxer'],
+  'Renault': ['Clio', 'Megane', 'Fluence', 'Sandero', 'Duster', 'Captur', 'Koleos', 'Oroch', 'Kangoo', 'Master'],
+  'Subaru': ['Impreza', 'Forester', 'Outback', 'XV', 'Legacy', 'BRZ', 'WRX'],
+  'Suzuki': ['Swift', 'Baleno', 'Vitara', 'S-Cross', 'Jimny', 'Grand Vitara', 'APV'],
+  'Toyota': ['Yaris', 'Corolla', 'Camry', 'Hilux', 'Land Cruiser', 'RAV4', 'C-HR', 'Fortuner', 'Prado', 'Prius', 'SW4'],
+  'Volkswagen': ['Polo', 'Golf', 'Jetta', 'Passat', 'Tiguan', 'Touareg', 'T-Cross', 'Taos', 'Amarok', 'Transporter'],
+  'Volvo': ['S60', 'S90', 'V60', 'V90', 'XC40', 'XC60', 'XC90'],
+  'BMW': ['Serie 1', 'Serie 2', 'Serie 3', 'Serie 4', 'Serie 5', 'X1', 'X2', 'X3', 'X5', 'X6', 'X7'],
+  'Audi': ['A1', 'A3', 'A4', 'A6', 'Q3', 'Q5', 'Q7', 'Q8', 'TT'],
+  'Jeep': ['Compass', 'Cherokee', 'Grand Cherokee', 'Renegade', 'Wrangler', 'Gladiator'],
+  'Fiat': ['500', 'Argo', 'Cronos', 'Pulse', 'Fastback', 'Ducato', 'Strada'],
+  'Otro': []
+}
+
+const MARCAS = Object.keys(MARCAS_MODELOS).sort((a, b) => a.localeCompare(b, 'es'))
+
 function minutosDeHora(hora) {
   const [horas, minutos] = String(hora).split(':').map(Number)
   return horas * 60 + minutos
@@ -145,7 +173,8 @@ export default function Reservar() {
     kilometraje: '',
     marca: '',
     modelo: '',
-    anio: ''
+    anio: '',
+    observaciones: ''
   })
   const [errores, setErrores] = useState({})
   const [errorEnvio, setErrorEnvio] = useState('')
@@ -326,7 +355,12 @@ export default function Reservar() {
 
   const actualizarCampo = (campo, valor) => {
     const normalizado = campo === 'patente' ? valor.toUpperCase() : valor
-    setForm(prev => ({ ...prev, [campo]: normalizado }))
+    setForm(prev => ({
+      ...prev,
+      [campo]: normalizado,
+      // Al cambiar la marca, limpiar el modelo ya que puede no existir en la nueva lista
+      ...(campo === 'marca' ? { modelo: '' } : {})
+    }))
     setErrores(prev => ({ ...prev, [campo]: '' }))
     setErrorEnvio('')
   }
@@ -395,9 +429,10 @@ export default function Reservar() {
         email: form.email.trim(),
         patente: form.patente.toUpperCase().trim(),
         kilometraje: form.kilometraje === '' ? undefined : Number(form.kilometraje),
-        marca: form.marca.trim() || undefined,
-        modelo: form.modelo.trim() || undefined,
+        marca: form.marca || undefined,
+        modelo: form.modelo || undefined,
         anio: form.anio === '' ? undefined : Number(form.anio),
+        notas: form.observaciones.trim() || undefined,
         fecha: toDateKey(fechaSeleccionada),
         hora: horaSeleccionada,
         servicioId: servicioSeleccionado.id
@@ -871,27 +906,45 @@ export default function Reservar() {
                 </FormField>
 
                 <FormField id="marca" label="Marca (opcional)">
-                  <Input
+                  <select
                     id="marca"
                     name="marca"
-                    autoComplete="off"
-                    placeholder="Ej: Toyota"
-                    maxLength={60}
                     value={form.marca}
                     onChange={event => actualizarCampo('marca', event.target.value)}
-                  />
+                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
+                  >
+                    <option value="">Selecciona una marca</option>
+                    {MARCAS.map(marca => (
+                      <option key={marca} value={marca}>{marca}</option>
+                    ))}
+                  </select>
                 </FormField>
 
                 <FormField id="modelo" label="Modelo (opcional)">
-                  <Input
-                    id="modelo"
-                    name="modelo"
-                    autoComplete="off"
-                    placeholder="Ej: Corolla"
-                    maxLength={60}
-                    value={form.modelo}
-                    onChange={event => actualizarCampo('modelo', event.target.value)}
-                  />
+                  {form.marca && form.marca !== 'Otro' && MARCAS_MODELOS[form.marca]?.length > 0 ? (
+                    <select
+                      id="modelo"
+                      name="modelo"
+                      value={form.modelo}
+                      onChange={event => actualizarCampo('modelo', event.target.value)}
+                      className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
+                    >
+                      <option value="">Selecciona un modelo</option>
+                      {MARCAS_MODELOS[form.marca].map(modelo => (
+                        <option key={modelo} value={modelo}>{modelo}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input
+                      id="modelo"
+                      name="modelo"
+                      autoComplete="off"
+                      placeholder={form.marca ? 'Ingresa el modelo' : 'Primero selecciona una marca'}
+                      maxLength={60}
+                      value={form.modelo}
+                      onChange={event => actualizarCampo('modelo', event.target.value)}
+                    />
+                  )}
                 </FormField>
 
                 <FormField id="anio" label="Año (opcional)">
@@ -907,6 +960,30 @@ export default function Reservar() {
                     value={form.anio}
                     onChange={event => actualizarCampo('anio', event.target.value)}
                   />
+                </FormField>
+              </div>
+
+              <div className="mt-4">
+                <FormField
+                  id="observaciones"
+                  label="Observaciones (opcional)"
+                  hint="Cuéntale al taller detalles adicionales sobre tu vehículo o el servicio que necesitas."
+                >
+                  <textarea
+                    id="observaciones"
+                    name="observaciones"
+                    rows={3}
+                    maxLength={500}
+                    placeholder="Ej: El auto hace un ruido al frenar, revísalo también por favor."
+                    value={form.observaciones}
+                    onChange={event => actualizarCampo('observaciones', event.target.value)}
+                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent resize-none"
+                  />
+                  {form.observaciones.length > 400 && (
+                    <p className="mt-1 text-xs text-ink-soft text-right">
+                      {form.observaciones.length}/500
+                    </p>
+                  )}
                 </FormField>
               </div>
 
@@ -951,6 +1028,9 @@ export default function Reservar() {
                     etiqueta="Kilometraje"
                     valor={`${Number(form.kilometraje).toLocaleString('es-CL')} km`}
                   />
+                )}
+                {form.observaciones.trim() && (
+                  <Fila etiqueta="Observaciones" valor={form.observaciones.trim()} />
                 )}
               </dl>
 

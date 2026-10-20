@@ -758,7 +758,8 @@ function DetalleReserva({ reserva }) {
       value: kilometraje !== null && kilometraje !== undefined
         ? `${kilometraje.toLocaleString('es-CL')} km`
         : null
-    }
+    },
+    { label: 'Observaciones', value: reserva.notas }
   ].filter(item => item.value !== null && item.value !== undefined && item.value !== '')
 
   return (

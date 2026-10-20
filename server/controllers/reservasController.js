@@ -133,7 +133,8 @@ const createReserva = async (req, res) => {
     kilometraje,
     marca,
     modelo,
-    anio
+    anio,
+    notas
   } = req.body
   const tenantIdNumerico = parseInt(tenantId)
   const patenteNormalizada = normalizarPatente(patente)
@@ -141,6 +142,7 @@ const createReserva = async (req, res) => {
   const anioNumerico = parseEnteroOpcional(anio)
   const marcaNormalizada = normalizarTextoOpcional(marca)
   const modeloNormalizado = normalizarTextoOpcional(modelo)
+  const notasNormalizadas = notas ? String(notas).trim().slice(0, 500) || null : null
 
   if (Number.isNaN(tenantIdNumerico) || !patenteNormalizada) {
     return res.status(400).json({ error: 'Tenant y patente son obligatorios' })
@@ -184,7 +186,8 @@ const createReserva = async (req, res) => {
           tenantId: tenantIdNumerico,
           servicioId: parseInt(servicioId),
           vehiculoId: vehiculo.id,
-          kilometraje: kilometrajeNumerico
+          kilometraje: kilometrajeNumerico,
+          notas: notasNormalizadas
         },
         include: { servicio: true, tenant: true, vehiculo: true }
       })
