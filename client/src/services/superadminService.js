@@ -9,5 +9,8 @@ export const createTenant = (data) =>
 export const toggleTenant = (id) =>
   api.patch(`/superadmin/tenants/${id}`).then(r => r.data)
 
+export const actualizarVencimiento = (id, vencimiento) =>
+  api.patch(`/superadmin/tenants/${id}`, { vencimiento }).then(r => r.data)
+
 export const getStats = () =>
   api.get('/superadmin/stats').then(r => r.data)

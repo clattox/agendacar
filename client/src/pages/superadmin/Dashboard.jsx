@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Building2, CheckCircle2, Plus, PowerOff, Users, X } from 'lucide-react'
+import { Building2, CalendarClock, CheckCircle2, Pencil, Plus, PowerOff, Users, X } from 'lucide-react'
 import SuperadminLayout from '../../components/superadmin/SuperadminLayout'
-import { getTenants, createTenant, toggleTenant, getStats } from '../../services/superadminService'
+import { getTenants, createTenant, toggleTenant, getStats, actualizarVencimiento } from '../../services/superadminService'
 import { Button, Input } from '../../components/ui'
 
 const EMPTY_FORM = {
@@ -19,6 +19,9 @@ export default function SuperadminDashboard() {
   const [formError, setFormError] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [toggling, setToggling] = useState(null)
+  const [editandoVenc, setEditandoVenc] = useState(null) // id del tenant editando
+  const [vencInput, setVencInput] = useState('')
+  const [guardandoVenc, setGuardandoVenc] = useState(false)
 
   useEffect(() => {
     Promise.all([getTenants(), getStats()])
@@ -64,6 +67,37 @@ export default function SuperadminDashboard() {
   }
 
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  const iniciarEditVenc = (t) => {
+    setEditandoVenc(t.id)
+    setVencInput(t.vencimiento ? t.vencimiento.split('T')[0] : '')
+  }
+
+  const guardarVenc = async (id) => {
+    if (guardandoVenc) return
+    setGuardandoVenc(true)
+    try {
+      const actualizado = await actualizarVencimiento(id, vencInput || null)
+      setTenants(prev => prev.map(t => t.id === id ? actualizado : t))
+      setEditandoVenc(null)
+    } catch {
+      setError('No pudimos actualizar el vencimiento.')
+    } finally {
+      setGuardandoVenc(false)
+    }
+  }
+
+  const vencimientoLabel = (venc) => {
+    if (!venc) return null
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    const fecha = new Date(venc)
+    const diff = Math.ceil((fecha - hoy) / (1000 * 60 * 60 * 24))
+    const str = fecha.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+    if (diff < 0) return { str, color: 'text-red-600 bg-red-50', label: `Vencido (${str})` }
+    if (diff <= 7) return { str, color: 'text-orange-600 bg-orange-50', label: `Vence en ${diff}d (${str})` }
+    return { str, color: 'text-ink-muted bg-graphite-100', label: str }
+  }
 
   return (
     <SuperadminLayout>
@@ -130,6 +164,10 @@ export default function SuperadminDashboard() {
               <label className="block text-xs font-medium text-ink-muted mb-1">Teléfono</label>
               <Input value={form.telefono} onChange={e => f('telefono', e.target.value)} placeholder="+56 9 1234 5678" />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-ink-muted mb-1">Fecha de vencimiento</label>
+              <Input type="date" value={form.vencimiento || ''} onChange={e => f('vencimiento', e.target.value)} />
+            </div>
             <div className="sm:col-span-2 border-t border-line pt-3 mt-1">
               <p className="text-xs font-semibold text-ink-muted mb-3 uppercase tracking-wide">Cuenta admin del taller</p>
             </div>
@@ -170,6 +208,7 @@ export default function SuperadminDashboard() {
                 <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide">Taller</th>
                 <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden sm:table-cell">Subdominio</th>
                 <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden md:table-cell">Reservas</th>
+                <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden lg:table-cell">Vencimiento</th>
                 <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide">Estado</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -186,6 +225,36 @@ export default function SuperadminDashboard() {
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell text-ink-muted">
                     {t._count?.reservas ?? 0}
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    {editandoVenc === t.id ? (
+                      <div className="flex items-center gap-1.5">
+                        <Input type="date" value={vencInput} onChange={e => setVencInput(e.target.value)} className="text-xs py-1 h-7" />
+                        <button onClick={() => guardarVenc(t.id)} disabled={guardandoVenc}
+                          className="rounded px-2 py-1 text-xs bg-accent-600 text-white hover:bg-accent-700 disabled:opacity-50">
+                          OK
+                        </button>
+                        <button onClick={() => setEditandoVenc(null)}
+                          className="rounded px-1.5 py-1 text-xs text-ink-soft hover:bg-graphite-100">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 group">
+                        {t.vencimiento ? (
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${vencimientoLabel(t.vencimiento)?.color}`}>
+                            <CalendarClock className="h-3 w-3" />
+                            {vencimientoLabel(t.vencimiento)?.label}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-ink-soft">Sin fecha</span>
+                        )}
+                        <button onClick={() => iniciarEditVenc(t)}
+                          className="opacity-0 group-hover:opacity-100 text-ink-soft hover:text-ink transition-opacity">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${

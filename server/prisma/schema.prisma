@@ -15,6 +15,7 @@ model Tenant {
   telefono   String?
   logoUrl    String?
   activo     Boolean    @default(true)
+  vencimiento DateTime?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]
