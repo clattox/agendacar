@@ -2,10 +2,9 @@ import { Check } from 'lucide-react'
 
 export const PASOS_RESERVA = [
   { numero: 1, label: 'Servicio' },
-  { numero: 2, label: 'Fecha' },
-  { numero: 3, label: 'Hora' },
-  { numero: 4, label: 'Datos' },
-  { numero: 5, label: 'Confirmar' }
+  { numero: 2, label: 'Fecha y hora' },
+  { numero: 3, label: 'Tus datos' },
+  { numero: 4, label: 'Confirmar' }
 ]
 
 export default function StepIndicator({ paso }) {

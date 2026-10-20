@@ -17,6 +17,7 @@ import { listarServicios } from '../../services/serviciosService'
 import { listarHorarios } from '../../services/horariosService'
 import { crearReserva, listarHorasDisponibles } from '../../services/reservasService'
 import { getApiErrorMessage } from '../../lib/errors'
+import { getTenantFromQuery } from '../../lib/tenant'
 import {
   DIAS_CORTOS,
   formatLongDate,
@@ -28,23 +29,21 @@ import {
 } from '../../lib/dates'
 import TenantHeader from '../../components/public/TenantHeader'
 import PublicFooter from '../../components/public/PublicFooter'
-import StepIndicator from '../../components/public/StepIndicator'
+import StepIndicator, { PASOS_RESERVA } from '../../components/public/StepIndicator'
 import { Alert, Button, EmptyState, FormField, Input } from '../../components/ui'
 
 const TITULOS = {
   1: 'Elige el servicio',
-  2: 'Elige el día',
-  3: 'Elige la hora',
-  4: 'Tus datos',
-  5: 'Confirma tu reserva'
+  2: 'Elige fecha y hora',
+  3: 'Tus datos',
+  4: 'Confirma tu reserva'
 }
 
 const SUBTITULOS = {
   1: '¿Qué necesita tu vehículo?',
-  2: 'Selecciona la fecha de tu visita.',
-  3: 'Estos son los horarios disponibles para el día elegido.',
-  4: 'Usaremos estos datos para identificar y contactar tu reserva.',
-  5: 'Revisa que todo esté correcto antes de enviar la reserva al taller.'
+  2: 'Selecciona el día y uno de los horarios disponibles.',
+  3: 'Usaremos estos datos para identificar y contactar tu reserva.',
+  4: 'Revisa que todo esté correcto antes de enviar la reserva al taller.'
 }
 
 const CAMPOS = ['nombre', 'telefono', 'email', 'patente']
@@ -108,6 +107,11 @@ function validarFormulario(form) {
 export default function Reservar() {
   const { state } = useLocation()
   const navigate = useNavigate()
+
+  const tenantQuery = getTenantFromQuery()
+  const rutaInicio = tenantQuery
+    ? `/?tenant=${encodeURIComponent(tenantQuery)}`
+    : '/'
 
   const tenantInicial = state?.tenant || null
   const servicioIdInicial = state?.servicioId ?? null
@@ -304,13 +308,11 @@ export default function Reservar() {
     }
     setFechaSeleccionada(fecha)
     setErrorEnvio('')
-    setPaso(3)
   }
 
   const seleccionarHora = hora => {
     setHoraSeleccionada(hora)
     setErrorEnvio('')
-    setPaso(4)
   }
 
   const actualizarCampo = (campo, valor) => {
@@ -330,7 +332,7 @@ export default function Reservar() {
       setErrorEnvio('')
       setPaso(paso - 1)
     } else {
-      navigate('/')
+      navigate(rutaInicio)
     }
   }
 
@@ -345,7 +347,7 @@ export default function Reservar() {
     }
 
     setErrorEnvio('')
-    setPaso(5)
+    setPaso(4)
   }
 
   const confirmarReserva = async () => {
@@ -373,7 +375,7 @@ export default function Reservar() {
       if (!horasVigentes.includes(horaSeleccionada)) {
         setHoraSeleccionada(null)
         setHorasError('La hora que elegiste ya pasó o acaba de dejar de estar disponible. Selecciona otro horario.')
-        setPaso(3)
+        setPaso(2)
         return
       }
 
@@ -437,7 +439,7 @@ export default function Reservar() {
             }
           />
           <div className="mt-4 text-center">
-            <Link to="/" className="text-sm font-medium text-accent-600 hover:text-accent-700">
+            <Link to={rutaInicio} className="text-sm font-medium text-accent-600 hover:text-accent-700">
               Volver al inicio
             </Link>
           </div>
@@ -452,7 +454,7 @@ export default function Reservar() {
         tenant={tenant}
         actions={
           <Link
-            to="/"
+            to={rutaInicio}
             className="inline-flex h-9 items-center rounded-md border border-line bg-surface px-3 text-xs font-semibold text-ink-muted transition-colors hover:bg-graphite-50 hover:text-ink"
           >
             Inicio
@@ -474,13 +476,13 @@ export default function Reservar() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           <div>
-            <p className="micro-label">Paso {paso} de 5</p>
+            <p className="micro-label">Paso {paso} de {PASOS_RESERVA.length}</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">{TITULOS[paso]}</h1>
             <p className="mt-1 text-sm text-ink-muted">{SUBTITULOS[paso]}</p>
           </div>
         </div>
 
-        {paso === 5 && errorEnvio && (
+        {paso === 4 && errorEnvio && (
           <Alert variant="error" title="No pudimos confirmar la reserva" className="mb-4">
             {errorEnvio}
           </Alert>
@@ -515,7 +517,7 @@ export default function Reservar() {
                 title="Sin servicios disponibles"
                 description="El taller todavía no tiene servicios publicados para reservar en línea."
                 action={
-                  <Button variant="secondary" onClick={() => navigate('/')}>
+                  <Button variant="secondary" onClick={() => navigate(rutaInicio)}>
                     Volver al inicio
                   </Button>
                 }
@@ -554,7 +556,8 @@ export default function Reservar() {
 
 
         {paso === 2 && (
-          <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+          <div className="space-y-3">
+            <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <button
                 type="button"
@@ -631,10 +634,8 @@ export default function Reservar() {
               </p>
             </div>
           </div>
-        )}
 
-
-        {paso === 3 && (
+        {fechaSeleccionada && (
           <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
               <div>
@@ -643,14 +644,10 @@ export default function Reservar() {
                   {servicioSeleccionado?.nombre} · {servicioSeleccionado?.duracion} minutos
                 </p>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={CalendarDays}
-                onClick={() => setPaso(2)}
-              >
-                Cambiar día
-              </Button>
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-graphite-50 px-2.5 py-1 text-xs font-medium text-ink-muted">
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                {horaSeleccionada ? `Hora elegida: ${horaSeleccionada}` : 'Elige una hora'}
+              </span>
             </div>
 
             <div className="p-4">
@@ -680,13 +677,8 @@ export default function Reservar() {
                   title="Sin horas disponibles"
                   description={
                     esHoySeleccionado
-                      ? 'Ya pasó el último horario disponible para hoy. Prueba con otra fecha.'
-                      : 'No quedan cupos para este día. Prueba con otra fecha.'
-                  }
-                  action={
-                    <Button variant="secondary" onClick={() => setPaso(2)}>
-                      Elegir otro día
-                    </Button>
+                      ? 'Ya pasó el último horario disponible para hoy. Elige otra fecha en el calendario.'
+                      : 'No quedan cupos para este día. Elige otra fecha en el calendario.'
                   }
                 />
               ) : (
@@ -719,7 +711,7 @@ export default function Reservar() {
 
               {!cargandoHoras && !horasError && horaSeleccionada && horasDelDia.includes(horaSeleccionada) && (
                 <div className="mt-4 flex justify-end border-t border-line pt-4">
-                  <Button rightIcon={ArrowRight} onClick={() => setPaso(4)}>
+                  <Button rightIcon={ArrowRight} onClick={() => setPaso(3)}>
                     Continuar con las {horaSeleccionada}
                   </Button>
                 </div>
@@ -728,8 +720,11 @@ export default function Reservar() {
           </div>
         )}
 
+          </div>
+        )}
 
-        {paso === 4 && (
+
+        {paso === 3 && (
           <div className="rounded-xl border border-line bg-surface shadow-card">
             <div className="grid gap-3 border-b border-line bg-graphite-50 px-4 py-3 sm:grid-cols-3">
               <div>
@@ -747,7 +742,7 @@ export default function Reservar() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setPaso(3)}
+                  onClick={() => setPaso(2)}
                   className="text-xs font-semibold text-accent-600 transition-colors hover:text-accent-700"
                 >
                   Cambiar
@@ -846,8 +841,8 @@ export default function Reservar() {
               </div>
 
               <div className="mt-5 flex flex-col-reverse gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <Button variant="secondary" onClick={() => setPaso(3)}>
-                  Cambiar hora
+                <Button variant="secondary" onClick={() => setPaso(2)}>
+                  Cambiar fecha u hora
                 </Button>
                 <Button type="submit" rightIcon={ArrowRight}>
                   Revisar reserva
@@ -858,7 +853,7 @@ export default function Reservar() {
         )}
 
 
-        {paso === 5 && (
+        {paso === 4 && (
           <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
               <div className="border-b border-line px-4 py-3">
@@ -884,7 +879,7 @@ export default function Reservar() {
                 <Button
                   variant="secondary"
                   leftIcon={ArrowLeft}
-                  onClick={() => setPaso(4)}
+                  onClick={() => setPaso(3)}
                   disabled={enviando}
                 >
                   Editar datos

@@ -5,7 +5,6 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
-  ChevronRight,
   Clock,
   Mail,
   Phone,
@@ -308,25 +307,37 @@ export default function Inicio() {
               description="El taller todavía no tiene servicios disponibles para reservar en línea."
             />
           ) : (
-            <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+            <div className="grid gap-3 sm:grid-cols-2">
               {servicios.map(servicio => (
-                <button
+                <article
                   key={servicio.id}
-                  type="button"
-                  onClick={() => reservar(servicio.id)}
-                  className="group flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-graphite-50 focus-ring"
+                  className="flex flex-col rounded-xl border border-line bg-surface p-4 shadow-card"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-ink">{servicio.nombre}</p>
-                    <p className="mt-0.5 text-xs text-ink-muted">
-                      Duración estimada: {servicio.duracion} minutos
-                    </p>
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-700">
+                      <Wrench className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold leading-snug text-ink">
+                        {servicio.nombre}
+                      </h3>
+                      <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-ink-muted">
+                        <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                        Duración estimada: {servicio.duracion} min
+                      </p>
+                    </div>
                   </div>
-                  <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-accent-600 transition-colors group-hover:text-accent-700">
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-4 w-full"
+                    rightIcon={ArrowRight}
+                    onClick={() => reservar(servicio.id)}
+                  >
                     Reservar
-                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                </button>
+                  </Button>
+                </article>
               ))}
             </div>
           )}

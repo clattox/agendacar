@@ -21,6 +21,9 @@ export default function AdminLayout({ children }) {
   const navigate = useNavigate()
   const usuario = getUsuario() || {}
   const tenant = usuario.tenant
+  const sitioPublico = tenant?.subdominio
+    ? `/?tenant=${encodeURIComponent(tenant.subdominio)}`
+    : '/'
 
   const handleLogout = () => {
     clearSession()
@@ -80,9 +83,10 @@ export default function AdminLayout({ children }) {
 
         <div className="space-y-1 border-t border-line p-3">
           <a
-            href="/"
+            href={sitioPublico}
             target="_blank"
             rel="noreferrer"
+            aria-label={`Abrir sitio público de ${tenant?.nombre || 'AgendaCar'} en una nueva pestaña`}
             className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink focus-ring"
           >
             <ExternalLink className="h-4 w-4" aria-hidden="true" />

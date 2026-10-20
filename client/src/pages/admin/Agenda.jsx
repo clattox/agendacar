@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Mail,
   Phone,
   RefreshCw,
@@ -24,6 +25,7 @@ import {
   formatWeekRange,
   getDateKeyInTimeZone,
   isSameDay,
+  nowAsReservationDate,
   startOfWeek,
   toDateKey,
   toReservationDateKey
@@ -194,6 +196,20 @@ export default function Agenda() {
     return mapa
   }, [diasSemana, filtradas])
 
+  const indicadoresDia = useMemo(() => {
+    const pendientes = reservas.filter(reserva => reserva.estado === 'confirmada')
+    const ahora = nowAsReservationDate()
+    const proxima = pendientes
+      .filter(reserva => new Date(reserva.fecha).getTime() >= ahora.getTime())
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0] || null
+
+    return {
+      total: reservas.length,
+      pendientes: pendientes.length,
+      proxima
+    }
+  }, [reservas])
+
   const titulo = vista === 'dia' ? formatFullDate(fecha) : formatWeekRange(inicioSemana)
   const esHoy = vista === 'dia'
     ? isSameDay(fecha, new Date())
@@ -278,6 +294,40 @@ export default function Agenda() {
         </div>
       </div>
 
+      {vista === 'dia' && (
+        <section
+          className="mt-4 grid gap-2 sm:grid-cols-3"
+          aria-label="Indicadores operativos del día"
+        >
+          <IndicadorOperativo
+            icon={CalendarDays}
+            label="Total del día"
+            value={loading ? '…' : indicadoresDia.total}
+          />
+          <IndicadorOperativo
+            icon={CalendarClock}
+            label="Pendientes de confirmar"
+            value={loading ? '…' : indicadoresDia.pendientes}
+          />
+          <IndicadorOperativo
+            icon={Clock}
+            label="Próxima atención"
+            value={
+              loading
+                ? '…'
+                : indicadoresDia.proxima
+                  ? formatTimeFromISO(indicadoresDia.proxima.fecha)
+                  : 'Sin próximas'
+            }
+            detail={
+              !loading && indicadoresDia.proxima
+                ? indicadoresDia.proxima.servicio?.nombre
+                : undefined
+            }
+          />
+        </section>
+      )}
+
       {vista === 'dia' ? (
         <div className="mt-4 space-y-3">
           {loading ? (
@@ -344,7 +394,9 @@ export default function Agenda() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
               {diasSemana.map(dia => {
-                const delDia = reservasPorDia.get(toDateKey(dia)) || []
+                const delDia = (reservasPorDia.get(toDateKey(dia)) || [])
+                  .slice()
+                  .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
                 const hoy = isSameDay(dia, new Date())
                 return (
                   <section
@@ -376,6 +428,7 @@ export default function Agenda() {
                             key={reserva.id}
                             type="button"
                             onClick={() => setDetalle(reserva)}
+                            aria-label={`Ver detalle de ${reserva.nombre} a las ${formatTimeFromISO(reserva.fecha)}`}
                             className="w-full rounded-md border border-line bg-graphite-50 px-2 py-1.5 text-left transition-colors hover:border-graphite-300 hover:bg-graphite-100 focus-ring"
                           >
                             <p className="text-[11px] font-bold font-tabular text-ink">
@@ -581,6 +634,25 @@ function ReagendarReservaDialog({ reserva, onClose, onSaved }) {
         {error && <Alert variant="error">{error}</Alert>}
       </form>
     </Dialog>
+  )
+}
+
+function IndicadorOperativo({ icon: Icon, label, value, detail }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 shadow-card">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-graphite-50 text-ink-muted">
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-soft">
+          {label}
+        </p>
+        <p className="mt-0.5 truncate text-sm font-bold font-tabular text-ink">{value}</p>
+        {detail && (
+          <p className="truncate text-xs text-ink-muted">{detail}</p>
+        )}
+      </div>
+    </div>
   )
 }
 
