@@ -11,8 +11,13 @@ import Dashboard from './pages/admin/Dashboard'
 import Agenda from './pages/admin/Agenda'
 import Configuracion from './pages/admin/Configuracion'
 
+// Páginas superadmin
+import SuperadminLogin from './pages/superadmin/Login'
+import SuperadminDashboard from './pages/superadmin/Dashboard'
+
 // Componentes
 import ProtectedRoute from './components/admin/ProtectedRoute'
+import SuperadminRoute from './components/superadmin/SuperadminRoute'
 
 export default function App() {
   return (
@@ -29,6 +34,12 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="configuracion" element={<Configuracion />} />
+        </Route>
+
+        {/* Rutas superadmin */}
+        <Route path="/superadmin/login" element={<SuperadminLogin />} />
+        <Route path="/superadmin" element={<SuperadminRoute />}>
+          <Route index element={<SuperadminDashboard />} />
         </Route>
 
         {/* Fallback */}

@@ -31,8 +31,8 @@ model Usuario {
   email     String   @unique
   password  String
   rol       String   @default("admin")
-  tenantId  Int
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId  Int?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
   createdAt DateTime @default(now())
 }
 
