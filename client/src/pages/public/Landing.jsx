@@ -116,8 +116,8 @@ export default function Landing() {
       </section>
 
       {/* Features */}
-      <section className="relative mx-auto max-w-2xl px-6 pb-24">
-        <div className="flex flex-col gap-3">
+      <section className="relative mx-auto max-w-6xl px-6 pb-24">
+        <div className="grid gap-3 sm:grid-cols-2">
           {FEATURES.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
