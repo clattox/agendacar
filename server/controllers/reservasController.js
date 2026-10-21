@@ -335,43 +335,163 @@ const esFechaHoraValida = (fecha, hora) => {
   )
 }
 
+// ─── Email helpers ────────────────────────────────────────────────────────────
+
+const crearTransporter = () =>
+  nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    port: Number(process.env.MAIL_PORT) || 465,
+    secure: (Number(process.env.MAIL_PORT) || 465) === 465,
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS
+    }
+  })
+
+const baseEmail = (contenido) => `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgendaCar</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
+        <!-- Header -->
+        <tr>
+          <td style="background:#111827;padding:20px 28px;">
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#f97316;border-radius:8px;width:32px;height:32px;text-align:center;vertical-align:middle;">
+                  <span style="color:#fff;font-size:16px;font-weight:700;">A</span>
+                </td>
+                <td style="padding-left:10px;">
+                  <span style="color:#ffffff;font-size:15px;font-weight:700;letter-spacing:-0.3px;">AgendaCar</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:28px;">
+            ${contenido}
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f9fafb;border-top:1px solid #e4e4e7;padding:16px 28px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#9ca3af;">
+              Este correo fue generado automáticamente por AgendaCar · No responder
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+`
+
+const filaDato = (label, valor) => `
+  <tr>
+    <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;">
+      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;">${label}</span>
+      <p style="margin:3px 0 0;font-size:14px;font-weight:600;color:#111827;">${valor}</p>
+    </td>
+  </tr>
+`
+
+// Email al taller: nueva reserva recibida
+const htmlNotificacionTaller = ({ reserva, fechaFormateada, horaFormateada }) =>
+  baseEmail(`
+    <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#111827;">Nueva reserva recibida</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;">
+      ${reserva.nombre} agendó una cita en tu taller.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${filaDato('Cliente', reserva.nombre)}
+      ${reserva.telefono ? filaDato('Teléfono', `<a href="tel:${reserva.telefono}" style="color:#f97316;text-decoration:none;">${reserva.telefono}</a>`) : ''}
+      ${filaDato('Patente', reserva.patente)}
+      ${filaDato('Servicio', reserva.servicio.nombre + (reserva.servicio.duracion ? ` (${reserva.servicio.duracion} min)` : ''))}
+      ${filaDato('Fecha', fechaFormateada)}
+      ${filaDato('Hora', horaFormateada)}
+    </table>
+    <p style="margin:20px 0 0;font-size:12px;color:#9ca3af;">
+      Reserva #${reserva.id} · Para gestionar la reserva accede a tu panel de AgendaCar.
+    </p>
+  `)
+
+// Email al cliente: confirmación de su reserva
+const htmlConfirmacionCliente = ({ reserva, tenant, fechaFormateada, horaFormateada }) =>
+  baseEmail(`
+    <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#111827;">Tu hora está confirmada</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#6b7280;">
+      Hola ${reserva.nombre}, te esperamos en <strong style="color:#111827;">${tenant.nombre}</strong>.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${filaDato('Servicio', reserva.servicio.nombre + (reserva.servicio.duracion ? ` (${reserva.servicio.duracion} min)` : ''))}
+      ${filaDato('Fecha', fechaFormateada)}
+      ${filaDato('Hora', horaFormateada)}
+      ${filaDato('Patente', reserva.patente)}
+    </table>
+    ${tenant.telefono ? `
+    <div style="margin:20px 0 0;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 16px;">
+      <p style="margin:0;font-size:13px;color:#92400e;">
+        ¿Necesitas cancelar o reagendar? Llama directamente al taller:<br>
+        <a href="tel:${tenant.telefono}" style="font-weight:700;color:#f97316;text-decoration:none;">${tenant.telefono}</a>
+      </p>
+    </div>` : ''}
+    <p style="margin:20px 0 0;font-size:12px;color:#9ca3af;">Reserva #${reserva.id}</p>
+  `)
+
+// ─── Enviar notificaciones ────────────────────────────────────────────────────
+
 const enviarNotificacion = async (reserva) => {
-  try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      port: process.env.MAIL_PORT,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
-      }
-    })
-
-    const fecha = new Date(reserva.fecha)
-    const fechaFormateada = fecha.toLocaleDateString('es-CL', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
-    })
-    const horaFormateada = fecha.toLocaleTimeString('es-CL', {
-      hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC'
-    })
-
-    await transporter.sendMail({
-      from: process.env.MAIL_USER,
-      to: reserva.tenant.email,
-      subject: `Nueva reserva — ${reserva.nombre} (${reserva.patente})`,
-      html: `
-        <h2>Nueva reserva recibida</h2>
-        <p><strong>Cliente:</strong> ${reserva.nombre}</p>
-        <p><strong>Teléfono:</strong> ${reserva.telefono}</p>
-        <p><strong>Patente:</strong> ${reserva.patente}</p>
-        <p><strong>Servicio:</strong> ${reserva.servicio.nombre}</p>
-        <p><strong>Fecha:</strong> ${fechaFormateada}</p>
-        <p><strong>Hora:</strong> ${horaFormateada}</p>
-      `
-    })
-  } catch (error) {
-    console.error('Error enviando email:', error)
-    // No interrumpir el flujo si falla el email
+  if (!process.env.MAIL_HOST || !process.env.MAIL_USER || !process.env.MAIL_PASS) {
+    console.warn('Email no configurado: faltan variables MAIL_HOST / MAIL_USER / MAIL_PASS')
+    return
   }
+
+  const fecha = new Date(reserva.fecha)
+  const fechaFormateada = fecha.toLocaleDateString('es-CL', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+  })
+  const horaFormateada = fecha.toLocaleTimeString('es-CL', {
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC'
+  })
+
+  const tenant = reserva.tenant
+  const promesas = []
+
+  // 1. Notificación al taller
+  if (tenant?.email) {
+    promesas.push(
+      crearTransporter().sendMail({
+        from: `"AgendaCar" <${process.env.MAIL_USER}>`,
+        to: tenant.email,
+        subject: `Nueva reserva — ${reserva.nombre} (${reserva.patente})`,
+        html: htmlNotificacionTaller({ reserva, fechaFormateada, horaFormateada })
+      }).catch(err => console.error('Error email taller:', err.message))
+    )
+  }
+
+  // 2. Confirmación al cliente (solo si dejó su email)
+  if (reserva.email) {
+    promesas.push(
+      crearTransporter().sendMail({
+        from: `"${tenant?.nombre || 'AgendaCar'}" <${process.env.MAIL_USER}>`,
+        to: reserva.email,
+        subject: `Reserva confirmada — ${fechaFormateada} a las ${horaFormateada}`,
+        html: htmlConfirmacionCliente({ reserva, tenant, fechaFormateada, horaFormateada })
+      }).catch(err => console.error('Error email cliente:', err.message))
+    )
+  }
+
+  await Promise.allSettled(promesas)
 }
 
 module.exports = {
