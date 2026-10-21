@@ -106,9 +106,14 @@ const getHorasDisponibles = async (req, res) => {
     }
 
     // Filtrar slots que caen dentro de la colación del día
+    const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
     const slotEnColacion = (slot) => {
       if (!horario.inicioColacion || !horario.finColacion) return false
-      return slot >= horario.inicioColacion && slot < horario.finColacion
+      const s = toMin(slot)
+      const ini = toMin(horario.inicioColacion)
+      const fin = toMin(horario.finColacion)
+      if (fin <= ini) return false // datos inválidos, ignorar colación
+      return s >= ini && s < fin
     }
 
     const horasDisponibles = slots.filter(s =>

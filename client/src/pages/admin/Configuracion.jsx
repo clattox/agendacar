@@ -216,6 +216,15 @@ export default function Configuracion() {
 
   const guardarHorarios = async () => {
     if (guardandoHorarios) return
+    // Validar colaciones: fin debe ser mayor que inicio
+    const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+    const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+    for (const h of horarios.filter(h => h.activo)) {
+      if (h.inicioColacion && h.finColacion && toMin(h.finColacion) <= toMin(h.inicioColacion)) {
+        setError(`La hora de fin de colación del ${DIAS[h.diaSemana]} debe ser mayor que la de inicio. Verifica que estés usando formato 24 h (ej: 14:00 para las 2 PM).`)
+        return
+      }
+    }
     setGuardandoHorarios(true)
     setOkHorarios(false)
     setError('')
