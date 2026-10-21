@@ -466,6 +466,7 @@ const enviarNotificacion = async (reserva) => {
       resend.emails.send({
         from: MAIL_FROM,
         to: tenant.email,
+        reply_to: reserva.email || undefined,
         subject: `Nueva reserva — ${reserva.nombre} (${reserva.patente})`,
         html: htmlNotificacionTaller({ reserva, fechaFormateada, horaFormateada })
       }).then(r => { if (r.error) console.error('[Email] taller:', r.error) })
@@ -479,6 +480,7 @@ const enviarNotificacion = async (reserva) => {
       resend.emails.send({
         from: MAIL_FROM,
         to: reserva.email,
+        reply_to: tenant.email || undefined,
         subject: `Reserva confirmada — ${fechaFormateada} a las ${horaFormateada}`,
         html: htmlConfirmacionCliente({ reserva, tenant, fechaFormateada, horaFormateada })
       }).then(r => { if (r.error) console.error('[Email] cliente:', r.error) })
