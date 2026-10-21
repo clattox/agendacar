@@ -3,15 +3,17 @@ import {
   Ban,
   Check,
   Clock,
+  ImageIcon,
   KeyRound,
   Plus,
   Save,
+  Store,
   Trash2,
   Wrench
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { DIAS_SEMANA } from '../../lib/dates'
-import { getUsuario } from '../../lib/auth'
+import { getToken, getUsuario, saveSession } from '../../lib/auth'
 import { getApiErrorMessage } from '../../lib/errors'
 import {
   actualizarHorarios,
@@ -28,6 +30,7 @@ import {
   listarBloqueos
 } from '../../services/bloqueosService'
 import { cambiarPassword } from '../../services/authService'
+import { actualizarTenant } from '../../services/tenantService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
   Alert,
@@ -67,7 +70,19 @@ export default function Configuracion() {
   const [okPassword, setOkPassword] = useState(false)
   const [guardandoPassword, setGuardandoPassword] = useState(false)
 
-  const tenantId = getUsuario()?.tenant?.id
+  const usuario = getUsuario() || {}
+  const tenantId = usuario?.tenant?.id
+
+  // Perfil del taller
+  const [perfil, setPerfil] = useState({
+    nombre: usuario?.tenant?.nombre || '',
+    telefono: usuario?.tenant?.telefono || '',
+    logoUrl: usuario?.tenant?.logoUrl || ''
+  })
+  const [logoPreviewError, setLogoPreviewError] = useState(false)
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false)
+  const [okPerfil, setOkPerfil] = useState(false)
+  const [errorPerfil, setErrorPerfil] = useState('')
 
   useDocumentTitle('Configuración — AgendaCar')
 
@@ -235,6 +250,36 @@ export default function Configuracion() {
     }
   }
 
+  const guardarPerfil = async (e) => {
+    e?.preventDefault()
+    if (!perfil.nombre.trim()) {
+      setErrorPerfil('El nombre del taller es requerido.')
+      return
+    }
+    if (guardandoPerfil) return
+    setGuardandoPerfil(true)
+    setErrorPerfil('')
+    setOkPerfil(false)
+    try {
+      const tenantActualizado = await actualizarTenant({
+        nombre: perfil.nombre.trim(),
+        telefono: perfil.telefono.trim() || null,
+        logoUrl: perfil.logoUrl.trim() || null
+      })
+      // Actualizar sesión local para que sidebar refleje cambios de inmediato
+      saveSession({
+        token: getToken(),
+        usuario: { ...usuario, tenant: { ...usuario.tenant, ...tenantActualizado } }
+      })
+      setOkPerfil(true)
+      window.setTimeout(() => setOkPerfil(false), 2500)
+    } catch (err) {
+      setErrorPerfil(getApiErrorMessage(err, 'No pudimos guardar el perfil del taller.'))
+    } finally {
+      setGuardandoPerfil(false)
+    }
+  }
+
   const formatearFechaBloqueo = (fechaISO) => {
     const d = new Date(fechaISO)
     return d.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
@@ -256,7 +301,109 @@ export default function Configuracion() {
         </Alert>
       )}
 
-      <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
+      {/* Perfil del taller */}
+      <section className="mt-6 rounded-xl border border-line bg-surface shadow-card">
+        <div className="flex items-start gap-3 border-b border-line px-4 py-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
+            <Store className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Perfil del taller</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Nombre, teléfono y logo que se muestran en el sitio público.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={guardarPerfil} className="p-4 space-y-4">
+          {errorPerfil && (
+            <Alert variant="error" onDismiss={() => setErrorPerfil('')}>{errorPerfil}</Alert>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label htmlFor="perfil-nombre" className="block text-xs font-medium text-ink-muted">
+                Nombre del taller *
+              </label>
+              <Input
+                id="perfil-nombre"
+                value={perfil.nombre}
+                onChange={e => setPerfil(prev => ({ ...prev, nombre: e.target.value }))}
+                placeholder="Taller Ewert"
+                maxLength={80}
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="perfil-telefono" className="block text-xs font-medium text-ink-muted">
+                Teléfono de contacto
+              </label>
+              <Input
+                id="perfil-telefono"
+                value={perfil.telefono}
+                onChange={e => setPerfil(prev => ({ ...prev, telefono: e.target.value }))}
+                placeholder="+56 9 1234 5678"
+                maxLength={30}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="perfil-logo" className="block text-xs font-medium text-ink-muted">
+              URL del logo
+            </label>
+            <div className="flex items-start gap-3">
+              {/* Preview */}
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-line bg-graphite-50 overflow-hidden">
+                {perfil.logoUrl && !logoPreviewError ? (
+                  <img
+                    src={perfil.logoUrl}
+                    alt="Preview logo"
+                    className="h-full w-full object-contain p-1"
+                    onError={() => setLogoPreviewError(true)}
+                    onLoad={() => setLogoPreviewError(false)}
+                  />
+                ) : (
+                  <ImageIcon className="h-6 w-6 text-ink-soft" aria-hidden="true" />
+                )}
+              </div>
+              <div className="flex-1 space-y-1">
+                <Input
+                  id="perfil-logo"
+                  value={perfil.logoUrl}
+                  onChange={e => {
+                    setPerfil(prev => ({ ...prev, logoUrl: e.target.value }))
+                    setLogoPreviewError(false)
+                  }}
+                  placeholder="https://mitaller.cl/logo.png"
+                  type="url"
+                />
+                <p className="text-[11px] text-ink-soft">
+                  Pega la URL de tu logo (PNG o SVG con fondo transparente recomendado).
+                  Puedes subirlo a tu sitio web o a{' '}
+                  <a href="https://imgur.com" target="_blank" rel="noreferrer" className="underline hover:text-ink">
+                    imgur.com
+                  </a>{' '}
+                  y copiar el enlace directo.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end border-t border-line pt-4">
+            <Button
+              type="submit"
+              variant={okPerfil ? 'success' : 'dark'}
+              leftIcon={okPerfil ? Check : Save}
+              loading={guardandoPerfil}
+            >
+              {guardandoPerfil ? 'Guardando…' : okPerfil ? 'Guardado' : 'Guardar perfil'}
+            </Button>
+          </div>
+        </form>
+      </section>
+
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-line bg-surface shadow-card">
           <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-4">
             <div className="flex items-start gap-3">
