@@ -625,7 +625,8 @@ export default function Configuracion() {
                       {DIAS_SEMANA[index]}
                     </span>
 
-                    <div className={`ml-auto flex items-center gap-2 ${horario.activo ? '' : 'opacity-50'}`}>
+                    <div className={`ml-auto flex flex-wrap items-center gap-x-2 gap-y-2 ${horario.activo ? '' : 'opacity-50'}`}>
+                      {/* Horario de atención */}
                       <input
                         type="time"
                         value={horario.horaInicio}
@@ -642,6 +643,28 @@ export default function Configuracion() {
                         onChange={event => updateHorario(index, 'horaFin', event.target.value)}
                         aria-label={`Hora de término de ${DIAS_SEMANA[index]}`}
                         className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
+                      />
+
+                      {/* Colación */}
+                      <span className="text-xs text-ink-soft pl-1">| colación</span>
+                      <input
+                        type="time"
+                        value={horario.inicioColacion ?? ''}
+                        disabled={!horario.activo}
+                        onChange={event => updateHorario(index, 'inicioColacion', event.target.value || null)}
+                        aria-label={`Inicio colación de ${DIAS_SEMANA[index]}`}
+                        placeholder="--:--"
+                        className="h-9 w-24 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
+                      />
+                      <span className="text-xs text-ink-soft">a</span>
+                      <input
+                        type="time"
+                        value={horario.finColacion ?? ''}
+                        disabled={!horario.activo}
+                        onChange={event => updateHorario(index, 'finColacion', event.target.value || null)}
+                        aria-label={`Fin colación de ${DIAS_SEMANA[index]}`}
+                        placeholder="--:--"
+                        className="h-9 w-24 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
                       />
                     </div>
                   </div>

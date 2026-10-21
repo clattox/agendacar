@@ -264,11 +264,16 @@ export default function Inicio({ slugOverride = null }) {
                       {horariosOrdenados.map(horario => (
                         <li
                           key={`${horario.diaSemana}-${horario.horaInicio}-${horario.horaFin}`}
-                          className="flex items-center justify-between gap-3 text-xs"
+                          className="flex items-start justify-between gap-3 text-xs"
                         >
                           <span className="text-ink-muted">{DIAS_SEMANA[horario.diaSemana]}</span>
-                          <span className="font-tabular font-medium text-ink">
+                          <span className="text-right font-tabular font-medium text-ink">
                             {horario.horaInicio} – {horario.horaFin}
+                            {horario.inicioColacion && horario.finColacion && (
+                              <span className="block font-normal text-ink-muted">
+                                colación {horario.inicioColacion} – {horario.finColacion}
+                              </span>
+                            )}
                           </span>
                         </li>
                       ))}

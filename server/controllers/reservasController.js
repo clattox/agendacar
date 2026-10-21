@@ -105,7 +105,15 @@ const getHorasDisponibles = async (req, res) => {
       })
     }
 
-    const horasDisponibles = slots.filter(s => !slotsOcupados.includes(s) && !slotBloqueado(s))
+    // Filtrar slots que caen dentro de la colación del día
+    const slotEnColacion = (slot) => {
+      if (!horario.inicioColacion || !horario.finColacion) return false
+      return slot >= horario.inicioColacion && slot < horario.finColacion
+    }
+
+    const horasDisponibles = slots.filter(s =>
+      !slotsOcupados.includes(s) && !slotBloqueado(s) && !slotEnColacion(s)
+    )
 
     res.json({ horasDisponibles })
   } catch (error) {

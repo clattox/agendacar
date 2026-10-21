@@ -48,13 +48,15 @@ model Servicio {
 }
 
 model Horario {
-  id         Int     @id @default(autoincrement())
-  diaSemana  Int // 0=Domingo, 1=Lunes ... 6=Sábado
-  horaInicio String // "09:00"
-  horaFin    String // "18:00"
-  activo     Boolean @default(true)
-  tenantId   Int
-  tenant     Tenant  @relation(fields: [tenantId], references: [id])
+  id              Int     @id @default(autoincrement())
+  diaSemana       Int     // 0=Domingo, 1=Lunes ... 6=Sábado
+  horaInicio      String  // "09:00"
+  horaFin         String  // "18:00"
+  inicioColacion  String? // "13:00" — null = sin colación
+  finColacion     String? // "14:00" — null = sin colación
+  activo          Boolean @default(true)
+  tenantId        Int
+  tenant          Tenant  @relation(fields: [tenantId], references: [id])
 }
 
 model Bloqueo {
