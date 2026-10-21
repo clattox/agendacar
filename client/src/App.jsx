@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 // Páginas públicas
+import Landing from './pages/public/Landing'
 import Inicio from './pages/public/Inicio'
 import TenantPage from './pages/public/TenantPage'
 import Reservar from './pages/public/Reservar'
@@ -27,7 +28,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Rutas públicas */}
-        <Route path="/" element={<Inicio />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/reservar" element={<Reservar />} />
         <Route path="/confirmacion" element={<Confirmacion />} />
         <Route path="/privacidad" element={<Privacidad />} />
