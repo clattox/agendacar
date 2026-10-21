@@ -1,45 +1,43 @@
 import { Link } from 'react-router-dom'
+import { ArrowRight, Car, MessageCircle } from 'lucide-react'
 import {
-  ArrowRight,
-  BellRing,
-  CalendarCheck,
-  Car,
-  Clock,
-  LayoutGrid,
-  MessageCircle,
-  Users,
-  Wrench
-} from 'lucide-react'
+  IconCalendarCheck,
+  IconClockHands,
+  IconCrossedTools,
+  IconGrid2x2,
+  IconPersonCar,
+  IconBellCheck,
+} from '../../components/public/FeatureIcons'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 
 const FEATURES = [
   {
-    icon: CalendarCheck,
+    icon: IconCalendarCheck,
     title: 'Agenda online 24/7',
     desc: 'Tus clientes reservan cuando quieren, sin llamadas ni mensajes.'
   },
   {
-    icon: Clock,
+    icon: IconClockHands,
     title: 'Horarios flexibles',
     desc: 'Configura días, horarios y duración de servicios según tu taller.'
   },
   {
-    icon: Wrench,
+    icon: IconCrossedTools,
     title: 'Servicios a medida',
     desc: 'Define los servicios que ofreces y el tiempo que toma cada uno.'
   },
   {
-    icon: LayoutGrid,
+    icon: IconGrid2x2,
     title: 'Panel de control',
     desc: 'Revisa reservas del día, historial y estadísticas en un solo lugar.'
   },
   {
-    icon: Users,
+    icon: IconPersonCar,
     title: 'Gestión de clientes',
     desc: 'Registro automático de clientes y sus vehículos con cada reserva.'
   },
   {
-    icon: BellRing,
+    icon: IconBellCheck,
     title: 'Confirmaciones automáticas',
     desc: 'El taller recibe notificación por cada nueva reserva ingresada.'
   }
@@ -123,8 +121,8 @@ export default function Landing() {
               key={title}
               className="flex items-center gap-5 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4"
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-400/15 text-accent-300">
-                <Icon className="h-6 w-6" aria-hidden="true" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                <Icon className="h-10 w-10" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-white">{title}</p>
