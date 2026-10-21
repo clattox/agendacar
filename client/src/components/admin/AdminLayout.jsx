@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
+  AlertTriangle,
   CalendarDays,
   Car,
+  CheckCircle2,
   ExternalLink,
   LayoutDashboard,
   LogOut,
-  Settings
+  Settings,
+  XCircle
 } from 'lucide-react'
 import { clearSession, getUsuario } from '../../lib/auth'
 import TenantAvatar from '../public/TenantAvatar'
@@ -27,7 +30,7 @@ function BannerSuscripcion({ subdominio }) {
     // Sin fecha asignada = activo sin restricción
     return (
       <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs font-medium text-green-700">
-        <span>(^_^)</span>
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span>Suscripción activa</span>
       </div>
     )
@@ -41,7 +44,7 @@ function BannerSuscripcion({ subdominio }) {
   if (diff < 0) {
     return (
       <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs font-medium text-red-700">
-        <span>(T_T)</span>
+        <XCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span>Suscripción vencida — contacta a soporte</span>
       </div>
     )
@@ -49,14 +52,14 @@ function BannerSuscripcion({ subdominio }) {
   if (diff <= 7) {
     return (
       <div className="flex items-center gap-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 text-xs font-medium text-orange-700">
-        <span>(o_o)</span>
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span>Tu suscripción vence en {diff} {diff === 1 ? 'día' : 'días'} ({fechaStr})</span>
       </div>
     )
   }
   return (
     <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs font-medium text-green-700">
-      <span>(^_^)</span>
+      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       <span>Suscripción activa hasta el {fechaStr}</span>
     </div>
   )

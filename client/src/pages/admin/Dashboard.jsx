@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   BarChart3,
+  CalendarClock,
   CalendarDays,
   CheckCircle2,
-  CircleSlash,
-  Clock,
   RefreshCw,
-  Wrench
+  Wrench,
+  XCircle
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { formatLongDate, toDateKey } from '../../lib/dates'
@@ -141,7 +141,7 @@ export default function Dashboard() {
         aria-label="Resumen del día"
       >
         <MetricCard
-          icon={Clock}
+          icon={CalendarClock}
           label="Confirmadas"
           value={confirmadas.length}
           detail="Pendientes de atención"
@@ -165,7 +165,7 @@ export default function Dashboard() {
           loading={loadingHoy}
         />
         <MetricCard
-          icon={CircleSlash}
+          icon={XCircle}
           label="Canceladas"
           value={canceladas.length}
           detail="No se presentaron"

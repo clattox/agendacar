@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { CalendarDays, Car, CheckCircle2, Clock, Home, Phone, RotateCcw, Wrench } from 'lucide-react'
+import { CalendarDays, CalendarPlus, Car, CheckCircle2, Clock, Home, Phone, Wrench } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { formatDateFromISO, formatTimeFromISO } from '../../lib/dates'
 import TenantHeader from '../../components/public/TenantHeader'
@@ -119,7 +119,7 @@ export default function Confirmacion() {
             state={{ tenant }}
             className={buttonClasses({ variant: 'secondary', size: 'lg', className: 'w-full sm:w-auto' })}
           >
-            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            <CalendarPlus className="h-4 w-4" aria-hidden="true" />
             Reservar otra hora
           </Link>
         </div>
