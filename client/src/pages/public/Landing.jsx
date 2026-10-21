@@ -5,8 +5,8 @@ import {
   Car,
   CheckCircle2,
   Clock,
-  LayoutDashboard,
-  Users,
+  Contact2,
+  MonitorCheck,
   Wrench
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
@@ -28,12 +28,12 @@ const FEATURES = [
     desc: 'Define los servicios que ofreces y el tiempo que toma cada uno.'
   },
   {
-    icon: LayoutDashboard,
+    icon: MonitorCheck,
     title: 'Panel de control',
     desc: 'Revisa reservas del día, historial y estadísticas en un solo lugar.'
   },
   {
-    icon: Users,
+    icon: Contact2,
     title: 'Gestión de clientes',
     desc: 'Registro automático de clientes y sus vehículos con cada reserva.'
   },
