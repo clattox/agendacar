@@ -103,16 +103,30 @@ export default function AdminLayout({ children }) {
           </div>
         </div>
 
-        <div className="border-b border-line px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <TenantAvatar tenant={tenant} size="sm" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-ink">
-                {tenant?.nombre || 'Taller'}
-              </p>
-              <p className="truncate text-xs text-ink-muted">{usuario.email || 'Administrador'}</p>
+        <div className="border-b border-line px-4 py-4">
+          {tenant?.logoUrl ? (
+            <div className="flex flex-col items-center gap-2">
+              <img
+                src={tenant.logoUrl}
+                alt={`Logo de ${tenant.nombre}`}
+                className="h-14 w-full object-contain"
+              />
+              <div className="text-center">
+                <p className="truncate text-sm font-semibold text-ink">{tenant.nombre}</p>
+                <p className="truncate text-xs text-ink-muted">{usuario.email || 'Administrador'}</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <TenantAvatar tenant={tenant} size="sm" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-ink">
+                  {tenant?.nombre || 'Taller'}
+                </p>
+                <p className="truncate text-xs text-ink-muted">{usuario.email || 'Administrador'}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 space-y-1 p-3" aria-label="Navegación principal">
