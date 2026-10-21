@@ -148,7 +148,7 @@ export default function Landing() {
             </div>
             <div className="p-3">
               <img
-                src="/screenshot-panel.png"
+                src="/screenshot-agenda.png"
                 alt="Panel de administración de AgendaCar mostrando estadísticas del día y gráfico de reservas"
                 className="w-full rounded-lg"
                 loading="lazy"
