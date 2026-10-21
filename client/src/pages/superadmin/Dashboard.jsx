@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Building2, CalendarClock, CheckCircle2, KeyRound, Pencil, Plus, PowerOff, Users, X } from 'lucide-react'
+import { Building2, CalendarClock, CheckCircle2, KeyRound, Pencil, Plus, PowerOff, RotateCcw, Users, X } from 'lucide-react'
 import SuperadminLayout from '../../components/superadmin/SuperadminLayout'
-import { getTenants, createTenant, toggleTenant, getStats, actualizarVencimiento } from '../../services/superadminService'
+import { getTenants, createTenant, toggleTenant, getStats, actualizarVencimiento, resetPasswordTenant } from '../../services/superadminService'
 import { cambiarPassword } from '../../services/authService'
 import { getApiErrorMessage } from '../../lib/errors'
 import { Button, Input } from '../../components/ui'
@@ -24,6 +24,13 @@ export default function SuperadminDashboard() {
   const [editandoVenc, setEditandoVenc] = useState(null) // id del tenant editando
   const [vencInput, setVencInput] = useState('')
   const [guardandoVenc, setGuardandoVenc] = useState(false)
+
+  // Reset password de admin de taller
+  const [resetId, setResetId] = useState(null) // id del tenant al que se le resetea
+  const [resetPass, setResetPass] = useState('')
+  const [resetError, setResetError] = useState('')
+  const [resetOk, setResetOk] = useState('')
+  const [guardandoReset, setGuardandoReset] = useState(false)
 
   // Cambio de contraseña
   const [formPass, setFormPass] = useState({ actual: '', nueva: '', confirmar: '' })
@@ -75,6 +82,32 @@ export default function SuperadminDashboard() {
   }
 
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  const abrirReset = (id) => {
+    setResetId(id)
+    setResetPass('')
+    setResetError('')
+    setResetOk('')
+  }
+
+  const handleReset = async (e) => {
+    e.preventDefault()
+    setResetError('')
+    setResetOk('')
+    if (resetPass.length < 8) return setResetError('Mínimo 8 caracteres.')
+    if (guardandoReset) return
+    setGuardandoReset(true)
+    try {
+      const res = await resetPasswordTenant(resetId, resetPass)
+      setResetOk(`Contraseña actualizada para ${res.email}`)
+      setResetPass('')
+      window.setTimeout(() => { setResetId(null); setResetOk('') }, 2500)
+    } catch (err) {
+      setResetError(getApiErrorMessage(err, 'No pudimos resetear la contraseña.'))
+    } finally {
+      setGuardandoReset(false)
+    }
+  }
 
   const handleCambiarPassword = async (e) => {
     e.preventDefault()
@@ -300,18 +333,28 @@ export default function SuperadminDashboard() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleToggle(t.id)}
-                      disabled={toggling === t.id}
-                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
-                        t.activo
-                          ? 'text-red-600 hover:bg-red-50'
-                          : 'text-green-700 hover:bg-green-50'
-                      }`}
-                    >
-                      <PowerOff className="h-3.5 w-3.5" />
-                      {t.activo ? 'Desactivar' : 'Activar'}
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => abrirReset(t.id)}
+                        title="Resetear contraseña del admin"
+                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span className="hidden lg:inline">Reset pass</span>
+                      </button>
+                      <button
+                        onClick={() => handleToggle(t.id)}
+                        disabled={toggling === t.id}
+                        className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                          t.activo
+                            ? 'text-red-600 hover:bg-red-50'
+                            : 'text-green-700 hover:bg-green-50'
+                        }`}
+                      >
+                        <PowerOff className="h-3.5 w-3.5" />
+                        {t.activo ? 'Desactivar' : 'Activar'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -319,6 +362,55 @@ export default function SuperadminDashboard() {
           </table>
         )}
       </div>
+
+      {/* Modal reset contraseña admin de taller */}
+      {resetId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-line bg-surface shadow-xl">
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="h-4 w-4 text-ink-muted" />
+                <h3 className="text-sm font-semibold text-ink">Resetear contraseña</h3>
+              </div>
+              <button onClick={() => setResetId(null)} className="text-ink-soft hover:text-ink">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={handleReset} className="p-5 space-y-3">
+              <p className="text-sm text-ink-muted">
+                Ingresa la nueva contraseña para el admin de este taller.
+              </p>
+              <div>
+                <label className="block text-xs font-medium text-ink-muted mb-1">Nueva contraseña</label>
+                <Input
+                  type="password"
+                  value={resetPass}
+                  onChange={e => setResetPass(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  autoFocus
+                  autoComplete="new-password"
+                />
+              </div>
+              {resetError && (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{resetError}</p>
+              )}
+              {resetOk && (
+                <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />{resetOk}
+                </p>
+              )}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="secondary" size="sm" onClick={() => setResetId(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" size="sm" loading={guardandoReset} leftIcon={RotateCcw}>
+                  Resetear
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Cambio de contraseña */}
       <div className="mt-6 rounded-xl border border-line bg-surface shadow-card">

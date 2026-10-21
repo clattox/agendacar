@@ -103,4 +103,36 @@ const getStats = async (req, res) => {
   }
 }
 
-module.exports = { getTenants, createTenant, toggleTenant, getStats }
+// POST /api/superadmin/tenants/:id/reset-password — resetea contraseña del admin del taller
+const resetPasswordTenant = async (req, res) => {
+  const tenantId = parseInt(req.params.id)
+  const { nuevaPassword } = req.body
+
+  if (!nuevaPassword || nuevaPassword.length < 8) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' })
+  }
+
+  try {
+    // Buscar el usuario admin del tenant
+    const usuario = await prisma.usuario.findFirst({
+      where: { tenantId, rol: 'admin' }
+    })
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'No se encontró un admin para este taller.' })
+    }
+
+    const hash = await bcrypt.hash(nuevaPassword, 10)
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { password: hash }
+    })
+
+    res.json({ ok: true, email: usuario.email })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al resetear la contraseña.' })
+  }
+}
+
+module.exports = { getTenants, createTenant, toggleTenant, getStats, resetPasswordTenant }

@@ -14,3 +14,6 @@ export const actualizarVencimiento = (id, vencimiento) =>
 
 export const getStats = () =>
   api.get('/superadmin/stats').then(r => r.data)
+
+export const resetPasswordTenant = (id, nuevaPassword) =>
+  api.post(`/superadmin/tenants/${id}/reset-password`, { nuevaPassword }).then(r => r.data)

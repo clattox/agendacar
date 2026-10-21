@@ -1,11 +1,12 @@
 const express = require('express')
 const router = express.Router()
 const superadmin = require('../middleware/superadmin')
-const { getTenants, createTenant, toggleTenant, getStats } = require('../controllers/superadminController')
+const { getTenants, createTenant, toggleTenant, getStats, resetPasswordTenant } = require('../controllers/superadminController')
 
 router.get('/tenants', superadmin, getTenants)
 router.post('/tenants', superadmin, createTenant)
 router.patch('/tenants/:id', superadmin, toggleTenant)
+router.post('/tenants/:id/reset-password', superadmin, resetPasswordTenant)
 router.get('/stats', superadmin, getStats)
 
 module.exports = router
