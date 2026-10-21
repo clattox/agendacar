@@ -144,7 +144,7 @@ export default function Landing() {
           <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
             <div className="border-b border-white/10 px-5 py-3">
               <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Panel del taller</p>
-              <p className="mt-0.5 text-sm font-medium text-white">Reservas, estadísticas y agenda en un solo lugar</p>
+              <p className="mt-0.5 text-sm font-medium text-white">Todas las reservas del día, con horario, cliente y servicio</p>
             </div>
             <div className="p-3">
               <img
