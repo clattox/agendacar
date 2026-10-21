@@ -1,20 +1,20 @@
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
-  CalendarDays,
+  BellRing,
+  CalendarCheck,
   Car,
-  CheckCircle2,
   Clock,
-  Contact2,
+  LayoutGrid,
   MessageCircle,
-  MonitorCheck,
+  Users,
   Wrench
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 
 const FEATURES = [
   {
-    icon: CalendarDays,
+    icon: CalendarCheck,
     title: 'Agenda online 24/7',
     desc: 'Tus clientes reservan cuando quieren, sin llamadas ni mensajes.'
   },
@@ -29,17 +29,17 @@ const FEATURES = [
     desc: 'Define los servicios que ofreces y el tiempo que toma cada uno.'
   },
   {
-    icon: MonitorCheck,
+    icon: LayoutGrid,
     title: 'Panel de control',
     desc: 'Revisa reservas del día, historial y estadísticas en un solo lugar.'
   },
   {
-    icon: Contact2,
+    icon: Users,
     title: 'Gestión de clientes',
     desc: 'Registro automático de clientes y sus vehículos con cada reserva.'
   },
   {
-    icon: CheckCircle2,
+    icon: BellRing,
     title: 'Confirmaciones automáticas',
     desc: 'El taller recibe notificación por cada nueva reserva ingresada.'
   }
