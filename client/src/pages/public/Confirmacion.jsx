@@ -28,6 +28,8 @@ export default function Confirmacion() {
 
   const estado = ESTADOS[reserva.estado] || { label: reserva.estado || 'Registrada', variant: 'neutral' }
   const fechaValida = Boolean(reserva.fecha) && !Number.isNaN(new Date(reserva.fecha).getTime())
+  const rutaInicio = tenant?.subdominio ? `/${tenant.subdominio}` : '/'
+  const rutaReservar = tenant?.subdominio ? `/reservar?tenant=${encodeURIComponent(tenant.subdominio)}` : '/reservar'
   const fecha = fechaValida ? formatDateFromISO(reserva.fecha) : 'Fecha por confirmar'
   const hora = fechaValida ? formatTimeFromISO(reserva.fecha) : '—'
 
@@ -38,7 +40,7 @@ export default function Confirmacion() {
           tenant={tenant}
           actions={
             <Link
-              to="/"
+              to={rutaInicio}
               className="inline-flex h-9 items-center rounded-md border border-line bg-surface px-3 text-xs font-semibold text-ink-muted transition-colors hover:bg-graphite-50 hover:text-ink"
             >
               Inicio
@@ -108,14 +110,14 @@ export default function Confirmacion() {
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <Link
-            to="/"
+            to={rutaInicio}
             className={buttonClasses({ variant: 'dark', size: 'lg', className: 'w-full sm:w-auto' })}
           >
             <Home className="h-4 w-4" aria-hidden="true" />
             Volver al inicio
           </Link>
           <Link
-            to="/reservar"
+            to={rutaReservar}
             state={{ tenant }}
             className={buttonClasses({ variant: 'secondary', size: 'lg', className: 'w-full sm:w-auto' })}
           >

@@ -74,10 +74,11 @@ export default function Inicio({ slugOverride = null }) {
     return () => { activo = false }
   }, [tenant?.id, recargaDatos])
 
-  // Conserva el tenant de prueba al navegar para que un refresh no vuelva a "demo".
+  // Conserva el slug al navegar a reservar (slug limpio > ?tenant= > sin parámetro).
   const tenantQuery = getTenantFromQuery()
-  const rutaReservar = tenantQuery
-    ? `/reservar?tenant=${encodeURIComponent(tenantQuery)}`
+  const slugActivo = slugOverride || tenantQuery
+  const rutaReservar = slugActivo
+    ? `/reservar?tenant=${encodeURIComponent(slugActivo)}`
     : '/reservar'
 
   const reservar = servicioId => navigate(rutaReservar, {

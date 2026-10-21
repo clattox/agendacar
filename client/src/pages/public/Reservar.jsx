@@ -138,7 +138,7 @@ export default function Reservar() {
 
   const tenantQuery = getTenantFromQuery()
   const rutaInicio = tenantQuery
-    ? `/?tenant=${encodeURIComponent(tenantQuery)}`
+    ? `/${encodeURIComponent(tenantQuery)}`
     : '/'
 
   const tenantInicial = state?.tenant || null
