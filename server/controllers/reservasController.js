@@ -499,11 +499,78 @@ const enviarNotificacion = async (reserva) => {
   await Promise.allSettled(promesas)
 }
 
+// Exportar reservas a CSV (admin)
+const exportarReservasCSV = async (req, res) => {
+  const { desde, hasta } = req.query
+  const tenantId = req.usuario.tenantId
+
+  const fechaDesde = desde
+    ? new Date(`${desde}T00:00:00.000Z`)
+    : new Date(new Date().getFullYear(), 0, 1) // 1 enero año actual
+
+  const fechaHasta = hasta
+    ? new Date(`${hasta}T23:59:59.999Z`)
+    : new Date()
+
+  try {
+    const reservas = await prisma.reserva.findMany({
+      where: {
+        tenantId,
+        fecha: { gte: fechaDesde, lte: fechaHasta }
+      },
+      include: { servicio: true, vehiculo: true },
+      orderBy: { fecha: 'asc' }
+    })
+
+    const encabezado = [
+      'ID', 'Fecha', 'Hora', 'Estado',
+      'Cliente', 'Teléfono', 'Email',
+      'Patente', 'Marca', 'Modelo', 'Año', 'Kilometraje',
+      'Servicio', 'Duración (min)', 'Notas'
+    ].join(',')
+
+    const filas = reservas.map(r => {
+      const fecha = new Date(r.fecha)
+      const fechaStr = fecha.toLocaleDateString('es-CL', { timeZone: 'UTC' })
+      const horaStr = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC' })
+      const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`
+      return [
+        r.id,
+        fechaStr,
+        horaStr,
+        r.estado,
+        esc(r.nombre),
+        esc(r.telefono ?? ''),
+        esc(r.email ?? ''),
+        esc(r.patente),
+        esc(r.vehiculo?.marca ?? ''),
+        esc(r.vehiculo?.modelo ?? ''),
+        r.vehiculo?.anio ?? '',
+        r.vehiculo?.kilometraje ?? '',
+        esc(r.servicio?.nombre ?? ''),
+        r.servicio?.duracion ?? '',
+        esc(r.notas ?? '')
+      ].join(',')
+    })
+
+    const csv = [encabezado, ...filas].join('\n')
+    const nombreArchivo = `reservas_${desde ?? 'inicio'}_${hasta ?? 'hoy'}.csv`
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`)
+    res.send('﻿' + csv) // BOM para que Excel lo abra correctamente
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al exportar reservas' })
+  }
+}
+
 module.exports = {
   getReservas,
   getHorasDisponibles,
   createReserva,
   reagendarReserva,
   updateEstado,
-  deleteReserva
+  deleteReserva,
+  exportarReservasCSV
 }

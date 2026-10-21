@@ -1,4 +1,5 @@
 import api from '../lib/api'
+import { getToken } from '../lib/auth'
 
 export async function listarReservasPorFecha(fecha) {
   const { data } = await api.get('/reservas', { params: { fecha } })
@@ -30,4 +31,27 @@ export async function reagendarReserva(id, { fecha, hora }) {
 export async function eliminarReserva(id) {
   const { data } = await api.delete(`/reservas/${id}`)
   return data
+}
+
+export async function exportarReservasCSV({ desde, hasta } = {}) {
+  const params = new URLSearchParams()
+  if (desde) params.set('desde', desde)
+  if (hasta) params.set('hasta', hasta)
+
+  const base = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+  const url = `${base}/reservas/exportar?${params.toString()}`
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${getToken()}` }
+  })
+
+  if (!res.ok) throw new Error('Error al exportar')
+
+  const blob = await res.blob()
+  const href = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = href
+  a.download = `reservas_${desde ?? 'inicio'}_${hasta ?? 'hoy'}.csv`
+  a.click()
+  URL.revokeObjectURL(href)
 }
