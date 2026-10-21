@@ -527,7 +527,7 @@ const exportarReservasCSV = async (req, res) => {
       'Cliente', 'Teléfono', 'Email',
       'Patente', 'Marca', 'Modelo', 'Año', 'Kilometraje',
       'Servicio', 'Duración (min)', 'Notas'
-    ].join(',')
+    ].join(';')
 
     const filas = reservas.map(r => {
       const fecha = new Date(r.fecha)
@@ -550,7 +550,7 @@ const exportarReservasCSV = async (req, res) => {
         esc(r.servicio?.nombre ?? ''),
         r.servicio?.duracion ?? '',
         esc(r.notas ?? '')
-      ].join(',')
+      ].join(';')
     })
 
     const csv = [encabezado, ...filas].join('\n')
