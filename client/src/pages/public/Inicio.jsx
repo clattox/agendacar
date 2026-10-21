@@ -247,7 +247,7 @@ export default function Inicio({ slugOverride = null }) {
 
                 <div className="mt-5 border-t border-line pt-4">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-graphite-400" aria-hidden="true" />
+                    <IconClockThin className="h-4 w-4 text-graphite-400" aria-hidden="true" />
                     <p className="micro-label">Horario de atención</p>
                   </div>
 
