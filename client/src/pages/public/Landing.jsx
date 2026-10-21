@@ -128,6 +128,52 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Screenshots */}
+      <section className="relative mx-auto max-w-6xl px-6 pb-24">
+        <div className="mb-12 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-300">
+            Así se ve en tu taller
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight">
+            Simple para ti. Fácil para tus clientes.
+          </h2>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Panel admin */}
+          <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+            <div className="border-b border-white/10 px-5 py-3">
+              <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Panel del taller</p>
+              <p className="mt-0.5 text-sm font-medium text-white">Reservas, estadísticas y agenda en un solo lugar</p>
+            </div>
+            <div className="p-3">
+              <img
+                src="/screenshot-panel.png"
+                alt="Panel de administración de AgendaCar mostrando estadísticas del día y gráfico de reservas"
+                className="w-full rounded-lg"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+          {/* Sitio público */}
+          <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+            <div className="border-b border-white/10 px-5 py-3">
+              <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Sitio público del taller</p>
+              <p className="mt-0.5 text-sm font-medium text-white">Tus clientes reservan solos, 24/7, desde cualquier dispositivo</p>
+            </div>
+            <div className="p-3">
+              <img
+                src="/screenshot-publico.png"
+                alt="Página pública de reservas online de un taller con AgendaCar"
+                className="w-full rounded-lg"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA final */}
       <section className="relative border-t border-white/10">
         <div className="mx-auto max-w-6xl px-6 py-20 text-center">
