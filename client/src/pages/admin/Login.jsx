@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Car, Eye, EyeOff, ShieldCheck, Wrench } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Car, Eye, EyeOff, ExternalLink, ShieldCheck, Wrench } from 'lucide-react'
 import { Turnstile } from '@marsidev/react-turnstile'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { estaAutenticado, saveSession } from '../../lib/auth'
@@ -212,7 +212,14 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 border-t border-line pt-5">
+          <div className="mt-6 border-t border-line pt-5 space-y-4">
+            <Link
+              to="/"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-graphite-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-graphite-800 focus-ring"
+            >
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              Ver sitio público · Agendar hora
+            </Link>
             <p className="text-xs leading-relaxed text-ink-muted">
               ¿Necesitas acceso o recuperar tu contraseña? Contacta al administrador de tu taller.
             </p>
