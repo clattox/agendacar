@@ -12,6 +12,7 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  Download,
   Printer,
   RefreshCw,
   Search,
@@ -37,6 +38,7 @@ import { getApiErrorMessage } from '../../lib/errors'
 import {
   actualizarEstadoReserva,
   eliminarReserva,
+  exportarReservasCSV,
   listarReservasPorFecha,
   reagendarReserva
 } from '../../services/reservasService'
@@ -81,6 +83,7 @@ export default function Agenda() {
   const [reservaAEliminar, setReservaAEliminar] = useState(null)
   const [eliminando, setEliminando] = useState(false)
   const [reservaAReagendar, setReservaAReagendar] = useState(null)
+  const [exportando, setExportando] = useState(false)
 
   useDocumentTitle('Agenda — AgendaCar')
 
@@ -229,15 +232,35 @@ export default function Agenda() {
             Revisa las reservas del taller y actualiza cada atención.
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={RefreshCw}
-          onClick={cargar}
-          disabled={loading}
-        >
-          Actualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={Download}
+            onClick={async () => {
+              setExportando(true)
+              try {
+                await exportarReservasCSV()
+              } catch {
+                setError('No se pudo exportar el archivo CSV.')
+              } finally {
+                setExportando(false)
+              }
+            }}
+            disabled={exportando}
+          >
+            {exportando ? 'Exportando…' : 'Exportar CSV'}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={RefreshCw}
+            onClick={cargar}
+            disabled={loading}
+          >
+            Actualizar
+          </Button>
+        </div>
       </header>
 
       {error && (
