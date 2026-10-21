@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -7,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   Contact2,
+  MessageCircle,
   MonitorCheck,
   Wrench
 } from 'lucide-react'
@@ -45,9 +45,10 @@ const FEATURES = [
   }
 ]
 
+const WS_URL = 'https://wa.me/56982540503?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20sobre%20AgendaCar'
+
 export default function Landing() {
   useDocumentTitle('AgendaCar — Software de agendamiento para talleres')
-  const [lightboxSrc, setLightboxSrc] = useState(null)
 
   return (
     <div className="min-h-screen bg-graphite-950 text-white">
@@ -82,30 +83,32 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="relative mx-auto max-w-6xl px-6 py-24 text-center">
+      <section className="relative mx-auto max-w-6xl px-6 py-20 text-center sm:py-28">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-300">
           Software para talleres automotrices
         </p>
-        <h1 className="mt-4 text-5xl font-bold leading-[1.1] tracking-tight sm:text-6xl">
+        <h1 className="mt-4 text-4xl font-bold leading-[1.1] tracking-tight sm:text-6xl">
           Tu taller,{' '}
           <span className="text-accent-400">organizado</span>
           <br />y siempre disponible.
         </h1>
-        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/60">
+        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/60 sm:text-lg">
           AgendaCar permite a tus clientes reservar hora online en cualquier momento.
           Tú administras todo desde un panel simple y rápido.
         </p>
-        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+        <div className="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
           <a
-            href="mailto:claudio@claunet.cl?subject=Quiero%20probar%20AgendaCar"
-            className="inline-flex items-center gap-2 rounded-md bg-accent-400 px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-500"
+            href={WS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-accent-400 px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-500"
           >
-            Solicitar demo gratis
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            Solicitar demo por WhatsApp
           </a>
           <Link
             to="/admin/login"
-            className="inline-flex items-center gap-2 rounded-md border border-white/20 px-6 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/5"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-white/20 px-6 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/5"
           >
             Acceder a mi panel
           </Link>
@@ -130,98 +133,48 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Screenshots */}
-      <section className="relative mx-auto max-w-6xl px-6 pb-24">
-        <div className="mb-12 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-300">
-            Así se ve en tu taller
-          </p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight">
-            Simple para ti. Fácil para tus clientes.
-          </h2>
-        </div>
-
-        {/* Lightbox */}
-        {lightboxSrc && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-            onClick={() => setLightboxSrc(null)}
-          >
-            <img
-              src={lightboxSrc}
-              alt="Vista ampliada"
-              className="max-h-[90vh] max-w-full rounded-xl shadow-2xl"
-            />
-          </div>
-        )}
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Panel admin */}
-          <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
-            <div className="border-b border-white/10 px-5 py-3">
-              <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Panel del taller</p>
-              <p className="mt-0.5 text-sm font-medium text-white">Todas las reservas del día, con horario, cliente y servicio</p>
-            </div>
-            <div className="flex flex-col gap-2 p-3">
-              <img
-                src="/screenshot-agenda.png"
-                alt="Vista de agenda del panel AgendaCar con reservas del día"
-                className="w-full cursor-zoom-in rounded-lg transition hover:opacity-90"
-                loading="lazy"
-                onClick={() => setLightboxSrc('/screenshot-agenda.png')}
-              />
-              <img
-                src="/screenshot-dashboard.png"
-                alt="Dashboard del panel AgendaCar con estadísticas y gráfico"
-                className="w-full cursor-zoom-in rounded-lg transition hover:opacity-90"
-                loading="lazy"
-                onClick={() => setLightboxSrc('/screenshot-dashboard.png')}
-              />
-            </div>
-          </div>
-
-          {/* Sitio público */}
-          <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
-            <div className="border-b border-white/10 px-5 py-3">
-              <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Sitio público del taller</p>
-              <p className="mt-0.5 text-sm font-medium text-white">Tus clientes reservan solos, 24/7, desde cualquier dispositivo</p>
-            </div>
-            <div className="p-3">
-              <img
-                src="/screenshot-publico.png"
-                alt="Página pública de reservas online de un taller con AgendaCar"
-                className="w-full cursor-zoom-in rounded-lg transition hover:opacity-90"
-                loading="lazy"
-                onClick={() => setLightboxSrc('/screenshot-publico.png')}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA final */}
       <section className="relative border-t border-white/10">
         <div className="mx-auto max-w-6xl px-6 py-20 text-center">
-          <h2 className="text-3xl font-bold tracking-tight">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
             ¿Listo para modernizar tu taller?
           </h2>
           <p className="mt-3 text-white/50">
             Escríbenos y te configuramos en menos de 24 horas.
           </p>
-          <a
-            href="mailto:claudio@claunet.cl?subject=Quiero%20probar%20AgendaCar"
-            className="mt-8 inline-flex items-center gap-2 rounded-md bg-accent-400 px-8 py-3 text-sm font-semibold text-white transition hover:bg-accent-500"
-          >
-            Contactar ahora
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </a>
+          <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
+            <a
+              href={WS_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-accent-400 px-8 py-3 text-sm font-semibold text-white transition hover:bg-accent-500"
+            >
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              Contactar por WhatsApp
+            </a>
+            <a
+              href="mailto:claudio@claunet.cl?subject=Quiero%20probar%20AgendaCar"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-white/20 px-8 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/5"
+            >
+              Enviar un correo
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </a>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-white/10">
         <div className="mx-auto max-w-6xl px-6 py-6 text-center text-xs text-white/30">
-          © {new Date().getFullYear()} AgendaCar · Software de agendamiento para talleres automotrices
+          © {new Date().getFullYear()} AgendaCar ·{' '}
+          <a
+            href="https://claunet.cl"
+            target="_blank"
+            rel="noreferrer"
+            className="transition hover:text-white/50"
+          >
+            Desarrollado por ClauNet
+          </a>
         </div>
       </footer>
     </div>
