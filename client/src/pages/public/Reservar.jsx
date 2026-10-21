@@ -27,6 +27,7 @@ import {
   getTimeInMinutesInTimeZone,
   toDateKey
 } from '../../lib/dates'
+import { Turnstile } from '@marsidev/react-turnstile'
 import TenantHeader from '../../components/public/TenantHeader'
 import PublicFooter from '../../components/public/PublicFooter'
 import StepIndicator, { PASOS_RESERVA } from '../../components/public/StepIndicator'
@@ -179,6 +180,8 @@ export default function Reservar() {
   const [errores, setErrores] = useState({})
   const [errorEnvio, setErrorEnvio] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState(null)
+  const turnstileRef = useRef(null)
 
   const preseleccionAplicada = useRef(false)
 
@@ -373,6 +376,10 @@ export default function Reservar() {
     if (enviando) return
     if (paso > 1) {
       setErrorEnvio('')
+      if (paso === 4) {
+        setTurnstileToken(null)
+        turnstileRef.current?.reset()
+      }
       setPaso(paso - 1)
     } else {
       navigate(rutaInicio)
@@ -398,6 +405,11 @@ export default function Reservar() {
 
     if (!servicioSeleccionado || !fechaSeleccionada || !horaSeleccionada) {
       setErrorEnvio('Faltan datos de la reserva. Revisa los pasos anteriores antes de confirmar.')
+      return
+    }
+
+    if (!turnstileToken) {
+      setErrorEnvio('Espera la verificación de seguridad e intenta de nuevo.')
       return
     }
 
@@ -435,12 +447,15 @@ export default function Reservar() {
         notas: form.observaciones.trim() || undefined,
         fecha: toDateKey(fechaSeleccionada),
         hora: horaSeleccionada,
-        servicioId: servicioSeleccionado.id
+        servicioId: servicioSeleccionado.id,
+        'cf-turnstile-response': turnstileToken
       })
 
       navigate('/confirmacion', { state: { reserva, tenant } })
     } catch (err) {
       setErrorEnvio(getApiErrorMessage(err, 'No pudimos confirmar la reserva. Intenta nuevamente.'))
+      turnstileRef.current?.reset()
+      setTurnstileToken(null)
     } finally {
       setEnviando(false)
     }
@@ -1069,11 +1084,21 @@ export default function Reservar() {
                 </p>
               </div>
 
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                onSuccess={token => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+                options={{ theme: 'light', size: 'flexible' }}
+                className="mt-4"
+              />
+
               <Button
                 size="lg"
-                className="mt-4 w-full"
+                className="mt-3 w-full"
                 loading={enviando}
-                disabled={enviando}
+                disabled={enviando || !turnstileToken}
                 onClick={confirmarReserva}
               >
                 {enviando ? 'Confirmando reserva…' : 'Confirmar reserva'}

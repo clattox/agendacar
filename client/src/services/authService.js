@@ -1,7 +1,11 @@
 import api from '../lib/api'
 
-export async function iniciarSesion({ email, password }) {
-  const { data } = await api.post('/auth/login', { email, password })
+export async function iniciarSesion({ email, password, turnstileToken }) {
+  const { data } = await api.post('/auth/login', {
+    email,
+    password,
+    'cf-turnstile-response': turnstileToken
+  })
   return data
 }
 

@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const auth = require('../middleware/auth')
+const verifyTurnstile = require('../middleware/verifyTurnstile')
 const {
   getReservas,
   getReservasPublicas,
@@ -13,7 +14,7 @@ const {
 
 // Rutas públicas (cliente)
 router.get('/disponibles', getHorasDisponibles)
-router.post('/nueva', createReserva)
+router.post('/nueva', verifyTurnstile, createReserva)
 
 // Rutas privadas (admin)
 router.get('/', auth, getReservas)

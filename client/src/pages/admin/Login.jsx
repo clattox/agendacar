@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Car, Eye, EyeOff, ShieldCheck, Wrench } from 'lucide-react'
+import { Turnstile } from '@marsidev/react-turnstile'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { estaAutenticado, saveSession } from '../../lib/auth'
 import { getApiErrorMessage } from '../../lib/errors'
@@ -12,6 +13,8 @@ export default function Login() {
   const [mostrarPassword, setMostrarPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState(null)
+  const turnstileRef = useRef(null)
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from || '/admin'
@@ -32,16 +35,24 @@ export default function Login() {
       return
     }
 
+    if (!turnstileToken) {
+      setError('Espera la verificación de seguridad e intenta de nuevo.')
+      return
+    }
+
     setLoading(true)
     try {
       const data = await iniciarSesion({
         email: form.email.trim(),
-        password: form.password
+        password: form.password,
+        turnstileToken
       })
       saveSession(data)
       navigate(from, { replace: true })
     } catch (err) {
       setError(getApiErrorMessage(err, 'Email o contraseña incorrectos'))
+      turnstileRef.current?.reset()
+      setTurnstileToken(null)
     } finally {
       setLoading(false)
     }
@@ -179,11 +190,21 @@ export default function Login() {
               </div>
             </FormField>
 
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onSuccess={token => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+              options={{ theme: 'light', size: 'flexible' }}
+            />
+
             <Button
               type="submit"
               variant="dark"
               size="lg"
               loading={loading}
+              disabled={loading || !turnstileToken}
               rightIcon={loading ? undefined : ArrowRight}
               className="w-full"
             >

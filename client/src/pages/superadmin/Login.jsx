@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Shield } from 'lucide-react'
+import { Turnstile } from '@marsidev/react-turnstile'
 import api from '../../lib/api'
 import { saveSession } from '../../lib/auth'
 import { Button, Input } from '../../components/ui'
@@ -10,14 +11,25 @@ export default function SuperadminLogin() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState(null)
+  const turnstileRef = useRef(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (loading) return
+
+    if (!turnstileToken) {
+      setError('Espera la verificación de seguridad e intenta de nuevo.')
+      return
+    }
+
     setLoading(true)
     setError('')
     try {
-      const { data } = await api.post('/auth/login', form)
+      const { data } = await api.post('/auth/login', {
+        ...form,
+        'cf-turnstile-response': turnstileToken
+      })
       if (data.usuario?.rol !== 'superadmin') {
         setError('No tienes permisos de superadmin.')
         return
@@ -26,6 +38,8 @@ export default function SuperadminLogin() {
       navigate('/superadmin', { replace: true })
     } catch (err) {
       setError(err.response?.data?.error || 'Credenciales incorrectas.')
+      turnstileRef.current?.reset()
+      setTurnstileToken(null)
     } finally {
       setLoading(false)
     }
@@ -69,7 +83,16 @@ export default function SuperadminLogin() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" loading={loading}>
+          <Turnstile
+            ref={turnstileRef}
+            siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+            onSuccess={token => setTurnstileToken(token)}
+            onExpire={() => setTurnstileToken(null)}
+            onError={() => setTurnstileToken(null)}
+            options={{ theme: 'light', size: 'flexible' }}
+          />
+
+          <Button type="submit" className="w-full" loading={loading} disabled={loading || !turnstileToken}>
             Ingresar
           </Button>
         </form>
