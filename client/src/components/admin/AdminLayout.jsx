@@ -77,7 +77,7 @@ export default function AdminLayout({ children }) {
   const usuario = getUsuario() || {}
   const tenant = usuario.tenant
   const sitioPublico = tenant?.subdominio
-    ? `/?tenant=${encodeURIComponent(tenant.subdominio)}`
+    ? `/${encodeURIComponent(tenant.subdominio)}`
     : '/'
 
   const handleLogout = () => {
