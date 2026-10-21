@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -46,6 +47,7 @@ const FEATURES = [
 
 export default function Landing() {
   useDocumentTitle('AgendaCar — Software de agendamiento para talleres')
+  const [lightboxSrc, setLightboxSrc] = useState(null)
 
   return (
     <div className="min-h-screen bg-graphite-950 text-white">
@@ -139,6 +141,20 @@ export default function Landing() {
           </h2>
         </div>
 
+        {/* Lightbox */}
+        {lightboxSrc && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+            onClick={() => setLightboxSrc(null)}
+          >
+            <img
+              src={lightboxSrc}
+              alt="Vista ampliada"
+              className="max-h-[90vh] max-w-full rounded-xl shadow-2xl"
+            />
+          </div>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Panel admin */}
           <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
@@ -146,12 +162,20 @@ export default function Landing() {
               <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Panel del taller</p>
               <p className="mt-0.5 text-sm font-medium text-white">Todas las reservas del día, con horario, cliente y servicio</p>
             </div>
-            <div className="p-3">
+            <div className="flex flex-col gap-2 p-3">
               <img
                 src="/screenshot-agenda.png"
-                alt="Panel de administración de AgendaCar mostrando estadísticas del día y gráfico de reservas"
-                className="w-full rounded-lg"
+                alt="Vista de agenda del panel AgendaCar con reservas del día"
+                className="w-full cursor-zoom-in rounded-lg transition hover:opacity-90"
                 loading="lazy"
+                onClick={() => setLightboxSrc('/screenshot-agenda.png')}
+              />
+              <img
+                src="/screenshot-dashboard.png"
+                alt="Dashboard del panel AgendaCar con estadísticas y gráfico"
+                className="w-full cursor-zoom-in rounded-lg transition hover:opacity-90"
+                loading="lazy"
+                onClick={() => setLightboxSrc('/screenshot-dashboard.png')}
               />
             </div>
           </div>
@@ -166,8 +190,9 @@ export default function Landing() {
               <img
                 src="/screenshot-publico.png"
                 alt="Página pública de reservas online de un taller con AgendaCar"
-                className="w-full rounded-lg"
+                className="w-full cursor-zoom-in rounded-lg transition hover:opacity-90"
                 loading="lazy"
+                onClick={() => setLightboxSrc('/screenshot-publico.png')}
               />
             </div>
           </div>
