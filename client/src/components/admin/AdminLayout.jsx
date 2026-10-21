@@ -136,16 +136,16 @@ export default function AdminLayout({ children }) {
           })}
         </nav>
 
-        <div className="space-y-1 border-t border-line p-3">
+        <div className="space-y-2 border-t border-line p-3">
           <a
             href={sitioPublico}
             target="_blank"
             rel="noreferrer"
             aria-label={`Abrir sitio público de ${tenant?.nombre || 'AgendaCar'} en una nueva pestaña`}
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink focus-ring"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-graphite-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-graphite-800 focus-ring"
           >
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            Ver sitio público
+            Ver sitio público · Agendar hora
           </a>
           <button
             type="button"
