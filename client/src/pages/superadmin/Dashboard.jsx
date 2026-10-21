@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Building2, CalendarClock, CheckCircle2, Pencil, Plus, PowerOff, Users, X } from 'lucide-react'
+import { Building2, CalendarClock, CheckCircle2, KeyRound, Pencil, Plus, PowerOff, Users, X } from 'lucide-react'
 import SuperadminLayout from '../../components/superadmin/SuperadminLayout'
 import { getTenants, createTenant, toggleTenant, getStats, actualizarVencimiento } from '../../services/superadminService'
+import { cambiarPassword } from '../../services/authService'
+import { getApiErrorMessage } from '../../lib/errors'
 import { Button, Input } from '../../components/ui'
 
 const EMPTY_FORM = {
@@ -22,6 +24,12 @@ export default function SuperadminDashboard() {
   const [editandoVenc, setEditandoVenc] = useState(null) // id del tenant editando
   const [vencInput, setVencInput] = useState('')
   const [guardandoVenc, setGuardandoVenc] = useState(false)
+
+  // Cambio de contraseña
+  const [formPass, setFormPass] = useState({ actual: '', nueva: '', confirmar: '' })
+  const [errorPass, setErrorPass] = useState('')
+  const [okPass, setOkPass] = useState(false)
+  const [guardandoPass, setGuardandoPass] = useState(false)
 
   useEffect(() => {
     Promise.all([getTenants(), getStats()])
@@ -67,6 +75,27 @@ export default function SuperadminDashboard() {
   }
 
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  const handleCambiarPassword = async (e) => {
+    e.preventDefault()
+    setErrorPass('')
+    setOkPass(false)
+    if (!formPass.actual) return setErrorPass('Ingresa tu contraseña actual.')
+    if (formPass.nueva.length < 8) return setErrorPass('La nueva contraseña debe tener al menos 8 caracteres.')
+    if (formPass.nueva !== formPass.confirmar) return setErrorPass('Las contraseñas nuevas no coinciden.')
+    if (guardandoPass) return
+    setGuardandoPass(true)
+    try {
+      await cambiarPassword({ passwordActual: formPass.actual, passwordNueva: formPass.nueva })
+      setOkPass(true)
+      setFormPass({ actual: '', nueva: '', confirmar: '' })
+      window.setTimeout(() => setOkPass(false), 3000)
+    } catch (err) {
+      setErrorPass(getApiErrorMessage(err, 'No pudimos cambiar la contraseña.'))
+    } finally {
+      setGuardandoPass(false)
+    }
+  }
 
   const iniciarEditVenc = (t) => {
     setEditandoVenc(t.id)
@@ -289,6 +318,64 @@ export default function SuperadminDashboard() {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Cambio de contraseña */}
+      <div className="mt-6 rounded-xl border border-line bg-surface shadow-card">
+        <div className="flex items-center gap-2.5 border-b border-line px-5 py-4">
+          <KeyRound className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-ink">Cambiar contraseña</h2>
+        </div>
+        <form onSubmit={handleCambiarPassword} className="p-5">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="block text-xs font-medium text-ink-muted mb-1">Contraseña actual</label>
+              <Input
+                type="password"
+                value={formPass.actual}
+                onChange={e => setFormPass(p => ({ ...p, actual: e.target.value }))}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-ink-muted mb-1">Nueva contraseña</label>
+              <Input
+                type="password"
+                value={formPass.nueva}
+                onChange={e => setFormPass(p => ({ ...p, nueva: e.target.value }))}
+                placeholder="Mínimo 8 caracteres"
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-ink-muted mb-1">Confirmar nueva</label>
+              <Input
+                type="password"
+                value={formPass.confirmar}
+                onChange={e => setFormPass(p => ({ ...p, confirmar: e.target.value }))}
+                placeholder="Repite la nueva contraseña"
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+
+          {errorPass && (
+            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{errorPass}</p>
+          )}
+          {okPass && (
+            <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              Contraseña actualizada correctamente.
+            </p>
+          )}
+
+          <div className="mt-4 flex justify-end">
+            <Button type="submit" loading={guardandoPass} leftIcon={KeyRound} size="sm">
+              Cambiar contraseña
+            </Button>
+          </div>
+        </form>
       </div>
     </SuperadminLayout>
   )
