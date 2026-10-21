@@ -169,6 +169,16 @@ export default function AdminLayout({ children }) {
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Cerrar sesión
           </button>
+          <p className="px-1 text-center text-[10px] text-ink-soft">
+            <a
+              href="https://claunet.cl"
+              target="_blank"
+              rel="noreferrer"
+              className="transition-colors hover:text-ink-muted"
+            >
+              Desarrollado por ClauNet
+            </a>
+          </p>
         </div>
       </aside>
 

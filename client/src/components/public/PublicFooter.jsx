@@ -30,7 +30,17 @@ export default function PublicFooter({ tenant }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 text-xs text-ink-soft">
-          <span>Reservas online con AgendaCar</span>
+          <span>
+            Reservas online con AgendaCar ·{' '}
+            <a
+              href="https://claunet.cl"
+              target="_blank"
+              rel="noreferrer"
+              className="transition-colors hover:text-ink"
+            >
+              Desarrollado por ClauNet
+            </a>
+          </span>
           <span aria-hidden="true">·</span>
           <Link to="/privacidad" className="transition-colors hover:text-ink">
             Privacidad
