@@ -3,14 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   Building2,
-  CalendarDays,
-  CheckCircle2,
-  Clock,
   Mail,
   Phone,
-  RefreshCw,
-  Wrench
+  RefreshCw
 } from 'lucide-react'
+import {
+  IconCalendarDot,
+  IconCheckRing,
+  IconClockThin,
+  IconWrench,
+} from '../../components/public/FeatureIcons'
 import useTenant from '../../hooks/useTenant'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { listarServicios } from '../../services/serviciosService'
@@ -23,9 +25,9 @@ import PublicFooter from '../../components/public/PublicFooter'
 import { Alert, Button, EmptyState, SkeletonText } from '../../components/ui'
 
 const PASOS = [
-  { icon: Wrench, title: 'Elige el servicio', detail: 'Según lo que necesita tu vehículo' },
-  { icon: CalendarDays, title: 'Fecha y hora', detail: 'Solo horarios disponibles' },
-  { icon: CheckCircle2, title: 'Confirma', detail: 'Recibe el detalle de tu cita' }
+  { icon: IconWrench,      title: 'Elige el servicio', detail: 'Según lo que necesita tu vehículo' },
+  { icon: IconCalendarDot, title: 'Fecha y hora',       detail: 'Solo horarios disponibles' },
+  { icon: IconCheckRing,   title: 'Confirma',           detail: 'Recibe el detalle de tu cita' },
 ]
 
 export default function Inicio({ slugOverride = null }) {
@@ -314,7 +316,7 @@ export default function Inicio({ slugOverride = null }) {
             </Alert>
           ) : servicios.length === 0 ? (
             <EmptyState
-              icon={Wrench}
+              icon={IconWrench}
               title="Servicios no publicados"
               description="El taller todavía no tiene servicios disponibles para reservar en línea."
             />
@@ -327,14 +329,14 @@ export default function Inicio({ slugOverride = null }) {
                 >
                   <div className="flex items-start gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-700">
-                      <Wrench className="h-4 w-4" aria-hidden="true" />
+                      <IconWrench className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold leading-snug text-ink">
                         {servicio.nombre}
                       </h3>
                       <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-ink-muted">
-                        <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                        <IconClockThin className="h-3.5 w-3.5" aria-hidden="true" />
                         Duración estimada: {servicio.duracion} min
                       </p>
                     </div>

@@ -1,9 +1,17 @@
 /**
- * Custom SVG icon components for landing feature cards.
- * Style: linear, minimal, white strokes + orange (#f97316) accents.
- * ViewBox: 0 0 40 40 — render at h-10 w-10 (40 px) for best crispness.
+ * Custom SVG icon components.
+ *
+ * LANDING (dark bg) — viewBox 0 0 40 40, render at h-10 w-10
+ *   Style: white strokes + orange (#f97316) accents
+ *   Exports: IconCalendarCheck, IconClockHands, IconCrossedTools,
+ *            IconGrid2x2, IconPersonCar, IconBellCheck
+ *
+ * SYSTEM (light bg) — viewBox 0 0 24 24, render at h-4 w-4 / h-5 w-5
+ *   Style: currentColor strokes (adapts to Tailwind text class) + orange accents
+ *   Exports: IconWrench, IconCalendarDot, IconCheckRing, IconClockThin
  */
 
+/* ── Shared constants ──────────────────────────────────────────────────────── */
 const W  = 'white'
 const O  = '#f97316'
 const SW = 1.8
@@ -140,6 +148,88 @@ export function IconBellCheck({ className }) {
         points="26.5,31 29.5,34.5 34.5,27.5"
         stroke={W} strokeWidth={SW} strokeLinecap="round" strokeLinejoin="round"
       />
+    </svg>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SYSTEM ICONS — light-theme compatible
+   viewBox 0 0 24 24 · stroke="currentColor" · orange (#f97316) accent fills
+   Designed for h-4 w-4 (16 px) – h-5 w-5 (20 px) render sizes
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Wrench — service cards, PASOS step 1, EmptyState ───────────────────── */
+export function IconWrench({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {/* Handle */}
+      <line x1="3" y1="21" x2="14" y2="10"
+            stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      {/* C-head, opening toward handle */}
+      <path d="M19 3 L21.5 5.5 Q23 8.5 19 10 L15 6"
+            stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Orange bolt */}
+      <circle cx="19" cy="6.5" r="2" fill={O} />
+    </svg>
+  )
+}
+
+/* ─── Calendar — PASOS step 2 ────────────────────────────────────────────── */
+export function IconCalendarDot({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {/* Frame */}
+      <rect x="2" y="4" width="18" height="17" rx="1.5"
+            stroke="currentColor" strokeWidth="1.5" />
+      {/* Binding pegs */}
+      <line x1="7"  y1="2" x2="7"  y2="6"
+            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="14" y1="2" x2="14" y2="6"
+            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Header line */}
+      <line x1="2" y1="9" x2="20" y2="9"
+            stroke="currentColor" strokeWidth="1.5" />
+      {/* Date dots row 1 */}
+      <circle cx="7"  cy="13" r="0.85" fill="currentColor" />
+      <circle cx="11" cy="13" r="0.85" fill="currentColor" />
+      <circle cx="15" cy="13" r="0.85" fill="currentColor" />
+      {/* Date dots row 2 */}
+      <circle cx="7" cy="17" r="0.85" fill="currentColor" />
+      {/* Orange accent dot */}
+      <circle cx="15" cy="17" r="1.6" fill={O} />
+    </svg>
+  )
+}
+
+/* ─── Check ring — PASOS step 3 ──────────────────────────────────────────── */
+export function IconCheckRing({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {/* Ring */}
+      <circle cx="12" cy="12" r="9"
+              stroke="currentColor" strokeWidth="1.5" />
+      {/* Orange checkmark */}
+      <polyline points="8,12 11,15.5 16,9"
+                stroke={O} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* ─── Clock — duration row ────────────────────────────────────────────────── */
+export function IconClockThin({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {/* Ring */}
+      <circle cx="12" cy="12" r="9"
+              stroke="currentColor" strokeWidth="1.5" />
+      {/* Hour hand ~10 o'clock */}
+      <line x1="12" y1="12" x2="7.8" y2="7.8"
+            stroke={O} strokeWidth="1.6" strokeLinecap="round" />
+      {/* Minute hand ~2 o'clock */}
+      <line x1="12" y1="12" x2="16.5" y2="7"
+            stroke={O} strokeWidth="1.3" strokeLinecap="round" />
+      {/* Center pivot */}
+      <circle cx="12" cy="12" r="1.2" fill={O} />
     </svg>
   )
 }

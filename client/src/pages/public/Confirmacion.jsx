@@ -1,6 +1,11 @@
 import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { CalendarDays, CalendarPlus, Car, CheckCircle2, Clock, Home, Phone, Wrench } from 'lucide-react'
+import { CalendarPlus, Car, CheckCircle2, Home, Phone } from 'lucide-react'
+import {
+  IconCalendarDot,
+  IconClockThin,
+  IconWrench,
+} from '../../components/public/FeatureIcons'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { formatDateFromISO, formatTimeFromISO } from '../../lib/dates'
 import TenantHeader from '../../components/public/TenantHeader'
@@ -82,13 +87,13 @@ export default function Confirmacion() {
 
           <dl className="grid gap-x-8 gap-y-5 px-4 py-5 sm:grid-cols-2">
             <Dato
-              icon={Wrench}
+              icon={IconWrench}
               label="Servicio"
               value={reserva.servicio?.nombre || 'Servicio'}
               detail={reserva.servicio?.duracion ? `${reserva.servicio.duracion} minutos` : null}
             />
-            <Dato icon={CalendarDays} label="Fecha" value={fecha} />
-            <Dato icon={Clock} label="Hora" value={hora} />
+            <Dato icon={IconCalendarDot} label="Fecha" value={fecha} />
+            <Dato icon={IconClockThin}   label="Hora"  value={hora} />
             <Dato icon={Car} label="Patente" value={reserva.patente} />
           </dl>
 
