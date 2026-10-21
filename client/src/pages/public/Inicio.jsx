@@ -155,7 +155,13 @@ export default function Inicio({ slugOverride = null }) {
 
                 <h1 className="mt-3 break-words text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
                   Agenda tu hora en{' '}
-                  <span className="text-accent-400">{tenant.nombre}</span>
+                  <span className="relative inline-block text-accent-400">
+                    {tenant.nombre}
+                    <span
+                      className="absolute -bottom-0.5 left-0 h-0.5 w-full rounded-full bg-accent-400 opacity-40"
+                      aria-hidden="true"
+                    />
+                  </span>
                 </h1>
                 <p className="mt-3 max-w-lg text-base leading-relaxed text-graphite-300">
                   Elige el servicio, revisa la disponibilidad del taller y confirma tu cita en pocos pasos.
@@ -186,6 +192,7 @@ export default function Inicio({ slugOverride = null }) {
                     <div
                       key={title}
                       className="border-t border-white/10 py-4 first:border-t-0 first:pt-0 sm:border-l sm:border-t-0 sm:px-4 sm:py-0 sm:first:border-l-0 sm:first:pl-0"
+                      style={{ animationDelay: `${index * 120}ms` }}
                     >
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4 text-accent-400" aria-hidden="true" />
@@ -275,11 +282,14 @@ export default function Inicio({ slugOverride = null }) {
 
         <section className="mx-auto max-w-3xl px-4 py-10">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="micro-label">Servicios</p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight text-ink">
-                Qué puedes reservar
-              </h2>
+            <div className="flex items-center gap-3">
+              <span className="h-6 w-0.5 rounded-full bg-accent-400" aria-hidden="true" />
+              <div>
+                <p className="micro-label">Servicios</p>
+                <h2 className="mt-0.5 text-xl font-semibold tracking-tight text-ink">
+                  Qué puedes reservar
+                </h2>
+              </div>
             </div>
             {servicios.length > 0 && (
               <Button variant="secondary" size="sm" onClick={() => reservar()}>
@@ -325,10 +335,10 @@ export default function Inicio({ slugOverride = null }) {
               {servicios.map(servicio => (
                 <article
                   key={servicio.id}
-                  className="flex flex-col rounded-xl border border-line bg-surface p-4 shadow-card"
+                  className="group flex flex-col rounded-xl border border-line bg-surface p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-lg"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-700">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-700 transition-colors duration-200 group-hover:bg-accent-100">
                       <IconWrench className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
