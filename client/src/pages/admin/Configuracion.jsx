@@ -80,9 +80,67 @@ export default function Configuracion() {
     logoUrl: usuario?.tenant?.logoUrl || ''
   })
   const [logoPreviewError, setLogoPreviewError] = useState(false)
+  const [subiendoLogo, setSubiendoLogo] = useState(false)
   const [guardandoPerfil, setGuardandoPerfil] = useState(false)
   const [okPerfil, setOkPerfil] = useState(false)
   const [errorPerfil, setErrorPerfil] = useState('')
+
+  const comprimirImagen = (file) => new Promise((resolve, reject) => {
+    const MAX_PX = 400
+    const MAX_KB = 150
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        if (width > MAX_PX || height > MAX_PX) {
+          if (width > height) { height = Math.round((height * MAX_PX) / width); width = MAX_PX }
+          else { width = Math.round((width * MAX_PX) / height); height = MAX_PX }
+        }
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        // Intenta con calidad decreciente hasta quedar bajo MAX_KB
+        let quality = 0.9
+        let dataUrl
+        do {
+          dataUrl = canvas.toDataURL('image/jpeg', quality)
+          quality -= 0.1
+        } while (dataUrl.length > MAX_KB * 1024 * 1.37 && quality > 0.2)
+        resolve(dataUrl)
+      }
+      img.onerror = reject
+      img.src = e.target.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+
+  const handleLogoFile = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setErrorPerfil('Solo se aceptan imágenes (PNG, JPG, WebP).')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorPerfil('La imagen no debe superar 5 MB.')
+      return
+    }
+    setSubiendoLogo(true)
+    setErrorPerfil('')
+    try {
+      const dataUrl = await comprimirImagen(file)
+      setPerfil(prev => ({ ...prev, logoUrl: dataUrl }))
+      setLogoPreviewError(false)
+    } catch {
+      setErrorPerfil('No pudimos procesar la imagen. Prueba con otro archivo.')
+    } finally {
+      setSubiendoLogo(false)
+      e.target.value = ''
+    }
+  }
 
   useDocumentTitle('Configuración — AgendaCar')
 
@@ -349,42 +407,49 @@ export default function Configuracion() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="perfil-logo" className="block text-xs font-medium text-ink-muted">
-              URL del logo
-            </label>
-            <div className="flex items-start gap-3">
+            <span className="block text-xs font-medium text-ink-muted">Logo del taller</span>
+            <div className="flex items-start gap-4">
               {/* Preview */}
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-line bg-graphite-50 overflow-hidden">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-line bg-graphite-50 overflow-hidden">
                 {perfil.logoUrl && !logoPreviewError ? (
                   <img
                     src={perfil.logoUrl}
                     alt="Preview logo"
-                    className="h-full w-full object-contain p-1"
+                    className="h-full w-full object-contain p-1.5"
                     onError={() => setLogoPreviewError(true)}
                     onLoad={() => setLogoPreviewError(false)}
                   />
                 ) : (
-                  <ImageIcon className="h-6 w-6 text-ink-soft" aria-hidden="true" />
+                  <ImageIcon className="h-7 w-7 text-ink-soft" aria-hidden="true" />
                 )}
               </div>
-              <div className="flex-1 space-y-1">
-                <Input
-                  id="perfil-logo"
-                  value={perfil.logoUrl}
-                  onChange={e => {
-                    setPerfil(prev => ({ ...prev, logoUrl: e.target.value }))
-                    setLogoPreviewError(false)
-                  }}
-                  placeholder="https://mitaller.cl/logo.png"
-                  type="url"
-                />
-                <p className="text-[11px] text-ink-soft">
-                  Pega la URL de tu logo (PNG o SVG con fondo transparente recomendado).
-                  Puedes subirlo a tu sitio web o a{' '}
-                  <a href="https://imgur.com" target="_blank" rel="noreferrer" className="underline hover:text-ink">
-                    imgur.com
-                  </a>{' '}
-                  y copiar el enlace directo.
+
+              <div className="flex-1 space-y-2">
+                {/* Botón subir archivo */}
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-graphite-50 focus-within:ring-2 focus-within:ring-accent-400/25">
+                  <ImageIcon className="h-4 w-4 text-ink-muted" aria-hidden="true" />
+                  {subiendoLogo ? 'Procesando…' : perfil.logoUrl ? 'Cambiar imagen' : 'Subir imagen'}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="sr-only"
+                    onChange={handleLogoFile}
+                    disabled={subiendoLogo}
+                  />
+                </label>
+
+                {perfil.logoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => { setPerfil(prev => ({ ...prev, logoUrl: '' })); setLogoPreviewError(false) }}
+                    className="ml-2 text-xs text-danger-600 hover:underline"
+                  >
+                    Quitar logo
+                  </button>
+                )}
+
+                <p className="text-[11px] leading-relaxed text-ink-soft">
+                  PNG, JPG o WebP · máx. 5 MB. La imagen se comprime automáticamente.
                 </p>
               </div>
             </div>
