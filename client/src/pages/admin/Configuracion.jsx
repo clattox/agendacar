@@ -76,6 +76,7 @@ export default function Configuracion() {
   // Perfil del taller
   const [perfil, setPerfil] = useState({
     nombre: usuario?.tenant?.nombre || '',
+    email: usuario?.tenant?.email || '',
     telefono: usuario?.tenant?.telefono || '',
     logoUrl: usuario?.tenant?.logoUrl || ''
   })
@@ -321,6 +322,7 @@ export default function Configuracion() {
     try {
       const tenantActualizado = await actualizarTenant({
         nombre: perfil.nombre.trim(),
+        email: perfil.email.trim() || null,
         telefono: perfil.telefono.trim() || null,
         logoUrl: perfil.logoUrl.trim() || null
       })
@@ -402,6 +404,20 @@ export default function Configuracion() {
                 onChange={e => setPerfil(prev => ({ ...prev, telefono: e.target.value }))}
                 placeholder="+56 9 1234 5678"
                 maxLength={30}
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <label htmlFor="perfil-email" className="block text-xs font-medium text-ink-muted">
+                Correo del taller
+                <span className="ml-1.5 font-normal text-ink-soft">(recibe avisos de nuevas reservas)</span>
+              </label>
+              <Input
+                id="perfil-email"
+                type="email"
+                value={perfil.email}
+                onChange={e => setPerfil(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="reservas@mitaller.cl"
+                maxLength={120}
               />
             </div>
           </div>
