@@ -55,47 +55,34 @@ const FEATURES = [
   { icon: IconBellCheck,     title: 'Confirmaciones automáticas', desc: 'El taller recibe notificación por cada nueva reserva ingresada.' }
 ]
 
-const TYPEWRITER_TEXT = 'organizado'
+const ROTATING_WORDS = ['organizado', 'moderno', 'en control', 'eficiente', 'sin papel']
 const WS_URL = 'https://wa.me/56982540503?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20sobre%20AgendaCar'
 
 export default function Landing() {
   useDocumentTitle('AgendaCar — Software de agendamiento para talleres')
 
-  /* Typewriter */
-  const [displayed, setDisplayed] = useState('')
-  const [cursorOn, setCursorOn] = useState(true)
-  const [typingDone, setTypingDone] = useState(false)
+  /* Rotación de palabras */
+  const [wordIndex, setWordIndex] = useState(0)
+  const [fadeWord, setFadeWord] = useState(true)
 
   useEffect(() => {
-    let i = 0
-    const type = setInterval(() => {
-      i++
-      setDisplayed(TYPEWRITER_TEXT.slice(0, i))
-      if (i >= TYPEWRITER_TEXT.length) { clearInterval(type); setTypingDone(true) }
-    }, 75)
-    return () => clearInterval(type)
+    const interval = setInterval(() => {
+      setFadeWord(false)
+      setTimeout(() => {
+        setWordIndex(i => (i + 1) % ROTATING_WORDS.length)
+        setFadeWord(true)
+      }, 400)
+    }, 2800)
+    return () => clearInterval(interval)
   }, [])
-
-  /* Parpadeo del cursor — se detiene 2 s después de terminar de escribir */
-  useEffect(() => {
-    const blink = setInterval(() => setCursorOn(v => !v), 530)
-    if (typingDone) {
-      const stop = setTimeout(() => { clearInterval(blink); setCursorOn(false) }, 2000)
-      return () => { clearInterval(blink); clearTimeout(stop) }
-    }
-    return () => clearInterval(blink)
-  }, [typingDone])
 
   return (
     <div className="min-h-screen bg-graphite-950 text-white">
 
       {/* ── Keyframes globales ── */}
       <style>{`
-        @keyframes orb-slow  { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,-30px) scale(1.08)} }
-        @keyframes orb-slow2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-35px,25px) scale(1.06)} }
-        @keyframes orb-slow3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(20px,40px) scale(1.05)} }
-        @keyframes hero-in   { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes hero-in2  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes hero-in  { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes hero-in2 { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
       {/* ── Grilla de fondo ── */}
@@ -108,31 +95,6 @@ export default function Landing() {
         }}
         aria-hidden="true"
       />
-
-      {/* ── Orbs del hero ── */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
-        <div style={{
-          position:'absolute', top:'8%', left:'15%',
-          width:420, height:420, borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%)',
-          filter:'blur(40px)',
-          animation:'orb-slow 9s ease-in-out infinite'
-        }} />
-        <div style={{
-          position:'absolute', top:'20%', right:'10%',
-          width:340, height:340, borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 70%)',
-          filter:'blur(50px)',
-          animation:'orb-slow2 12s ease-in-out infinite'
-        }} />
-        <div style={{
-          position:'absolute', bottom:'15%', left:'35%',
-          width:300, height:300, borderRadius:'50%',
-          background:'radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)',
-          filter:'blur(60px)',
-          animation:'orb-slow3 15s ease-in-out infinite'
-        }} />
-      </div>
 
       {/* ── Nav ── */}
       <header className="relative border-b border-white/10">
@@ -167,18 +129,16 @@ export default function Landing() {
           style={{animation:'hero-in 0.7s ease 0.35s both'}}
         >
           Tu taller,{' '}
-          <span className="text-accent-400">
-            {displayed}
-            <span
-              style={{
-                display:'inline-block', width:'3px', height:'0.85em',
-                background:'#fb923c', marginLeft:'2px', verticalAlign:'middle',
-                borderRadius:'1px',
-                opacity: cursorOn ? 1 : 0,
-                transition:'opacity 0.1s'
-              }}
-              aria-hidden="true"
-            />
+          <span
+            className="text-accent-400"
+            style={{
+              display:'inline-block',
+              opacity: fadeWord ? 1 : 0,
+              transform: fadeWord ? 'translateY(0)' : 'translateY(-8px)',
+              transition:'opacity 0.4s ease, transform 0.4s ease'
+            }}
+          >
+            {ROTATING_WORDS[wordIndex]}
           </span>
           <br />y siempre disponible.
         </h1>
