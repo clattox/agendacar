@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client')
-const nodemailer = require('nodemailer')
+const { Resend } = require('resend')
 
 const prisma = new PrismaClient()
 
@@ -337,16 +337,8 @@ const esFechaHoraValida = (fecha, hora) => {
 
 // ─── Email helpers ────────────────────────────────────────────────────────────
 
-const crearTransporter = () =>
-  nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: Number(process.env.MAIL_PORT) || 465,
-    secure: (Number(process.env.MAIL_PORT) || 465) === 465,
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS
-    }
-  })
+const getResend = () => new Resend(process.env.RESEND_API_KEY)
+const MAIL_FROM = process.env.MAIL_FROM || 'AgendaCar <reservas@agendacar.cl>'
 
 const baseEmail = (contenido) => `
 <!DOCTYPE html>
@@ -451,8 +443,8 @@ const htmlConfirmacionCliente = ({ reserva, tenant, fechaFormateada, horaFormate
 // ─── Enviar notificaciones ────────────────────────────────────────────────────
 
 const enviarNotificacion = async (reserva) => {
-  if (!process.env.MAIL_HOST || !process.env.MAIL_USER || !process.env.MAIL_PASS) {
-    console.warn('Email no configurado: faltan variables MAIL_HOST / MAIL_USER / MAIL_PASS')
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Email] RESEND_API_KEY no configurada — emails desactivados')
     return
   }
 
@@ -464,30 +456,33 @@ const enviarNotificacion = async (reserva) => {
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC'
   })
 
+  const resend = getResend()
   const tenant = reserva.tenant
   const promesas = []
 
   // 1. Notificación al taller
   if (tenant?.email) {
     promesas.push(
-      crearTransporter().sendMail({
-        from: `"AgendaCar" <${process.env.MAIL_USER}>`,
+      resend.emails.send({
+        from: MAIL_FROM,
         to: tenant.email,
         subject: `Nueva reserva — ${reserva.nombre} (${reserva.patente})`,
         html: htmlNotificacionTaller({ reserva, fechaFormateada, horaFormateada })
-      }).catch(err => console.error('Error email taller:', err.message))
+      }).then(r => { if (r.error) console.error('[Email] taller:', r.error) })
+        .catch(err => console.error('[Email] taller:', err.message))
     )
   }
 
   // 2. Confirmación al cliente (solo si dejó su email)
   if (reserva.email) {
     promesas.push(
-      crearTransporter().sendMail({
-        from: `"${tenant?.nombre || 'AgendaCar'}" <${process.env.MAIL_USER}>`,
+      resend.emails.send({
+        from: MAIL_FROM,
         to: reserva.email,
         subject: `Reserva confirmada — ${fechaFormateada} a las ${horaFormateada}`,
         html: htmlConfirmacionCliente({ reserva, tenant, fechaFormateada, horaFormateada })
-      }).catch(err => console.error('Error email cliente:', err.message))
+      }).then(r => { if (r.error) console.error('[Email] cliente:', r.error) })
+        .catch(err => console.error('[Email] cliente:', err.message))
     )
   }
 
