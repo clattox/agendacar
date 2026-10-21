@@ -97,7 +97,7 @@ export default function Landing() {
         </p>
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <a
-            href="mailto:clattox@gmail.com?subject=Quiero%20probar%20AgendaCar"
+            href="mailto:claudio@claunet.cl?subject=Quiero%20probar%20AgendaCar"
             className="inline-flex items-center gap-2 rounded-md bg-accent-400 px-6 py-3 text-sm font-semibold text-white transition hover:bg-accent-500"
           >
             Solicitar demo gratis
@@ -209,7 +209,7 @@ export default function Landing() {
             Escríbenos y te configuramos en menos de 24 horas.
           </p>
           <a
-            href="mailto:clattox@gmail.com?subject=Quiero%20probar%20AgendaCar"
+            href="mailto:claudio@claunet.cl?subject=Quiero%20probar%20AgendaCar"
             className="mt-8 inline-flex items-center gap-2 rounded-md bg-accent-400 px-8 py-3 text-sm font-semibold text-white transition hover:bg-accent-500"
           >
             Contactar ahora
