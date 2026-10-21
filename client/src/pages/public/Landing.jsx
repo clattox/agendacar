@@ -116,18 +116,20 @@ export default function Landing() {
       </section>
 
       {/* Features */}
-      <section className="relative mx-auto max-w-6xl px-6 pb-24">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="relative mx-auto max-w-2xl px-6 pb-24">
+        <div className="flex flex-col gap-3">
           {FEATURES.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="rounded-xl border border-white/10 bg-white/[0.04] p-6"
+              className="flex items-center gap-5 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4"
             >
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-accent-400/15 text-accent-300">
-                <Icon className="h-4 w-4" aria-hidden="true" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-400/15 text-accent-300">
+                <Icon className="h-6 w-6" aria-hidden="true" />
               </div>
-              <p className="text-sm font-semibold text-white">{title}</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-white/50">{desc}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">{title}</p>
+                <p className="mt-0.5 text-sm leading-relaxed text-white/50">{desc}</p>
+              </div>
             </div>
           ))}
         </div>
