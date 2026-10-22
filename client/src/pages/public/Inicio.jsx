@@ -31,6 +31,39 @@ const PASOS = [
   { icon: IconCheckRing,   title: 'Confirma',           detail: 'Recibe el detalle de tu cita' },
 ]
 
+/** Devuelve el icono SVG/imagen correspondiente al nombre del servicio */
+function ServicioIcon({ nombre }) {
+  const lower = (nombre ?? '').toLowerCase()
+  let src = null
+  let isPhoto = false
+
+  if (/neumátic|neumatic|montaje|desmontaje/.test(lower)) {
+    src = '/assets/neumatico.png'; isPhoto = true
+  } else if (/aceite|filtro/.test(lower)) {
+    src = '/assets/cambio-aceite.svg'
+  } else if (/freno/.test(lower)) {
+    src = '/assets/frenos.svg'
+  } else if (/alineac|balanceo/.test(lower)) {
+    src = '/assets/alineacion-balanceo.svg'
+  } else if (/diagnóst|diagnost/.test(lower)) {
+    src = '/assets/diagnostico.svg'
+  } else if (/revisión|revision/.test(lower)) {
+    src = '/assets/revision-general.svg'
+  }
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        aria-hidden="true"
+        className={isPhoto ? 'h-9 w-9 object-contain' : 'h-8 w-8'}
+      />
+    )
+  }
+  return <IconWrench className="h-5 w-5 text-accent-700" aria-hidden="true" />
+}
+
 export default function Inicio({ slugOverride = null }) {
   const navigate = useNavigate()
   const { tenant, loading, error, recargar } = useTenant(null, slugOverride)
@@ -183,7 +216,16 @@ export default function Inicio({ slugOverride = null }) {
       />
       <main className="flex-1">
         <section className="mx-auto w-full max-w-3xl px-4 pt-6 sm:pt-8">
-          <div className="rounded-xl bg-graphite-900 p-6 sm:p-8 lg:p-10">
+          <div className="relative overflow-hidden rounded-xl">
+            {/* Fotografía de fondo del hero */}
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: 'url(/assets/hero-taller.png)', backgroundPosition: 'center 40%' }}
+              aria-hidden="true"
+            />
+            {/* Capa oscura para legibilidad */}
+            <div className="absolute inset-0 bg-graphite-900/82" aria-hidden="true" />
+            <div className="relative z-10 p-6 sm:p-8 lg:p-10">
             <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-10">
               <div className="min-w-0">
                 <span className="micro-label inline-flex items-center gap-2 text-graphite-300">
@@ -245,7 +287,7 @@ export default function Inicio({ slugOverride = null }) {
                 </div>
               </div>
 
-              <aside className="min-w-0 rounded-lg border border-white/10 bg-graphite-50 p-5">
+              <aside className="min-w-0 rounded-lg border border-[#E1E3E6] bg-white p-5 shadow-sm">
                 <p className="micro-label">Datos del taller</p>
 
                 <dl className="mt-3 space-y-2.5 text-sm">
@@ -322,7 +364,8 @@ export default function Inicio({ slugOverride = null }) {
                 </div>
               </aside>
             </div>
-          </div>
+            </div>{/* /relative z-10 */}
+          </div>{/* /relative overflow-hidden */}
         </section>
 
         <section className="mx-auto max-w-3xl px-4 py-10">
@@ -383,8 +426,8 @@ export default function Inicio({ slugOverride = null }) {
                   className="group flex flex-col rounded-xl border border-line bg-surface p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-lg"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-700 transition-colors duration-200 group-hover:bg-accent-100">
-                      <IconWrench className="h-5 w-5" aria-hidden="true" />
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-50 transition-colors duration-200 group-hover:bg-accent-100">
+                      <ServicioIcon nombre={servicio.nombre} />
                     </span>
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold leading-snug text-ink">
