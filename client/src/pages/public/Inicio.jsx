@@ -239,14 +239,14 @@ export default function Inicio({ slugOverride = null }) {
               aria-hidden="true"
             />
             <div className="relative z-10 p-6 sm:p-8 lg:p-10">
-            <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:gap-8">
-              <div className="min-w-0 max-w-lg">
+            <div className="grid gap-6 md:grid-cols-[1fr_280px] md:gap-6 lg:grid-cols-[1fr_300px] lg:gap-8">
+              <div className="min-w-0">
                 <span className="micro-label inline-flex items-center gap-2 text-graphite-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
                   Reserva online
                 </span>
 
-                <h1 className="mt-3 max-w-sm break-words text-3xl font-bold leading-snug tracking-tight text-white sm:text-4xl">
+                <h1 className="mt-3 break-words text-3xl font-bold leading-snug tracking-tight text-white sm:text-4xl">
                   Agenda tu hora en{' '}
                   <span className="relative inline-block text-accent-400">
                     {tenant.nombre}
@@ -256,7 +256,7 @@ export default function Inicio({ slugOverride = null }) {
                     />
                   </span>
                 </h1>
-                <p className="mt-3 max-w-sm text-base leading-relaxed text-graphite-200">
+                <p className="mt-3 text-base leading-relaxed text-graphite-200">
                   Elige el servicio, revisa la disponibilidad del taller y confirma tu cita en pocos pasos.
                 </p>
 
@@ -299,7 +299,7 @@ export default function Inicio({ slugOverride = null }) {
                 </div>
               </div>
 
-              <aside className="min-w-0 rounded-lg border border-[#E1E3E6] bg-white p-5 shadow-sm">
+              <aside className="min-w-0 self-start rounded-lg border border-[#E1E3E6] bg-white p-4 shadow-sm md:p-4 lg:p-5">
                 <p className="micro-label">Datos del taller</p>
 
                 <dl className="mt-3 space-y-2.5 text-sm">
