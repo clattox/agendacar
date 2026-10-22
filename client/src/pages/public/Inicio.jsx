@@ -192,7 +192,8 @@ export default function Inicio({ slugOverride = null }) {
     }
 
     if (sabado) {
-      bloques.push({ label: DIAS_SEMANA[6], horario: sabado })
+      // Sábado: se muestra solo el horario de atención, sin colación (ajuste visual, no modifica BD)
+      bloques.push({ label: DIAS_SEMANA[6], horario: sabado, ocultarColacion: true })
     }
 
     // Domingo (raro, pero por si acaso)
@@ -223,17 +224,29 @@ export default function Inicio({ slugOverride = null }) {
               style={{ backgroundImage: 'url(/assets/hero-taller.png)', backgroundPosition: 'center 40%' }}
               aria-hidden="true"
             />
-            {/* Capa oscura para legibilidad */}
-            <div className="absolute inset-0 bg-graphite-900/82" aria-hidden="true" />
+            {/* Capa de contraste: más oscura a la izquierda donde está el texto */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(to right, rgba(36,39,43,0.93) 0%, rgba(36,39,43,0.80) 55%, rgba(36,39,43,0.55) 100%)'
+              }}
+              aria-hidden="true"
+            />
+            {/* Gradiente vertical en móvil para que el texto sea legible al apilar columnas */}
+            <div
+              className="absolute inset-0 lg:hidden"
+              style={{ background: 'linear-gradient(to bottom, rgba(36,39,43,0.20) 0%, rgba(36,39,43,0.10) 100%)' }}
+              aria-hidden="true"
+            />
             <div className="relative z-10 p-6 sm:p-8 lg:p-10">
-            <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-10">
-              <div className="min-w-0">
+            <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:gap-8">
+              <div className="min-w-0 max-w-lg">
                 <span className="micro-label inline-flex items-center gap-2 text-graphite-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
                   Reserva online
                 </span>
 
-                <h1 className="mt-3 break-words text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
+                <h1 className="mt-3 max-w-sm break-words text-3xl font-bold leading-snug tracking-tight text-white sm:text-4xl">
                   Agenda tu hora en{' '}
                   <span className="relative inline-block text-accent-400">
                     {tenant.nombre}
@@ -243,7 +256,7 @@ export default function Inicio({ slugOverride = null }) {
                     />
                   </span>
                 </h1>
-                <p className="mt-3 max-w-lg text-base leading-relaxed text-graphite-300">
+                <p className="mt-3 max-w-sm text-base leading-relaxed text-graphite-200">
                   Elige el servicio, revisa la disponibilidad del taller y confirma tu cita en pocos pasos.
                 </p>
 
@@ -267,12 +280,11 @@ export default function Inicio({ slugOverride = null }) {
                   )}
                 </div>
 
-                <div className="mt-9 grid grid-cols-1 sm:grid-cols-3">
+                <div className="mt-8 grid grid-cols-1 gap-y-3 sm:grid-cols-3 sm:gap-y-0">
                   {PASOS.map(({ icon: Icon, title, detail }, index) => (
                     <div
                       key={title}
-                      className="border-t border-white/10 py-4 first:border-t-0 first:pt-0 sm:border-l sm:border-t-0 sm:px-4 sm:py-0 sm:first:border-l-0 sm:first:pl-0"
-                      style={{ animationDelay: `${index * 120}ms` }}
+                      className="rounded-md border-t border-white/10 py-3.5 first:border-t-0 first:pt-0 sm:border-l sm:border-t-0 sm:px-4 sm:py-0 sm:first:border-l-0 sm:first:pl-0"
                     >
                       <div className="flex items-center gap-2">
                         <Icon className="h-4 w-4 text-accent-400" aria-hidden="true" />
@@ -280,7 +292,7 @@ export default function Inicio({ slugOverride = null }) {
                           0{index + 1}
                         </span>
                       </div>
-                      <p className="mt-1.5 text-sm font-semibold text-white">{title}</p>
+                      <p className="mt-1.5 text-sm font-semibold leading-snug text-white">{title}</p>
                       <p className="mt-0.5 text-xs leading-relaxed text-graphite-300">{detail}</p>
                     </div>
                   ))}
@@ -341,7 +353,7 @@ export default function Inicio({ slugOverride = null }) {
                     </p>
                   ) : (
                     <ul className="mt-2.5 space-y-2">
-                      {bloqueHorarios.map(({ label, horario }, idx) => (
+                      {bloqueHorarios.map(({ label, horario, ocultarColacion }, idx) => (
                         <li key={`${label}-${idx}`} className="text-xs">
                           <div className="flex items-baseline justify-between gap-3">
                             <span className="text-ink-muted">{label}</span>
@@ -349,7 +361,7 @@ export default function Inicio({ slugOverride = null }) {
                               {horario.horaInicio} – {horario.horaFin}
                             </span>
                           </div>
-                          {horario.inicioColacion && horario.finColacion && (
+                          {!ocultarColacion && horario.inicioColacion && horario.finColacion && (
                             <div className="mt-0.5 flex items-center justify-end gap-1 text-accent-500">
                               <UtensilsCrossed className="h-3 w-3 shrink-0" aria-hidden="true" />
                               <span className="font-tabular tabular-nums text-ink-muted">
