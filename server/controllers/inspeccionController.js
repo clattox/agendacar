@@ -6,6 +6,7 @@ const prisma = new PrismaClient()
 const getInspeccion = async (req, res) => {
   const tenantId = req.usuario.tenantId
   const reservaId = parseInt(req.params.reservaId)
+  console.log(`[inspeccion] GET reservaId=${reservaId} tenantId=${tenantId}`)
 
   try {
     // Verificar que la reserva pertenece al tenant
@@ -17,12 +18,13 @@ const getInspeccion = async (req, res) => {
         inspeccion: { include: { danos: { orderBy: { createdAt: 'asc' } }, realizadaPor: true } }
       }
     })
-    if (!reserva) return res.status(404).json({ error: 'Reserva no encontrada' })
+    console.log(`[inspeccion] reserva:`, reserva ? `id=${reserva.id}` : 'null')
+    if (!reserva) return res.status(404).json({ error: `Reserva ${reservaId} no encontrada para tenant ${tenantId}` })
 
     res.json({ reserva, inspeccion: reserva.inspeccion || null })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: 'Error al obtener inspección' })
+    console.error('[inspeccion] ERROR:', err.message)
+    res.status(500).json({ error: 'Error al obtener inspección: ' + err.message })
   }
 }
 
