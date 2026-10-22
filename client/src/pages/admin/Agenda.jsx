@@ -595,7 +595,16 @@ export default function Agenda() {
               >
                 Reagendar
               </Button>
-              {detalle.estado === 'confirmada' && (
+              {inspeccionActiva && detalle.servicio?.requiereInspeccion && (
+                <Button
+                  variant="secondary"
+                  leftIcon={ClipboardList}
+                  onClick={() => navigate(`/admin/inspeccion/${detalle.id}`)}
+                >
+                  {detalle.estado === 'inspeccionada' ? 'Ver inspección' : 'Inspeccionar'}
+                </Button>
+              )}
+              {(detalle.estado === 'confirmada' || detalle.estado === 'inspeccionada') && (
                 <>
                   <Button
                     variant="danger-ghost"
