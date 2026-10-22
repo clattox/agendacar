@@ -8,12 +8,14 @@ import {
   Copy,
   ImageIcon,
   KeyRound,
+  Pencil,
   Plus,
   Save,
   Store,
   Trash2,
   UtensilsCrossed,
-  Wrench
+  Wrench,
+  X
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { DIAS_SEMANA } from '../../lib/dates'
@@ -24,6 +26,7 @@ import {
   listarHorarios
 } from '../../services/horariosService'
 import {
+  actualizarServicio,
   crearServicio,
   eliminarServicio,
   listarServicios
@@ -52,6 +55,9 @@ export default function Configuracion() {
   const [servicios, setServicios] = useState([])
   const [horarios, setHorarios] = useState([])
   const [nuevoServicio, setNuevoServicio] = useState({ nombre: '', duracion: 30 })
+  const [editandoServicio, setEditandoServicio] = useState(null) // { id, nombre, duracion }
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false)
+  const [errorEdicion, setErrorEdicion] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [errorServicio, setErrorServicio] = useState('')
@@ -202,6 +208,41 @@ export default function Configuracion() {
       setErrorServicio(getApiErrorMessage(err, 'No pudimos agregar el servicio.'))
     } finally {
       setGuardandoServicio(false)
+    }
+  }
+
+  const iniciarEdicion = (servicio) => {
+    setEditandoServicio({ id: servicio.id, nombre: servicio.nombre, duracion: servicio.duracion })
+    setErrorEdicion('')
+  }
+
+  const cancelarEdicion = () => {
+    setEditandoServicio(null)
+    setErrorEdicion('')
+  }
+
+  const guardarEdicion = async (event) => {
+    event?.preventDefault()
+    const nombre = editandoServicio.nombre.trim()
+    if (!nombre) {
+      setErrorEdicion('Escribe el nombre del servicio.')
+      return
+    }
+    if (guardandoEdicion) return
+
+    setGuardandoEdicion(true)
+    setErrorEdicion('')
+    try {
+      const actualizado = await actualizarServicio(editandoServicio.id, {
+        nombre,
+        duracion: editandoServicio.duracion,
+      })
+      setServicios(prev => prev.map(s => s.id === actualizado.id ? actualizado : s))
+      setEditandoServicio(null)
+    } catch (err) {
+      setErrorEdicion(getApiErrorMessage(err, 'No pudimos actualizar el servicio.'))
+    } finally {
+      setGuardandoEdicion(false)
     }
   }
 
@@ -572,19 +613,79 @@ export default function Configuracion() {
             ) : (
               <ul className="divide-y divide-line">
                 {servicios.map(servicio => (
-                  <li key={servicio.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-ink">{servicio.nombre}</p>
-                      <p className="text-xs text-ink-muted">{servicio.duracion} minutos</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setAEliminar(servicio)}
-                      className="rounded-md p-2 text-ink-soft transition-colors hover:bg-danger-50 hover:text-danger-600 focus-ring"
-                      aria-label={`Eliminar ${servicio.nombre}`}
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    </button>
+                  <li key={servicio.id} className="py-2.5">
+                    {editandoServicio?.id === servicio.id ? (
+                      <form onSubmit={guardarEdicion} className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <Input
+                            value={editandoServicio.nombre}
+                            onChange={e => setEditandoServicio(prev => ({ ...prev, nombre: e.target.value }))}
+                            aria-label="Nombre del servicio"
+                            invalid={Boolean(errorEdicion)}
+                            maxLength={80}
+                            autoFocus
+                          />
+                          <Select
+                            value={editandoServicio.duracion}
+                            onChange={e => setEditandoServicio(prev => ({ ...prev, duracion: Number(e.target.value) }))}
+                            aria-label="Duración"
+                            className="w-24 shrink-0"
+                          >
+                            {DURACIONES.map(d => (
+                              <option key={d} value={d}>{d} min</option>
+                            ))}
+                          </Select>
+                        </div>
+                        {errorEdicion && (
+                          <p role="alert" className="text-xs text-danger-600">{errorEdicion}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            type="submit"
+                            size="sm"
+                            variant="dark"
+                            leftIcon={Check}
+                            loading={guardandoEdicion}
+                          >
+                            Guardar
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            leftIcon={X}
+                            onClick={cancelarEdicion}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-ink">{servicio.nombre}</p>
+                          <p className="text-xs text-ink-muted">{servicio.duracion} minutos</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => iniciarEdicion(servicio)}
+                            className="rounded-md p-2 text-ink-soft transition-colors hover:bg-graphite-50 hover:text-ink focus-ring"
+                            aria-label={`Editar ${servicio.nombre}`}
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAEliminar(servicio)}
+                            className="rounded-md p-2 text-ink-soft transition-colors hover:bg-danger-50 hover:text-danger-600 focus-ring"
+                            aria-label={`Eliminar ${servicio.nombre}`}
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

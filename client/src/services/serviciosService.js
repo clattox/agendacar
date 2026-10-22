@@ -10,6 +10,11 @@ export async function crearServicio({ nombre, duracion }) {
   return data
 }
 
+export async function actualizarServicio(id, { nombre, duracion }) {
+  const { data } = await api.put(`/servicios/${id}`, { nombre, duracion })
+  return data
+}
+
 export async function eliminarServicio(id) {
   const { data } = await api.delete(`/servicios/${id}`)
   return data
