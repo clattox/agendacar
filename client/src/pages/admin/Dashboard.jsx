@@ -190,7 +190,7 @@ export default function Dashboard() {
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <RankingPanel
           title="Servicios más solicitados"
-          description="Top 5 de servicios por cantidad de reservas."
+          description="Top 5 por total de reservas registradas (todos los estados)."
           icon={Wrench}
           items={servicios.map(servicio => ({
             label: servicio.nombre,
@@ -203,12 +203,12 @@ export default function Dashboard() {
         />
         <RankingPanel
           title="Días más ocupados"
-          description="Distribución de reservas de lunes a sábado."
+          description="Distribución histórica de lunes a sábado (todos los estados)."
           icon={CalendarDays}
           items={diasSemana}
           loading={loadingEstadisticas}
           error={errorEstadisticas}
-          barClassName="bg-graphite-700"
+          barClassName="bg-graphite-500"
           emptyDescription="Aún no hay reservas registradas en la semana."
         />
       </div>
@@ -217,21 +217,21 @@ export default function Dashboard() {
 }
 
 const TONES = {
-  accent: { box: 'bg-accent-50 text-accent-600', value: 'text-ink' },
-  success: { box: 'bg-success-50 text-success-600', value: 'text-ink' },
-  neutral: { box: 'bg-graphite-100 text-graphite-600', value: 'text-ink' },
-  muted: { box: 'bg-graphite-100 text-graphite-400', value: 'text-ink-muted' }
+  accent:  { box: 'bg-accent-50 text-accent-600',   border: 'border-l-accent-500',   value: 'text-ink' },
+  success: { box: 'bg-success-50 text-success-600', border: 'border-l-success-500',  value: 'text-ink' },
+  neutral: { box: 'bg-graphite-100 text-graphite-600', border: 'border-l-graphite-300', value: 'text-ink' },
+  muted:   { box: 'bg-graphite-100 text-graphite-400', border: 'border-l-graphite-200', value: 'text-ink-muted' }
 }
 
 function MetricCard({ icon: Icon, label, value, detail, tone = 'neutral', loading }) {
   const styles = TONES[tone] || TONES.neutral
   return (
-    <div className="rounded-xl border border-line bg-surface p-4 shadow-card">
+    <div className={`rounded-xl border border-line border-l-4 bg-surface p-4 shadow-card ${styles.border}`}>
       <div className="flex items-center gap-2">
-        <span className={`flex h-7 w-7 items-center justify-center rounded ${styles.box}`}>
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded ${styles.box}`}>
           <Icon className="h-3.5 w-3.5" aria-hidden="true" />
         </span>
-        <span className="text-xs font-semibold text-ink-muted">{label}</span>
+        <span className="text-xs font-semibold text-ink-muted leading-tight">{label}</span>
       </div>
       {loading ? (
         <Skeleton className="mt-3 h-8 w-12" />
@@ -350,6 +350,17 @@ function PanelMensaje({ icon: Icon, title, description }) {
   )
 }
 
+// Mes actual en la zona horaria del taller (America/Santiago).
+function obtenerClavesMesActual() {
+  const partes = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: 'numeric'
+  }).formatToParts(new Date())
+  const vals = Object.fromEntries(partes.map(({ type, value }) => [type, value]))
+  return `${vals.year}-${String(vals.month).padStart(2, '0')}`
+}
+
 function ReservasPorMesChart({ datos, loading, error }) {
   const [hover, setHover] = useState(null)
 
@@ -378,9 +389,11 @@ function ReservasPorMesChart({ datos, loading, error }) {
     )
   }
 
+  const mesActual = obtenerClavesMesActual()
+
   const ancho = 640
-  const alto = 280
-  const margen = { top: 24, right: 16, bottom: 40, left: 40 }
+  const alto = 300
+  const margen = { top: 32, right: 16, bottom: 40, left: 40 }
   const anchoPlot = ancho - margen.left - margen.right
   const altoPlot = alto - margen.top - margen.bottom
   const { escala, paso } = calcularEscala(maximo)
@@ -423,6 +436,7 @@ function ReservasPorMesChart({ datos, loading, error }) {
 
         {serie.map((item, index) => {
           const total = Number(item.total) || 0
+          const esMesActual = item.mes === mesActual
           const alturaBarra = (total / escala) * altoPlot
           const x = margen.left + index * anchoBanda + (anchoBanda - anchoBarra) / 2
           const y = margen.top + altoPlot - alturaBarra
@@ -430,6 +444,9 @@ function ReservasPorMesChart({ datos, loading, error }) {
           const etiqueta = etiquetaMes(item.mes)
           const etiquetaLarga = etiquetaMesLarga(item.mes)
           const activo = hover === index
+          // Mes actual: naranja. Meses anteriores: grafito suave.
+          const fillBarra = esMesActual ? '#F47732' : '#C8CDD5'
+          const opacidadBarra = hover === null || activo ? 1 : 0.55
           const tooltipAncho = Math.max(72, String(total).length * 7 + 42)
           const tooltipX = Math.min(
             Math.max(centro - tooltipAncho / 2, margen.left),
@@ -444,6 +461,7 @@ function ReservasPorMesChart({ datos, loading, error }) {
               onMouseLeave={() => setHover(null)}
               className="cursor-default"
             >
+              {/* Zona de hover amplia */}
               <rect
                 x={margen.left + index * anchoBanda}
                 y={margen.top}
@@ -451,16 +469,31 @@ function ReservasPorMesChart({ datos, loading, error }) {
                 height={altoPlot}
                 fill="transparent"
               />
+              {/* Barra */}
               <rect
                 x={x}
                 y={y}
                 width={anchoBarra}
                 height={total > 0 ? Math.max(alturaBarra, 2) : 0}
                 rx="4"
-                fill="#F47732"
-                opacity={hover === null || activo ? 1 : 0.5}
+                fill={fillBarra}
+                opacity={opacidadBarra}
               />
-              {activo && (
+              {/* Etiqueta de valor sobre la barra (siempre visible) */}
+              {total > 0 && (
+                <text
+                  x={centro}
+                  y={y - 6}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="600"
+                  fill={esMesActual ? '#F47732' : '#8C939D'}
+                >
+                  {total}
+                </text>
+              )}
+              {/* Tooltip al hacer hover */}
+              {activo && total > 0 && (
                 <g pointerEvents="none">
                   <rect
                     x={tooltipX}
@@ -482,12 +515,14 @@ function ReservasPorMesChart({ datos, loading, error }) {
                   </text>
                 </g>
               )}
+              {/* Etiqueta del mes en el eje X */}
               <text
                 x={centro}
                 y={alto - 14}
                 textAnchor="middle"
                 fontSize="11"
-                fill="#69717B"
+                fontWeight={esMesActual ? '700' : '400'}
+                fill={esMesActual ? '#F47732' : '#69717B'}
               >
                 {etiqueta}
               </text>
