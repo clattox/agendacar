@@ -211,7 +211,7 @@ export default function Inspeccion() {
         // Cargar usuarios del tenant para el selector de responsable
         // Reutilizamos el endpoint de auth que devuelve el perfil con tenant
         const api = import.meta.env.VITE_API_URL
-        const resU = await fetch(`${api}/api/auth/usuarios`, { headers: { Authorization: `Bearer ${getToken()}` } })
+        const resU = await fetch(`${api}/auth/usuarios`, { headers: { Authorization: `Bearer ${getToken()}` } })
         if (resU.ok) setUsuarios(await resU.json())
       } catch (e) {
         setError(e?.message || 'No se pudo cargar la información de la reserva.')
