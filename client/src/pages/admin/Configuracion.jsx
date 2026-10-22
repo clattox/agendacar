@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react'
 import {
   Ban,
   Check,
+  ChevronDown,
+  ChevronUp,
   Clock,
+  Copy,
   ImageIcon,
   KeyRound,
   Plus,
   Save,
   Store,
   Trash2,
+  UtensilsCrossed,
   Wrench
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
@@ -56,6 +60,9 @@ export default function Configuracion() {
   const [aEliminar, setAEliminar] = useState(null)
   const [guardandoHorarios, setGuardandoHorarios] = useState(false)
   const [okHorarios, setOkHorarios] = useState(false)
+  const [diasExpandidos, setDiasExpandidos] = useState({})
+  const [dialogoCopiar, setDialogoCopiar] = useState(null) // index del día origen
+  const [diasDestino, setDiasDestino] = useState([])
 
   // Bloqueos
   const [bloqueos, setBloqueos] = useState([])
@@ -250,6 +257,47 @@ export default function Configuracion() {
       idx === index ? { ...horario, [campo]: valor } : horario
     )))
   }
+
+  const toggleExpandido = (index) => {
+    setDiasExpandidos(prev => ({ ...prev, [index]: !prev[index] }))
+  }
+
+  const copiarHorario = () => {
+    if (dialogoCopiar === null || diasDestino.length === 0) return
+    const origen = horarios[dialogoCopiar]
+    setHorarios(prev => prev.map((h, i) =>
+      diasDestino.includes(i)
+        ? { ...origen, diaSemana: i }
+        : h
+    ))
+    setDialogoCopiar(null)
+    setDiasDestino([])
+  }
+
+  const toggleDiaDestino = (index) => {
+    setDiasDestino(prev =>
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    )
+  }
+
+  // Genera opciones de horas en formato 24h cada 30 min (00:00 – 23:30)
+  const HORAS_DIA = Array.from({ length: 48 }, (_, i) => {
+    const h = Math.floor(i / 2).toString().padStart(2, '0')
+    const m = i % 2 === 0 ? '00' : '30'
+    return `${h}:${m}`
+  })
+
+  const resumenHorario = (horario) => {
+    if (!horario.activo) return null
+    const { horaInicio, horaFin, inicioColacion, finColacion } = horario
+    if (inicioColacion && finColacion) {
+      return `${horaInicio} – ${inicioColacion} · ${finColacion} – ${horaFin}`
+    }
+    return `${horaInicio} – ${horaFin}`
+  }
+
+  const selectClass = (disabled) =>
+    `h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 ${disabled ? 'cursor-not-allowed opacity-50 bg-graphite-50' : ''}`
 
   const agregarBloqueo = async (e) => {
     e?.preventDefault()
@@ -597,87 +645,184 @@ export default function Configuracion() {
 
           <div className="px-4 py-4">
             {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 7 }).map((_, index) => (
-                  <Skeleton key={index} className="h-10 w-full" />
+              <div className="space-y-2">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
                 ))}
               </div>
             ) : (
-              <div className="space-y-1">
-                {horarios.map((horario, index) => (
-                  <div
-                    key={DIAS_SEMANA[index]}
-                    className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md px-2 py-2 transition-colors ${
-                      horario.activo ? 'bg-graphite-50' : ''
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleDia(index)}
-                      role="switch"
-                      aria-checked={horario.activo}
-                      aria-label={`Activar ${DIAS_SEMANA[index]}`}
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors focus-ring ${
-                        horario.activo
-                          ? 'border-accent-400 bg-accent-400 text-white'
-                          : 'border-graphite-300 bg-surface'
-                      }`}
+              <div className="space-y-2">
+                {horarios.map((horario, index) => {
+                  const expandido = !!diasExpandidos[index]
+                  const resumen = resumenHorario(horario)
+                  const tieneColacion = !!(horario.inicioColacion && horario.finColacion)
+
+                  return (
+                    <div
+                      key={DIAS_SEMANA[index]}
+                      className="rounded-lg border border-line overflow-hidden"
                     >
-                      {horario.activo && <Check className="h-3 w-3" aria-hidden="true" />}
-                    </button>
+                      {/* Fila de cabecera (siempre visible) */}
+                      <div className={`flex items-center gap-2 px-3 py-2.5 ${expandido ? 'bg-graphite-50' : 'bg-surface'}`}>
+                        {/* Toggle activo */}
+                        <button
+                          type="button"
+                          onClick={() => toggleDia(index)}
+                          role="switch"
+                          aria-checked={horario.activo}
+                          aria-label={`Activar ${DIAS_SEMANA[index]}`}
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors focus-ring ${
+                            horario.activo
+                              ? 'border-accent-400 bg-accent-400 text-white'
+                              : 'border-graphite-300 bg-surface'
+                          }`}
+                        >
+                          {horario.activo && <Check className="h-3 w-3" aria-hidden="true" />}
+                        </button>
 
-                    <span
-                      className={`w-24 shrink-0 text-sm font-medium ${
-                        horario.activo ? 'text-ink' : 'text-ink-soft'
-                      }`}
-                    >
-                      {DIAS_SEMANA[index]}
-                    </span>
+                        {/* Nombre del día */}
+                        <span className={`w-20 shrink-0 text-sm font-semibold ${horario.activo ? 'text-ink' : 'text-ink-soft'}`}>
+                          {DIAS_SEMANA[index]}
+                        </span>
 
-                    <div className={`ml-auto flex flex-wrap items-center gap-x-2 gap-y-2 ${horario.activo ? '' : 'opacity-50'}`}>
-                      {/* Horario de atención */}
-                      <input
-                        type="time"
-                        value={horario.horaInicio}
-                        disabled={!horario.activo}
-                        onChange={event => updateHorario(index, 'horaInicio', event.target.value)}
-                        aria-label={`Hora de inicio de ${DIAS_SEMANA[index]}`}
-                        className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
-                      />
-                      <span className="text-xs text-ink-soft">a</span>
-                      <input
-                        type="time"
-                        value={horario.horaFin}
-                        disabled={!horario.activo}
-                        onChange={event => updateHorario(index, 'horaFin', event.target.value)}
-                        aria-label={`Hora de término de ${DIAS_SEMANA[index]}`}
-                        className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
-                      />
+                        {/* Badge estado */}
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                          horario.activo
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-graphite-100 text-graphite-500'
+                        }`}>
+                          {horario.activo ? 'Abierto' : 'Cerrado'}
+                        </span>
 
-                      {/* Colación */}
-                      <span className="text-xs text-ink-soft pl-1" title="Ingresa en formato 24h, ej: 13:00 y 14:00">| colación (24h)</span>
-                      <input
-                        type="time"
-                        value={horario.inicioColacion ?? ''}
-                        disabled={!horario.activo}
-                        onChange={event => updateHorario(index, 'inicioColacion', event.target.value || null)}
-                        aria-label={`Inicio colación de ${DIAS_SEMANA[index]} (formato 24 horas)`}
-                        placeholder="--:--"
-                        className="h-9 w-24 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
-                      />
-                      <span className="text-xs text-ink-soft">a</span>
-                      <input
-                        type="time"
-                        value={horario.finColacion ?? ''}
-                        disabled={!horario.activo}
-                        onChange={event => updateHorario(index, 'finColacion', event.target.value || null)}
-                        aria-label={`Fin colación de ${DIAS_SEMANA[index]} (formato 24 horas)`}
-                        placeholder="--:--"
-                        className="h-9 w-24 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
-                      />
+                        {/* Resumen horario (colapsado) */}
+                        {!expandido && resumen && (
+                          <span className="hidden sm:inline-block text-xs text-ink-soft truncate flex-1 ml-1">
+                            {resumen}
+                          </span>
+                        )}
+
+                        {/* Badge colación (colapsado) */}
+                        {!expandido && tieneColacion && (
+                          <span className="hidden md:inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-600 shrink-0">
+                            <UtensilsCrossed className="h-3 w-3" aria-hidden="true" />
+                            {horario.inicioColacion} – {horario.finColacion}
+                          </span>
+                        )}
+
+                        <div className="ml-auto flex items-center gap-1 shrink-0">
+                          {/* Botón copiar */}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setDialogoCopiar(index); setDiasDestino([]) }}
+                            title="Copiar horario a otros días"
+                            aria-label={`Copiar horario de ${DIAS_SEMANA[index]}`}
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-ink-soft transition-colors hover:bg-graphite-100 hover:text-ink focus-ring"
+                          >
+                            <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+
+                          {/* Botón expandir */}
+                          <button
+                            type="button"
+                            onClick={() => toggleExpandido(index)}
+                            aria-expanded={expandido}
+                            aria-label={expandido ? `Cerrar ${DIAS_SEMANA[index]}` : `Editar ${DIAS_SEMANA[index]}`}
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-ink-soft transition-colors hover:bg-graphite-100 hover:text-ink focus-ring"
+                          >
+                            {expandido
+                              ? <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                              : <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                            }
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Cuerpo expandido */}
+                      {expandido && (
+                        <div className="border-t border-line bg-graphite-50/40 px-4 py-4 space-y-4">
+                          {/* Bloque Mañana */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                              Mañana
+                            </span>
+                            <select
+                              value={horario.horaInicio}
+                              disabled={!horario.activo}
+                              onChange={e => updateHorario(index, 'horaInicio', e.target.value)}
+                              aria-label={`Inicio mañana de ${DIAS_SEMANA[index]}`}
+                              className={selectClass(!horario.activo)}
+                            >
+                              {HORAS_DIA.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                            <span className="text-xs text-ink-soft">a</span>
+                            <select
+                              value={horario.inicioColacion ?? ''}
+                              disabled={!horario.activo}
+                              onChange={e => updateHorario(index, 'inicioColacion', e.target.value || null)}
+                              aria-label={`Fin mañana / inicio colación de ${DIAS_SEMANA[index]}`}
+                              className={selectClass(!horario.activo)}
+                            >
+                              <option value="">— sin colación</option>
+                              {HORAS_DIA.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                          </div>
+
+                          {/* Badge colación */}
+                          {tieneColacion && (
+                            <div className="flex items-center gap-2">
+                              <span className="w-16 shrink-0" />
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-100 px-3 py-1 text-xs font-medium text-orange-700">
+                                <UtensilsCrossed className="h-3 w-3" aria-hidden="true" />
+                                Colación {horario.inicioColacion} – {horario.finColacion}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Bloque Tarde */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+                              Tarde
+                            </span>
+                            <select
+                              value={horario.finColacion ?? ''}
+                              disabled={!horario.activo || !horario.inicioColacion}
+                              onChange={e => updateHorario(index, 'finColacion', e.target.value || null)}
+                              aria-label={`Fin colación / inicio tarde de ${DIAS_SEMANA[index]}`}
+                              className={selectClass(!horario.activo || !horario.inicioColacion)}
+                            >
+                              <option value="">—</option>
+                              {HORAS_DIA.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                            <span className="text-xs text-ink-soft">a</span>
+                            <select
+                              value={horario.horaFin}
+                              disabled={!horario.activo}
+                              onChange={e => updateHorario(index, 'horaFin', e.target.value)}
+                              aria-label={`Fin jornada de ${DIAS_SEMANA[index]}`}
+                              className={selectClass(!horario.activo)}
+                            >
+                              {HORAS_DIA.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                          </div>
+
+                          {/* Limpiar colación */}
+                          {tieneColacion && (
+                            <div className="flex items-center gap-2">
+                              <span className="w-16 shrink-0" />
+                              <button
+                                type="button"
+                                onClick={() => { updateHorario(index, 'inicioColacion', null); updateHorario(index, 'finColacion', null) }}
+                                className="text-xs text-ink-soft underline hover:text-ink transition-colors focus-ring rounded"
+                              >
+                                Quitar colación
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
 
@@ -701,6 +846,68 @@ export default function Configuracion() {
             </div>
           </div>
         </section>
+
+        {/* Diálogo copiar horario */}
+        {dialogoCopiar !== null && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Copiar horario"
+            onClick={e => { if (e.target === e.currentTarget) { setDialogoCopiar(null); setDiasDestino([]) } }}
+          >
+            <div className="w-full max-w-sm rounded-xl border border-line bg-surface shadow-xl p-5">
+              <h3 className="text-sm font-semibold text-ink mb-1">
+                Copiar horario de {DIAS_SEMANA[dialogoCopiar]}
+              </h3>
+              <p className="text-xs text-ink-muted mb-4">
+                Selecciona los días a los que quieres aplicar este horario.
+              </p>
+              <div className="space-y-2 mb-5">
+                {DIAS_SEMANA.map((dia, i) => {
+                  if (i === dialogoCopiar) return null
+                  const seleccionado = diasDestino.includes(i)
+                  return (
+                    <label key={dia} className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2 hover:bg-graphite-50 transition-colors">
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
+                          seleccionado ? 'border-accent-400 bg-accent-400 text-white' : 'border-graphite-300 bg-surface'
+                        }`}
+                        onClick={() => toggleDiaDestino(i)}
+                      >
+                        {seleccionado && <Check className="h-3 w-3" aria-hidden="true" />}
+                      </span>
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={seleccionado}
+                        onChange={() => toggleDiaDestino(i)}
+                      />
+                      <span className="text-sm text-ink">{dia}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  className="flex-1"
+                  onClick={() => { setDialogoCopiar(null); setDiasDestino([]) }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="dark"
+                  className="flex-1"
+                  disabled={diasDestino.length === 0}
+                  onClick={copiarHorario}
+                >
+                  Aplicar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sección bloqueos */}
