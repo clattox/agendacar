@@ -419,7 +419,80 @@ export default function Agenda() {
               description="No hay reservas que coincidan con los filtros para la semana seleccionada."
             />
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+            <>
+            {/* Mobile: lista compacta de 7 días */}
+            <div className="xl:hidden space-y-1.5">
+              {diasSemana.map(dia => {
+                const delDia = (reservasPorDia.get(toDateKey(dia)) || [])
+                  .slice()
+                  .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+                const hoy = isSameDay(dia, new Date())
+                const seleccionado = isSameDay(dia, fecha)
+                const estadosUnicos = [...new Set(delDia.map(r => r.estado))]
+                const colorDot = {
+                  confirmada: 'bg-accent-500',
+                  atendida:   'bg-green-500',
+                  cancelada:  'bg-graphite-400',
+                  pendiente:  'bg-yellow-400'
+                }
+                return (
+                  <button
+                    key={toDateKey(dia)}
+                    type="button"
+                    onClick={() => { setFecha(dia); setVista('dia') }}
+                    aria-label={`Ver reservas del ${dia.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}`}
+                    className={`w-full flex items-center gap-3 rounded-xl border bg-surface px-3 py-3 text-left transition-colors hover:bg-graphite-50 focus-ring ${
+                      seleccionado ? 'border-accent-400 ring-1 ring-accent-200' :
+                      hoy          ? 'border-accent-300' : 'border-line'
+                    }`}
+                  >
+                    {/* Día + fecha */}
+                    <div className={`w-14 shrink-0 text-center rounded-lg py-1 ${
+                      seleccionado ? 'bg-accent-500 text-white' : hoy ? 'bg-accent-50' : ''
+                    }`}>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${seleccionado ? 'text-white/80' : 'text-ink-soft'}`}>
+                        {dia.toLocaleDateString('es-CL', { weekday: 'short' })}
+                      </p>
+                      <p className={`text-base font-bold font-tabular leading-tight ${seleccionado ? 'text-white' : hoy ? 'text-accent-600' : 'text-ink'}`}>
+                        {dia.getDate()}
+                      </p>
+                    </div>
+
+                    {/* Contenido */}
+                    <div className="min-w-0 flex-1">
+                      {delDia.length === 0 ? (
+                        <p className="text-xs text-ink-soft">Sin reservas</p>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-sm font-semibold text-ink">
+                            {delDia.length} {delDia.length === 1 ? 'reserva' : 'reservas'}
+                          </span>
+                          {/* Puntos de estado */}
+                          <span className="flex items-center gap-1" aria-hidden="true">
+                            {estadosUnicos.map(est => (
+                              <span
+                                key={est}
+                                title={est}
+                                className={`h-2 w-2 rounded-full ${colorDot[est] || 'bg-graphite-300'}`}
+                              />
+                            ))}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Acción */}
+                    <span className="shrink-0 flex items-center gap-1 text-xs font-medium text-accent-600">
+                      Ver
+                      <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Desktop: cuadrícula de 7 columnas (sin cambios) */}
+            <div className="hidden xl:grid gap-3 xl:grid-cols-7">
               {diasSemana.map(dia => {
                 const delDia = (reservasPorDia.get(toDateKey(dia)) || [])
                   .slice()
@@ -476,6 +549,7 @@ export default function Agenda() {
                 )
               })}
             </div>
+          </>
           )}
         </div>
       )}
