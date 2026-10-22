@@ -40,120 +40,419 @@ const VISTAS = [
 // ── SVGs del vehículo ────────────────────────────────────────────────────────
 const SVG_LATERAL = (
   <svg viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-    {/* Carrocería principal */}
-    <path d="M40 140 L40 115 Q42 108 50 100 L100 70 Q115 58 140 55 L260 55 Q280 58 300 70 L345 100 Q355 108 358 115 L360 140 Z" stroke="#24272B" strokeWidth="2" fill="#F3F4F5"/>
-    {/* Techo */}
-    <path d="M110 70 Q130 45 155 40 L245 40 Q268 45 290 70" stroke="#24272B" strokeWidth="2" fill="#E1E3E6"/>
-    {/* Parabrisas delantero */}
-    <path d="M258 70 Q276 55 288 70" stroke="#24272B" strokeWidth="1.5" fill="#D1E9FF" opacity="0.7"/>
-    {/* Parabrisas trasero */}
-    <path d="M110 70 Q122 55 140 70" stroke="#24272B" strokeWidth="1.5" fill="#D1E9FF" opacity="0.7"/>
-    {/* Ventana lateral */}
-    <path d="M148 70 L155 45 L243 45 L252 70 Z" stroke="#24272B" strokeWidth="1.5" fill="#D1E9FF" opacity="0.7"/>
-    {/* Puerta delantera */}
-    <line x1="210" y1="70" x2="215" y2="140" stroke="#24272B" strokeWidth="1.5"/>
-    {/* Rueda delantera */}
-    <circle cx="295" cy="140" r="28" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <circle cx="295" cy="140" r="16" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    <circle cx="295" cy="140" r="5" fill="#24272B"/>
-    {/* Rueda trasera */}
-    <circle cx="105" cy="140" r="28" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <circle cx="105" cy="140" r="16" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    <circle cx="105" cy="140" r="5" fill="#24272B"/>
-    {/* Faros delanteros */}
-    <path d="M345 100 L358 115 L355 108 Z" fill="#FEF3C7" stroke="#24272B" strokeWidth="1"/>
-    {/* Faros traseros */}
-    <path d="M42 100 L40 115 L45 108 Z" fill="#FEE2E2" stroke="#24272B" strokeWidth="1"/>
-    {/* Línea base / piso */}
-    <line x1="30" y1="168" x2="370" y2="168" stroke="#E1E3E6" strokeWidth="1.5"/>
+    {/* Sombra suelo */}
+    <ellipse cx="200" cy="175" rx="162" ry="5" fill="#C8CAD0" opacity="0.35"/>
+
+    {/* ── Carrocería principal ── */}
+    {/* Silueta exterior con pasos de rueda */}
+    <path d="
+      M 36,148
+      L 36,133 Q 38,112 52,105
+      L 70,96 Q 90,87 112,82
+      L 130,73
+      L 148,46 Q 150,43 154,43
+      L 256,43 Q 260,43 262,46
+      L 267,68 L 287,74
+      Q 314,80 338,95
+      L 350,106 Q 358,118 358,132
+      L 358,148
+      L 314,152
+      C 314,112 264,112 264,152
+      L 132,152
+      C 132,112 84,112 84,152
+      L 36,148 Z
+    " stroke="#2C3038" strokeWidth="2" fill="#F0F1F4"/>
+
+    {/* Panel de techo */}
+    <path d="M 154,43 L 256,43 L 262,46 L 267,68 L 130,68 L 130,73 L 148,46 Q 150,43 154,43 Z"
+      stroke="#2C3038" strokeWidth="1.2" fill="#E6E8EB"/>
+
+    {/* Panel capó */}
+    <path d="M 267,68 L 287,74 Q 316,80 340,96 L 350,106 L 346,100 Q 322,86 292,78 L 270,72 Z"
+      stroke="#2C3038" strokeWidth="1" fill="#ECEEF1"/>
+
+    {/* Parachoques delantero inferior */}
+    <path d="M 350,106 Q 358,118 358,132 L 358,148 L 354,148 L 354,130 Q 353,120 347,110 Z"
+      fill="#DFE1E5" stroke="#2C3038" strokeWidth="1"/>
+
+    {/* Moldura lateral sill */}
+    <path d="M 84,152 L 264,152 L 264,156 L 84,156 Z"
+      fill="#D8DADD" stroke="#2C3038" strokeWidth="0.8"/>
+
+    {/* ── Cristales ── */}
+    {/* Parabrisas delantero (franja A-pillar) */}
+    <path d="M 256,44 L 262,46 L 267,68 L 256,68 Q 254,58 254,44 Z"
+      fill="#B8CDD9" fillOpacity="0.88" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* Ventana puerta delantera */}
+    <path d="M 206,44 L 256,44 L 256,68 L 208,68 Z"
+      fill="#B8CDD9" fillOpacity="0.88" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* Ventana puerta trasera */}
+    <path d="M 156,44 L 206,44 L 208,68 L 158,68 Z"
+      fill="#B8CDD9" fillOpacity="0.88" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* Luneta trasera (hatchback slope) */}
+    <path d="M 148,46 L 154,44 L 158,68 L 148,68 L 134,70 Z"
+      fill="#B8CDD9" fillOpacity="0.85" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* ── Pilares y líneas de puertas ── */}
+    {/* Pilar B */}
+    <line x1="206" y1="44" x2="208" y2="68" stroke="#2C3038" strokeWidth="2"/>
+    <line x1="208" y1="68" x2="210" y2="152" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* ── Manillas ── */}
+    <rect x="224" y="106" width="20" height="5" rx="2.5" fill="#C4C6CA" stroke="#2C3038" strokeWidth="1"/>
+    <rect x="167" y="106" width="18" height="5" rx="2.5" fill="#C4C6CA" stroke="#2C3038" strokeWidth="1"/>
+
+    {/* ── Retrovisor lateral ── */}
+    <path d="M 264,70 L 272,68 L 274,75 L 267,77 Z"
+      fill="#D4D6DA" stroke="#2C3038" strokeWidth="1"/>
+
+    {/* ── Faro delantero ── */}
+    <path d="M 342,96 Q 350,102 354,112 L 356,126 Q 352,128 346,128 L 342,118 Q 340,108 342,96 Z"
+      fill="#FFF8C8" stroke="#2C3038" strokeWidth="1.2"/>
+    <ellipse cx="350" cy="111" rx="5" ry="4" fill="#FFE840" stroke="#2C3038" strokeWidth="0.8"/>
+    <line x1="342" y1="96" x2="342" y2="128" stroke="#2C3038" strokeWidth="0.8"/>
+    {/* DRL strip */}
+    <path d="M 342,94 Q 352,100 355,112" stroke="#FFE060" strokeWidth="2" fill="none" strokeLinecap="round"/>
+
+    {/* ── Piloto trasero ── */}
+    <path d="M 40,112 Q 44,106 54,103 L 56,116 Q 50,120 42,122 L 40,118 Z"
+      fill="#FFBCBC" stroke="#2C3038" strokeWidth="1.2"/>
+    <line x1="52" y1="103" x2="52" y2="122" stroke="#2C3038" strokeWidth="0.8"/>
+
+    {/* ── Zona parrilla delantera ── */}
+    <path d="M 354,128 Q 356,136 354,144 L 350,150 L 342,152 L 338,148 L 344,146 L 348,138 L 352,128 Z"
+      fill="#3A4048" stroke="#2C3038" strokeWidth="1"/>
+    <line x1="342" y1="138" x2="354" y2="134" stroke="#555" strokeWidth="0.8"/>
+    <line x1="340" y1="144" x2="354" y2="140" stroke="#555" strokeWidth="0.8"/>
+
+    {/* ── Rueda delantera ── */}
+    <circle cx="288" cy="148" r="24" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <circle cx="288" cy="148" r="16" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <circle cx="288" cy="148" r="5" fill="#2C3038"/>
+    <line x1="288" y1="132" x2="288" y2="138" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="288" y1="158" x2="288" y2="164" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="272" y1="148" x2="278" y2="148" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="298" y1="148" x2="304" y2="148" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="276" y1="136" x2="280" y2="141" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="296" y1="155" x2="300" y2="160" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="300" y1="136" x2="296" y2="141" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="280" y1="155" x2="276" y2="160" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* ── Rueda trasera ── */}
+    <circle cx="110" cy="148" r="24" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <circle cx="110" cy="148" r="16" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <circle cx="110" cy="148" r="5" fill="#2C3038"/>
+    <line x1="110" y1="132" x2="110" y2="138" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="110" y1="158" x2="110" y2="164" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="94" y1="148" x2="100" y2="148" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="120" y1="148" x2="126" y2="148" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="98" y1="136" x2="102" y2="141" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="118" y1="155" x2="122" y2="160" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="122" y1="136" x2="118" y2="141" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="102" y1="155" x2="98" y2="160" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* Línea de suelo */}
+    <line x1="28" y1="172" x2="372" y2="172" stroke="#D0D3D8" strokeWidth="1.5"/>
   </svg>
 )
 
 const SVG_FRONTAL = (
   <svg viewBox="0 0 300 220" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-    {/* Capó */}
-    <path d="M60 120 Q70 90 80 80 L220 80 Q230 90 240 120 Z" stroke="#24272B" strokeWidth="2" fill="#F3F4F5"/>
+    {/* Sombra suelo */}
+    <ellipse cx="150" cy="197" rx="115" ry="5" fill="#C8CAD0" opacity="0.35"/>
+
+    {/* ── Carrocería exterior ── */}
+    <path d="
+      M 96,28 Q 150,26 204,28
+      L 218,46 L 234,64
+      L 248,84 L 254,102
+      L 258,122 L 256,152
+      Q 254,164 248,170
+      L 218,178 Q 184,182 150,182
+      Q 116,182 82,178
+      L 52,170 Q 46,164 44,152
+      L 42,122 L 46,102
+      L 52,84 L 66,64
+      L 82,46 L 96,28 Z
+    " stroke="#2C3038" strokeWidth="2" fill="#F0F1F4"/>
+
+    {/* Panel techo visible */}
+    <path d="M 96,28 L 204,28 L 216,44 L 84,44 Z"
+      fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.2"/>
+
     {/* Parabrisas */}
-    <path d="M85 80 Q90 55 100 50 L200 50 Q210 55 215 80 Z" stroke="#24272B" strokeWidth="1.5" fill="#D1E9FF" opacity="0.7"/>
-    {/* Techo */}
-    <rect x="92" y="30" width="116" height="22" rx="6" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    {/* Parachoques */}
-    <path d="M50 120 Q55 135 60 140 L240 140 Q245 135 250 120 Z" stroke="#24272B" strokeWidth="2" fill="#E1E3E6"/>
-    {/* Parrilla */}
-    <rect x="110" y="122" width="80" height="14" rx="3" stroke="#24272B" strokeWidth="1.5" fill="#69717B"/>
-    {/* Faros izquierdo */}
-    <path d="M60 100 Q65 90 80 88 L80 112 Q65 112 60 105 Z" stroke="#24272B" strokeWidth="1.5" fill="#FEF3C7"/>
-    {/* Faros derecho */}
-    <path d="M240 100 Q235 90 220 88 L220 112 Q235 112 240 105 Z" stroke="#24272B" strokeWidth="1.5" fill="#FEF3C7"/>
-    {/* Rueda izquierda */}
-    <ellipse cx="72" cy="150" rx="22" ry="26" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <ellipse cx="72" cy="150" rx="12" ry="15" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    {/* Rueda derecha */}
-    <ellipse cx="228" cy="150" rx="22" ry="26" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <ellipse cx="228" cy="150" rx="12" ry="15" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    {/* Carrocería lateral izquierda */}
-    <path d="M50 120 L50 90 L60 80" stroke="#24272B" strokeWidth="1.5" fill="none"/>
-    {/* Carrocería lateral derecha */}
-    <path d="M250 120 L250 90 L240 80" stroke="#24272B" strokeWidth="1.5" fill="none"/>
-    {/* Piso */}
-    <line x1="40" y1="185" x2="260" y2="185" stroke="#E1E3E6" strokeWidth="1.5"/>
+    <path d="M 84,44 L 216,44 L 240,72 L 60,72 Z"
+      fill="#B8CDD9" fillOpacity="0.88" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* Panel capó superior */}
+    <path d="M 60,72 L 240,72 L 248,86 L 52,86 Z"
+      fill="#ECEEF1" stroke="#2C3038" strokeWidth="1"/>
+
+    {/* Cresta capó central */}
+    <line x1="150" y1="72" x2="150" y2="88" stroke="#C0C2C6" strokeWidth="1"/>
+
+    {/* ── Pilares A ── */}
+    <line x1="84" y1="44" x2="60" y2="72" stroke="#2C3038" strokeWidth="2"/>
+    <line x1="216" y1="44" x2="240" y2="72" stroke="#2C3038" strokeWidth="2"/>
+
+    {/* ── Faros delanteros ── */}
+    {/* Izquierdo */}
+    <path d="M 50,88 Q 44,96 42,110 L 44,124 Q 48,130 58,130 L 82,128 Q 90,124 90,116 L 90,96 Q 88,88 80,86 Z"
+      fill="#FFF8C8" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="66" cy="109" rx="11" ry="9" fill="#FFE840" stroke="#2C3038" strokeWidth="1"/>
+    <line x1="42" y1="109" x2="90" y2="109" stroke="#2C3038" strokeWidth="0.8"/>
+    {/* DRL izquierdo */}
+    <path d="M 48,124 Q 66,128 84,124" stroke="#FFE060" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+
+    {/* Derecho */}
+    <path d="M 250,88 Q 256,96 258,110 L 256,124 Q 252,130 242,130 L 218,128 Q 210,124 210,116 L 210,96 Q 212,88 220,86 Z"
+      fill="#FFF8C8" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="234" cy="109" rx="11" ry="9" fill="#FFE840" stroke="#2C3038" strokeWidth="1"/>
+    <line x1="210" y1="109" x2="258" y2="109" stroke="#2C3038" strokeWidth="0.8"/>
+    <path d="M 216,124 Q 234,128 252,124" stroke="#FFE060" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+
+    {/* ── Parrilla central ── */}
+    <path d="M 96,130 Q 96,126 102,124 L 198,124 Q 204,126 204,130 L 204,158 Q 204,164 198,166 L 102,166 Q 96,164 96,158 Z"
+      fill="#3A4048" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="98" y1="136" x2="202" y2="136" stroke="#555" strokeWidth="0.8"/>
+    <line x1="98" y1="146" x2="202" y2="146" stroke="#555" strokeWidth="0.8"/>
+    <line x1="98" y1="156" x2="202" y2="156" stroke="#555" strokeWidth="0.8"/>
+    <line x1="122" y1="124" x2="122" y2="166" stroke="#555" strokeWidth="0.8"/>
+    <line x1="146" y1="124" x2="146" y2="166" stroke="#555" strokeWidth="0.8"/>
+    <line x1="154" y1="124" x2="154" y2="166" stroke="#555" strokeWidth="0.8"/>
+    <line x1="178" y1="124" x2="178" y2="166" stroke="#555" strokeWidth="0.8"/>
+
+    {/* ── Parachoques delantero ── */}
+    <path d="M 44,152 Q 44,162 50,168 L 80,176 Q 114,180 150,180 Q 186,180 220,176 L 250,168 Q 256,162 256,152 L 248,158 Q 202,168 150,168 Q 98,168 52,158 Z"
+      fill="#DFE1E5" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* Matrícula */}
+    <rect x="124" y="164" width="52" height="12" rx="2" fill="white" stroke="#2C3038" strokeWidth="1"/>
+
+    {/* Costados carrocería */}
+    <path d="M 44,102 Q 42,118 44,140 L 44,152" stroke="#2C3038" strokeWidth="1.2" fill="none"/>
+    <path d="M 256,102 Q 258,118 256,140 L 256,152" stroke="#2C3038" strokeWidth="1.2" fill="none"/>
+
+    {/* Pasos de rueda */}
+    <path d="M 38,154 Q 38,138 58,132 Q 80,126 88,144 L 88,178 L 36,178 Z"
+      fill="#D8DADD" stroke="#2C3038" strokeWidth="1.2"/>
+    <path d="M 262,154 Q 262,138 242,132 Q 220,126 212,144 L 212,178 L 264,178 Z"
+      fill="#D8DADD" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* ── Ruedas (vista frontal) ── */}
+    <ellipse cx="60" cy="172" rx="24" ry="26" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <ellipse cx="60" cy="172" rx="15" ry="17" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="60" cy="172" rx="5" ry="5" fill="#2C3038"/>
+    <line x1="60" y1="155" x2="60" y2="161" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="60" y1="183" x2="60" y2="189" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="44" y1="172" x2="50" y2="172" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="70" y1="172" x2="76" y2="172" stroke="#2C3038" strokeWidth="1.5"/>
+
+    <ellipse cx="240" cy="172" rx="24" ry="26" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <ellipse cx="240" cy="172" rx="15" ry="17" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="240" cy="172" rx="5" ry="5" fill="#2C3038"/>
+    <line x1="240" y1="155" x2="240" y2="161" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="240" y1="183" x2="240" y2="189" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="224" y1="172" x2="230" y2="172" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="250" y1="172" x2="256" y2="172" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* Línea de suelo */}
+    <line x1="30" y1="195" x2="270" y2="195" stroke="#D0D3D8" strokeWidth="1.5"/>
   </svg>
 )
 
 const SVG_TRASERA = (
   <svg viewBox="0 0 300 220" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-    {/* Maletero */}
-    <path d="M60 120 Q70 90 80 80 L220 80 Q230 90 240 120 Z" stroke="#24272B" strokeWidth="2" fill="#F3F4F5"/>
+    {/* Sombra suelo */}
+    <ellipse cx="150" cy="197" rx="115" ry="5" fill="#C8CAD0" opacity="0.35"/>
+
+    {/* ── Carrocería exterior ── */}
+    <path d="
+      M 96,28 Q 150,26 204,28
+      L 218,46 L 234,64
+      L 248,84 L 254,102
+      L 258,122 L 256,152
+      Q 254,164 248,170
+      L 218,178 Q 184,182 150,182
+      Q 116,182 82,178
+      L 52,170 Q 46,164 44,152
+      L 42,122 L 46,102
+      L 52,84 L 66,64
+      L 82,46 L 96,28 Z
+    " stroke="#2C3038" strokeWidth="2" fill="#F0F1F4"/>
+
+    {/* Panel techo visible */}
+    <path d="M 96,28 L 204,28 L 216,44 L 84,44 Z"
+      fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.2"/>
+
     {/* Luneta trasera */}
-    <path d="M85 80 Q90 55 100 50 L200 50 Q210 55 215 80 Z" stroke="#24272B" strokeWidth="1.5" fill="#D1E9FF" opacity="0.7"/>
-    {/* Techo */}
-    <rect x="92" y="30" width="116" height="22" rx="6" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    {/* Parachoques trasero */}
-    <path d="M50 120 Q55 135 60 140 L240 140 Q245 135 250 120 Z" stroke="#24272B" strokeWidth="2" fill="#E1E3E6"/>
+    <path d="M 84,44 L 216,44 L 240,72 L 60,72 Z"
+      fill="#B8CDD9" fillOpacity="0.85" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* Panel maletero / portón */}
+    <path d="M 60,72 L 240,72 L 248,86 L 52,86 Z"
+      fill="#ECEEF1" stroke="#2C3038" strokeWidth="1"/>
+
+    {/* Portón trasero line */}
+    <line x1="150" y1="72" x2="150" y2="88" stroke="#C0C2C6" strokeWidth="1"/>
+
+    {/* ── Pilares C ── */}
+    <line x1="84" y1="44" x2="60" y2="72" stroke="#2C3038" strokeWidth="2"/>
+    <line x1="216" y1="44" x2="240" y2="72" stroke="#2C3038" strokeWidth="2"/>
+
+    {/* ── Pilotos traseros ── */}
+    {/* Izquierdo */}
+    <path d="M 50,88 Q 44,96 42,110 L 44,128 Q 48,134 58,134 L 82,132 Q 90,128 90,118 L 90,96 Q 88,88 80,86 Z"
+      fill="#FFBCBC" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="66" cy="111" rx="10" ry="9" fill="#FF8888" stroke="#2C3038" strokeWidth="1"/>
+    <line x1="42" y1="111" x2="90" y2="111" stroke="#2C3038" strokeWidth="0.8"/>
+    {/* Intermitente izquierdo */}
+    <path d="M 48,128 Q 66,132 84,128" stroke="#FFA050" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+
+    {/* Derecho */}
+    <path d="M 250,88 Q 256,96 258,110 L 256,128 Q 252,134 242,134 L 218,132 Q 210,128 210,118 L 210,96 Q 212,88 220,86 Z"
+      fill="#FFBCBC" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="234" cy="111" rx="10" ry="9" fill="#FF8888" stroke="#2C3038" strokeWidth="1"/>
+    <line x1="210" y1="111" x2="258" y2="111" stroke="#2C3038" strokeWidth="0.8"/>
+    <path d="M 216,128 Q 234,132 252,128" stroke="#FFA050" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+
+    {/* ── Parachoques trasero ── */}
+    <path d="M 44,152 Q 44,162 50,168 L 80,176 Q 114,180 150,180 Q 186,180 220,176 L 250,168 Q 256,162 256,152 L 248,158 Q 202,168 150,168 Q 98,168 52,158 Z"
+      fill="#DFE1E5" stroke="#2C3038" strokeWidth="1.2"/>
+
     {/* Matrícula */}
-    <rect x="110" y="125" width="80" height="12" rx="2" stroke="#24272B" strokeWidth="1.5" fill="white"/>
-    {/* Faros traseros izquierdo */}
-    <path d="M60 100 Q65 90 80 88 L80 112 Q65 112 60 105 Z" stroke="#24272B" strokeWidth="1.5" fill="#FEE2E2"/>
-    {/* Faros traseros derecho */}
-    <path d="M240 100 Q235 90 220 88 L220 112 Q235 112 240 105 Z" stroke="#24272B" strokeWidth="1.5" fill="#FEE2E2"/>
-    {/* Rueda izquierda */}
-    <ellipse cx="72" cy="150" rx="22" ry="26" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <ellipse cx="72" cy="150" rx="12" ry="15" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    {/* Rueda derecha */}
-    <ellipse cx="228" cy="150" rx="22" ry="26" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <ellipse cx="228" cy="150" rx="12" ry="15" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    {/* Carrocería lateral */}
-    <path d="M50 120 L50 90 L60 80" stroke="#24272B" strokeWidth="1.5" fill="none"/>
-    <path d="M250 120 L250 90 L240 80" stroke="#24272B" strokeWidth="1.5" fill="none"/>
-    {/* Piso */}
-    <line x1="40" y1="185" x2="260" y2="185" stroke="#E1E3E6" strokeWidth="1.5"/>
+    <rect x="118" y="126" width="64" height="14" rx="2" fill="white" stroke="#2C3038" strokeWidth="1.2"/>
+    <text x="150" y="137" textAnchor="middle" fontSize="7" fill="#2C3038" fontFamily="monospace">ABC 1234</text>
+
+    {/* Costados carrocería */}
+    <path d="M 44,102 Q 42,118 44,140 L 44,152" stroke="#2C3038" strokeWidth="1.2" fill="none"/>
+    <path d="M 256,102 Q 258,118 256,140 L 256,152" stroke="#2C3038" strokeWidth="1.2" fill="none"/>
+
+    {/* Pasos de rueda */}
+    <path d="M 38,154 Q 38,138 58,132 Q 80,126 88,144 L 88,178 L 36,178 Z"
+      fill="#D8DADD" stroke="#2C3038" strokeWidth="1.2"/>
+    <path d="M 262,154 Q 262,138 242,132 Q 220,126 212,144 L 212,178 L 264,178 Z"
+      fill="#D8DADD" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* ── Ruedas (vista trasera) ── */}
+    <ellipse cx="60" cy="172" rx="24" ry="26" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <ellipse cx="60" cy="172" rx="15" ry="17" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="60" cy="172" rx="5" ry="5" fill="#2C3038"/>
+    <line x1="60" y1="155" x2="60" y2="161" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="60" y1="183" x2="60" y2="189" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="44" y1="172" x2="50" y2="172" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="70" y1="172" x2="76" y2="172" stroke="#2C3038" strokeWidth="1.5"/>
+
+    <ellipse cx="240" cy="172" rx="24" ry="26" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <ellipse cx="240" cy="172" rx="15" ry="17" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="240" cy="172" rx="5" ry="5" fill="#2C3038"/>
+    <line x1="240" y1="155" x2="240" y2="161" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="240" y1="183" x2="240" y2="189" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="224" y1="172" x2="230" y2="172" stroke="#2C3038" strokeWidth="1.5"/>
+    <line x1="250" y1="172" x2="256" y2="172" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* Línea de suelo */}
+    <line x1="30" y1="195" x2="270" y2="195" stroke="#D0D3D8" strokeWidth="1.5"/>
   </svg>
 )
 
 const SVG_SUPERIOR = (
   <svg viewBox="0 0 220 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-    {/* Carrocería principal */}
-    <path d="M40 60 Q42 30 55 20 L165 20 Q178 30 180 60 L185 280 Q183 310 165 325 L55 325 Q37 310 35 280 Z" stroke="#24272B" strokeWidth="2" fill="#F3F4F5"/>
-    {/* Techo / habitáculo */}
-    <rect x="55" y="100" width="110" height="160" rx="8" stroke="#24272B" strokeWidth="1.5" fill="#E1E3E6"/>
-    {/* Parabrisas delantero */}
-    <path d="M58 100 Q60 70 65 60 L155 60 Q160 70 162 100 Z" stroke="#24272B" strokeWidth="1.5" fill="#D1E9FF" opacity="0.7"/>
-    {/* Luneta trasera */}
-    <path d="M58 260 Q60 285 65 295 L155 295 Q160 285 162 260 Z" stroke="#24272B" strokeWidth="1.5" fill="#D1E9FF" opacity="0.7"/>
-    {/* División puertas */}
-    <line x1="55" y1="178" x2="165" y2="178" stroke="#24272B" strokeWidth="1.5"/>
-    {/* Rueda delantera izquierda */}
-    <ellipse cx="30" cy="85" rx="14" ry="22" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <ellipse cx="30" cy="85" rx="7" ry="12" stroke="#24272B" strokeWidth="1" fill="#E1E3E6"/>
-    {/* Rueda delantera derecha */}
-    <ellipse cx="190" cy="85" rx="14" ry="22" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <ellipse cx="190" cy="85" rx="7" ry="12" stroke="#24272B" strokeWidth="1" fill="#E1E3E6"/>
-    {/* Rueda trasera izquierda */}
-    <ellipse cx="30" cy="270" rx="14" ry="22" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <ellipse cx="30" cy="270" rx="7" ry="12" stroke="#24272B" strokeWidth="1" fill="#E1E3E6"/>
-    {/* Rueda trasera derecha */}
-    <ellipse cx="190" cy="270" rx="14" ry="22" stroke="#24272B" strokeWidth="2" fill="#69717B"/>
-    <ellipse cx="190" cy="270" rx="7" ry="12" stroke="#24272B" strokeWidth="1" fill="#E1E3E6"/>
+    {/* ── Carrocería exterior ── */}
+    {/* Silueta con pasos de rueda */}
+    <path d="
+      M 74,22
+      Q 110,18 146,22
+      L 162,30 Q 172,42 174,58
+      L 178,110
+      C 178,110 194,110 194,130
+      C 194,150 178,150 178,150
+      L 178,228
+      C 178,228 194,228 194,248
+      C 194,268 178,268 178,268
+      L 174,318 Q 172,334 162,346
+      L 146,356 Q 110,360 74,356
+      L 58,346 Q 48,334 46,318
+      L 42,268
+      C 42,268 26,268 26,248
+      C 26,228 42,228 42,228
+      L 42,150
+      C 42,150 26,150 26,130
+      C 26,110 42,110 42,110
+      L 46,58 Q 48,42 58,30
+      L 74,22 Z
+    " stroke="#2C3038" strokeWidth="2" fill="#F0F1F4"/>
+
+    {/* ── Techo / habitáculo central ── */}
+    <rect x="52" y="120" width="116" height="140" rx="10"
+      fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* ── Parabrisas delantero ── */}
+    <path d="M 55,120 Q 58,96 65,80 L 155,80 Q 162,96 165,120 Z"
+      fill="#B8CDD9" fillOpacity="0.88" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* Capó (zona entre parabrisas y morro) */}
+    <path d="M 65,80 L 155,80 Q 162,58 162,40 L 150,28 L 70,28 L 58,40 Q 58,58 65,80 Z"
+      fill="#ECEEF1" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* Cresta central capó */}
+    <line x1="110" y1="28" x2="110" y2="80" stroke="#C8CACD" strokeWidth="1"/>
+
+    {/* ── Luneta trasera ── */}
+    <path d="M 55,260 Q 58,284 65,300 L 155,300 Q 162,284 165,260 Z"
+      fill="#B8CDD9" fillOpacity="0.88" stroke="#2C3038" strokeWidth="1.5"/>
+
+    {/* Portón trasero */}
+    <path d="M 65,300 L 155,300 Q 162,320 162,340 L 150,352 L 70,352 L 58,340 Q 58,320 65,300 Z"
+      fill="#ECEEF1" stroke="#2C3038" strokeWidth="1.2"/>
+
+    {/* ── Separación puertas ── */}
+    {/* B-pillar izquierdo */}
+    <line x1="52" y1="188" x2="168" y2="188" stroke="#2C3038" strokeWidth="1.5"/>
+    {/* Líneas puertas */}
+    <line x1="52" y1="156" x2="168" y2="156" stroke="#2C3038" strokeWidth="0.8" strokeDasharray="3,2"/>
+    <line x1="52" y1="224" x2="168" y2="224" stroke="#2C3038" strokeWidth="0.8" strokeDasharray="3,2"/>
+
+    {/* ── Retrovisores ── */}
+    <path d="M 46,130 L 36,128 L 34,138 L 44,140 Z"
+      fill="#D4D6DA" stroke="#2C3038" strokeWidth="1"/>
+    <path d="M 174,130 L 184,128 L 186,138 L 176,140 Z"
+      fill="#D4D6DA" stroke="#2C3038" strokeWidth="1"/>
+
+    {/* ── Rueda delantera izquierda ── */}
+    <ellipse cx="26" cy="130" rx="14" ry="22" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <ellipse cx="26" cy="130" rx="8" ry="14" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="26" cy="130" rx="3" ry="3" fill="#2C3038"/>
+
+    {/* ── Rueda delantera derecha ── */}
+    <ellipse cx="194" cy="130" rx="14" ry="22" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <ellipse cx="194" cy="130" rx="8" ry="14" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="194" cy="130" rx="3" ry="3" fill="#2C3038"/>
+
+    {/* ── Rueda trasera izquierda ── */}
+    <ellipse cx="26" cy="248" rx="14" ry="22" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <ellipse cx="26" cy="248" rx="8" ry="14" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="26" cy="248" rx="3" ry="3" fill="#2C3038"/>
+
+    {/* ── Rueda trasera derecha ── */}
+    <ellipse cx="194" cy="248" rx="14" ry="22" fill="#4A5059" stroke="#2C3038" strokeWidth="2"/>
+    <ellipse cx="194" cy="248" rx="8" ry="14" fill="#E6E8EB" stroke="#2C3038" strokeWidth="1.5"/>
+    <ellipse cx="194" cy="248" rx="3" ry="3" fill="#2C3038"/>
+
+    {/* ── Faros delanteros (vista superior) ── */}
+    <path d="M 66,30 Q 60,38 60,48 L 78,50 L 80,32 Z"
+      fill="#FFF8C8" stroke="#2C3038" strokeWidth="1"/>
+    <path d="M 154,30 Q 160,38 160,48 L 142,50 L 140,32 Z"
+      fill="#FFF8C8" stroke="#2C3038" strokeWidth="1"/>
+
+    {/* ── Pilotos traseros (vista superior) ── */}
+    <path d="M 66,350 Q 60,342 60,332 L 78,330 L 80,348 Z"
+      fill="#FFBCBC" stroke="#2C3038" strokeWidth="1"/>
+    <path d="M 154,350 Q 160,342 160,332 L 142,330 L 140,348 Z"
+      fill="#FFBCBC" stroke="#2C3038" strokeWidth="1"/>
   </svg>
 )
 
