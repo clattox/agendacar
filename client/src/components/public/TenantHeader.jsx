@@ -35,7 +35,7 @@ export default function TenantHeader({ tenant, actions }) {
                 aria-label={`Ver ${tenant.direccion} en Google Maps`}
               >
                 <MapPin className="h-3 w-3" aria-hidden="true" />
-                <span className="truncate max-w-[180px]">{tenant.direccion}</span>
+                <span className="truncate max-w-[260px]">{tenant.direccion}</span>
               </a>
             )}
           </div>
