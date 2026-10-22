@@ -38,6 +38,14 @@ async function main () {
       ON "SlotDisponible"("tenantId", "diaSemana", "hora")
   `)
 
+  // ── Migración: add_direccion_tenant ─────────────────────────────────────────
+  console.log('[migrate] add_direccion_tenant...')
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+      ADD COLUMN IF NOT EXISTS "direccion" TEXT
+  `)
+
   // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

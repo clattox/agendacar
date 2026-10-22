@@ -20,7 +20,7 @@ const getTenants = async (req, res) => {
 
 // POST /api/superadmin/tenants — crea tenant + usuario admin
 const createTenant = async (req, res) => {
-  const { nombre, subdominio, email, telefono, adminNombre, adminEmail, adminPassword, vencimiento } = req.body
+  const { nombre, subdominio, email, telefono, direccion, adminNombre, adminEmail, adminPassword, vencimiento } = req.body
 
   if (!nombre || !subdominio || !email || !adminEmail || !adminPassword) {
     return res.status(400).json({ error: 'Faltan campos requeridos' })
@@ -42,6 +42,7 @@ const createTenant = async (req, res) => {
         subdominio: subdominioLimpio,
         email,
         telefono: telefono || null,
+        direccion: direccion || null,
         vencimiento: vencimiento ? new Date(vencimiento) : null,
         usuarios: {
           create: {

@@ -13,6 +13,7 @@ model Tenant {
   subdominio String     @unique
   email      String
   telefono   String?
+  direccion  String?
   logoUrl    String?
   activo     Boolean    @default(true)
   vencimiento DateTime?

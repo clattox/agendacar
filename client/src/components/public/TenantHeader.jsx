@@ -1,7 +1,11 @@
-import { Phone } from 'lucide-react'
+import { MapPin, Phone } from 'lucide-react'
 import TenantAvatar from './TenantAvatar'
 
 export default function TenantHeader({ tenant, actions }) {
+  const mapsUrl = tenant.direccion
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tenant.direccion)}`
+    : null
+
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
@@ -10,17 +14,31 @@ export default function TenantHeader({ tenant, actions }) {
           <p className="truncate text-sm font-semibold leading-tight text-ink">
             {tenant.nombre}
           </p>
-          {tenant.telefono ? (
-            <a
-              href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
-              className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-muted transition-colors hover:text-ink"
-            >
-              <Phone className="h-3 w-3" aria-hidden="true" />
-              {tenant.telefono}
-            </a>
-          ) : (
-            <p className="mt-0.5 text-xs text-ink-muted">Reservas online</p>
-          )}
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+            {tenant.telefono ? (
+              <a
+                href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
+                className="inline-flex items-center gap-1 text-xs text-ink-muted transition-colors hover:text-ink"
+              >
+                <Phone className="h-3 w-3" aria-hidden="true" />
+                {tenant.telefono}
+              </a>
+            ) : (
+              <span className="text-xs text-ink-muted">Reservas online</span>
+            )}
+            {mapsUrl && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-ink-muted transition-colors hover:text-ink"
+                aria-label={`Ver ${tenant.direccion} en Google Maps`}
+              >
+                <MapPin className="h-3 w-3" aria-hidden="true" />
+                <span className="truncate max-w-[180px]">{tenant.direccion}</span>
+              </a>
+            )}
+          </div>
         </div>
         {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
       </div>

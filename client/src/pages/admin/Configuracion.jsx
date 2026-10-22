@@ -6,8 +6,11 @@ import {
   ChevronUp,
   Clock,
   Copy,
+  Eye,
+  EyeOff,
   ImageIcon,
   KeyRound,
+  MapPin,
   Pencil,
   Plus,
   Save,
@@ -94,6 +97,9 @@ export default function Configuracion() {
   const [guardandoSlots, setGuardandoSlots] = useState(false)
   const [okSlots, setOkSlots] = useState(false)
   const [errorDisponibilidad, setErrorDisponibilidad] = useState('')
+  const [showPassActual, setShowPassActual] = useState(false)
+  const [showPassNueva, setShowPassNueva] = useState(false)
+  const [showPassConfirm, setShowPassConfirm] = useState(false)
 
   // Cambio de contraseña
   const [formPassword, setFormPassword] = useState({ actual: '', nueva: '', confirmar: '' })
@@ -109,6 +115,7 @@ export default function Configuracion() {
     nombre: usuario?.tenant?.nombre || '',
     email: usuario?.tenant?.email || '',
     telefono: usuario?.tenant?.telefono || '',
+    direccion: usuario?.tenant?.direccion || '',
     logoUrl: usuario?.tenant?.logoUrl || ''
   })
   const [logoPreviewError, setLogoPreviewError] = useState(false)
@@ -524,6 +531,7 @@ export default function Configuracion() {
         nombre: perfil.nombre.trim(),
         email: perfil.email.trim() || null,
         telefono: perfil.telefono.trim() || null,
+        direccion: perfil.direccion.trim() || null,
         logoUrl: perfil.logoUrl.trim() || null
       })
       // Actualizar sesión local para que sidebar refleje cambios de inmediato
@@ -604,6 +612,18 @@ export default function Configuracion() {
                 onChange={e => setPerfil(prev => ({ ...prev, telefono: e.target.value }))}
                 placeholder="+56 9 1234 5678"
                 maxLength={30}
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="perfil-direccion" className="block text-xs font-medium text-ink-muted">
+                Dirección física
+              </label>
+              <Input
+                id="perfil-direccion"
+                value={perfil.direccion}
+                onChange={e => setPerfil(prev => ({ ...prev, direccion: e.target.value }))}
+                placeholder="Av. Principal 123, Ciudad"
+                maxLength={200}
               />
             </div>
             <div className="space-y-1 sm:col-span-2">
@@ -1407,40 +1427,58 @@ export default function Configuracion() {
               <label htmlFor="pwd-actual" className="block text-xs font-medium text-ink-muted mb-1">
                 Contraseña actual *
               </label>
-              <Input
-                id="pwd-actual"
-                type="password"
-                autoComplete="current-password"
-                value={formPassword.actual}
-                onChange={e => setFormPassword(prev => ({ ...prev, actual: e.target.value }))}
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <Input
+                  id="pwd-actual"
+                  type={showPassActual ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={formPassword.actual}
+                  onChange={e => setFormPassword(prev => ({ ...prev, actual: e.target.value }))}
+                  placeholder="••••••••"
+                  className="pr-10"
+                />
+                <button type="button" onClick={() => setShowPassActual(v => !v)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition-colors" aria-label={showPassActual ? 'Ocultar' : 'Ver'}>
+                  {showPassActual ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <label htmlFor="pwd-nueva" className="block text-xs font-medium text-ink-muted mb-1">
                 Nueva contraseña *
               </label>
-              <Input
-                id="pwd-nueva"
-                type="password"
-                autoComplete="new-password"
-                value={formPassword.nueva}
-                onChange={e => setFormPassword(prev => ({ ...prev, nueva: e.target.value }))}
-                placeholder="Mínimo 8 caracteres"
-              />
+              <div className="relative">
+                <Input
+                  id="pwd-nueva"
+                  type={showPassNueva ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={formPassword.nueva}
+                  onChange={e => setFormPassword(prev => ({ ...prev, nueva: e.target.value }))}
+                  placeholder="Mínimo 8 caracteres"
+                  className="pr-10"
+                />
+                <button type="button" onClick={() => setShowPassNueva(v => !v)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition-colors" aria-label={showPassNueva ? 'Ocultar' : 'Ver'}>
+                  {showPassNueva ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <label htmlFor="pwd-confirmar" className="block text-xs font-medium text-ink-muted mb-1">
                 Confirmar nueva contraseña *
               </label>
-              <Input
-                id="pwd-confirmar"
-                type="password"
-                autoComplete="new-password"
-                value={formPassword.confirmar}
-                onChange={e => setFormPassword(prev => ({ ...prev, confirmar: e.target.value }))}
-                placeholder="Repite la contraseña"
-              />
+              <div className="relative">
+                <Input
+                  id="pwd-confirmar"
+                  type={showPassConfirm ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={formPassword.confirmar}
+                  onChange={e => setFormPassword(prev => ({ ...prev, confirmar: e.target.value }))}
+                  placeholder="Repite la contraseña"
+                  className="pr-10"
+                />
+                <button type="button" onClick={() => setShowPassConfirm(v => !v)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition-colors" aria-label={showPassConfirm ? 'Ocultar' : 'Ver'}>
+                  {showPassConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div className="sm:col-span-3 flex justify-end">
               <Button

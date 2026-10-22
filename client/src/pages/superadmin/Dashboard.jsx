@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Building2, CalendarClock, CheckCircle2, Pencil, Plus, PowerOff, RotateCcw, Users, X } from 'lucide-react'
+import { Building2, CalendarClock, CheckCircle2, Eye, EyeOff, MapPin, Pencil, Plus, PowerOff, RotateCcw, Users, X } from 'lucide-react'
 import SuperadminLayout from '../../components/superadmin/SuperadminLayout'
 import { getTenants, createTenant, toggleTenant, getStats, actualizarVencimiento, resetPasswordTenant } from '../../services/superadminService'
 import { getApiErrorMessage } from '../../lib/errors'
 import { Button, Input } from '../../components/ui'
 
 const EMPTY_FORM = {
-  nombre: '', subdominio: '', email: '', telefono: '',
+  nombre: '', subdominio: '', email: '', telefono: '', direccion: '',
   adminNombre: '', adminEmail: '', adminPassword: ''
 }
 
@@ -30,6 +30,8 @@ export default function SuperadminDashboard() {
   const [resetError, setResetError] = useState('')
   const [resetOk, setResetOk] = useState('')
   const [guardandoReset, setGuardandoReset] = useState(false)
+  const [showPass, setShowPass] = useState(false)
+  const [showResetPass, setShowResetPass] = useState(false)
 
   useEffect(() => {
     Promise.all([getTenants(), getStats()])
@@ -203,6 +205,13 @@ export default function SuperadminDashboard() {
               <label className="block text-xs font-medium text-ink-muted mb-1">Fecha de vencimiento</label>
               <Input type="date" value={form.vencimiento || ''} onChange={e => f('vencimiento', e.target.value)} />
             </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-ink-muted mb-1">Dirección física</label>
+              <div className="relative">
+                <MapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-soft" />
+                <Input value={form.direccion} onChange={e => f('direccion', e.target.value)} placeholder="Av. Principal 123, Valdivia" className="pl-9" />
+              </div>
+            </div>
             <div className="sm:col-span-2 border-t border-line pt-3 mt-1">
               <p className="text-xs font-semibold text-ink-muted mb-3 uppercase tracking-wide">Cuenta admin del taller</p>
             </div>
@@ -216,7 +225,12 @@ export default function SuperadminDashboard() {
             </div>
             <div>
               <label className="block text-xs font-medium text-ink-muted mb-1">Contraseña admin *</label>
-              <Input type="password" value={form.adminPassword} onChange={e => f('adminPassword', e.target.value)} placeholder="••••••••" required />
+              <div className="relative">
+                <Input type={showPass ? 'text' : 'password'} value={form.adminPassword} onChange={e => f('adminPassword', e.target.value)} placeholder="••••••••" required className="pr-10" />
+                <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition-colors" tabIndex={-1} aria-label={showPass ? 'Ocultar contraseña' : 'Ver contraseña'}>
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <div className="sm:col-span-2 flex justify-end gap-2 mt-1">
               <Button type="button" variant="secondary" onClick={() => { setShowForm(false); setForm(EMPTY_FORM) }}>
@@ -354,14 +368,20 @@ export default function SuperadminDashboard() {
               </p>
               <div>
                 <label className="block text-xs font-medium text-ink-muted mb-1">Nueva contraseña</label>
-                <Input
-                  type="password"
-                  value={resetPass}
-                  onChange={e => setResetPass(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
-                  autoFocus
-                  autoComplete="new-password"
-                />
+                <div className="relative">
+                  <Input
+                    type={showResetPass ? 'text' : 'password'}
+                    value={resetPass}
+                    onChange={e => setResetPass(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    autoFocus
+                    autoComplete="new-password"
+                    className="pr-10"
+                  />
+                  <button type="button" onClick={() => setShowResetPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink transition-colors" tabIndex={-1} aria-label={showResetPass ? 'Ocultar contraseña' : 'Ver contraseña'}>
+                    {showResetPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               {resetError && (
                 <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{resetError}</p>

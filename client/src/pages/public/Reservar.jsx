@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  MapPin,
   MessageCircle,
   RefreshCw,
   Sun,
@@ -931,6 +932,22 @@ export default function Reservar() {
                 )}
               </div>
             </div>
+
+            {/* Dirección con Google Maps */}
+            {tenant.direccion && (
+              <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-4 py-3 shadow-card">
+                <MapPin className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
+                <p className="text-sm text-ink-muted flex-1">{tenant.direccion}</p>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tenant.direccion)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 text-xs font-medium text-accent-600 hover:underline"
+                >
+                  Ver en Maps
+                </a>
+              </div>
+            )}
 
             {/* Franja WhatsApp */}
             {tenant.telefono && (
