@@ -239,7 +239,7 @@ export default function Inicio({ slugOverride = null }) {
               aria-hidden="true"
             />
             <div className="relative z-10 p-6 sm:p-8 lg:p-10">
-            <div className="grid gap-6 md:grid-cols-[1fr_280px] md:gap-6 lg:grid-cols-[1fr_300px] lg:gap-8">
+            <div className="grid gap-6 md:grid-cols-[1fr_240px] md:gap-6 lg:grid-cols-[1fr_250px] lg:gap-8">
               <div className="min-w-0 max-w-lg">
                 <span className="micro-label inline-flex items-center gap-2 text-graphite-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
@@ -299,7 +299,7 @@ export default function Inicio({ slugOverride = null }) {
                 </div>
               </div>
 
-              <aside className="min-w-0 self-start rounded-lg border border-[#E1E3E6] bg-white p-4 shadow-sm md:p-4 lg:p-5">
+              <aside className="min-w-0 self-start rounded-lg border border-[#E1E3E6] bg-white p-4 shadow-sm">
                 <p className="micro-label">Datos del taller</p>
 
                 <dl className="mt-3 space-y-2.5 text-sm">
@@ -355,8 +355,8 @@ export default function Inicio({ slugOverride = null }) {
                     <ul className="mt-2.5 space-y-2">
                       {bloqueHorarios.map(({ label, horario, ocultarColacion }, idx) => (
                         <li key={`${label}-${idx}`} className="text-xs">
-                          <div className="flex items-baseline justify-between gap-3">
-                            <span className="text-ink-muted">{label}</span>
+                          <div className="flex items-baseline gap-2">
+                            <span className="w-24 shrink-0 text-ink-muted">{label}</span>
                             <span className="font-tabular font-medium text-ink tabular-nums">
                               {horario.horaInicio} – {horario.horaFin}
                             </span>
