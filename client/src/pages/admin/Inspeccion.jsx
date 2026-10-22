@@ -214,7 +214,7 @@ export default function Inspeccion() {
         const resU = await fetch(`${api}/api/auth/usuarios`, { headers: { Authorization: `Bearer ${getToken()}` } })
         if (resU.ok) setUsuarios(await resU.json())
       } catch (e) {
-        setError('No se pudo cargar la información de la reserva.')
+        setError(e?.message || 'No se pudo cargar la información de la reserva.')
       } finally {
         setLoading(false)
       }
@@ -318,7 +318,7 @@ export default function Inspeccion() {
   if (!reserva) return (
     <AdminLayout>
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <Alert variant="error">No se encontró la reserva.</Alert>
+        <Alert variant="error">{error || 'No se encontró la reserva.'}</Alert>
       </div>
     </AdminLayout>
   )

@@ -8,7 +8,10 @@ export const getInspeccion = async (reservaId) => {
   const res = await fetch(`${API}/api/inspecciones/${reservaId}`, {
     headers: authHeaders()
   })
-  if (!res.ok) throw new Error('Error al obtener inspección')
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Error ${res.status} al obtener inspección`)
+  }
   return res.json()
 }
 
