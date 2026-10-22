@@ -43,6 +43,17 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() })
 })
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`)
-})
+// Ejecutar migraciones al iniciar
+const runMigrations = require('./prisma/migrate')
+runMigrations()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en puerto ${PORT}`)
+    })
+  })
+  .catch(err => {
+    console.error('Error en migraciones, iniciando igual:', err.message)
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en puerto ${PORT}`)
+    })
+  })

@@ -100,9 +100,14 @@ async function main () {
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }
 
-main()
-  .catch(err => {
-    console.error('[migrate] ✗ Error:', err.message)
-    process.exit(1)
-  })
-  .finally(() => prisma.$disconnect())
+// Permite correr directo (node prisma/migrate.js) o importar desde index.js
+if (require.main === module) {
+  main()
+    .catch(err => {
+      console.error('[migrate] ✗ Error:', err.message)
+      process.exit(1)
+    })
+    .finally(() => prisma.$disconnect())
+}
+
+module.exports = main
