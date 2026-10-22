@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  Users,
   XCircle
 } from 'lucide-react'
 import { clearSession, getUsuario } from '../../lib/auth'
@@ -68,6 +69,7 @@ function BannerSuscripcion({ subdominio }) {
 const nav = [
   { to: '/admin', icon: LayoutDashboard, label: 'Panel', exact: true },
   { to: '/admin/agenda', icon: CalendarDays, label: 'Agenda' },
+  { to: '/admin/trabajadores', icon: Users, label: 'Trabajadores' },
   { to: '/admin/configuracion', icon: Settings, label: 'Configuración' }
 ]
 

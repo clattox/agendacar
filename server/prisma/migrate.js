@@ -96,6 +96,41 @@ async function main () {
     )
   `)
 
+  // ── Migración: add_trabajadores ─────────────────────────────────────────────
+  console.log('[migrate] add_trabajadores...')
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Trabajador" (
+      "id"        SERIAL PRIMARY KEY,
+      "nombre"    TEXT    NOT NULL,
+      "cargo"     TEXT,
+      "activo"    BOOLEAN NOT NULL DEFAULT true,
+      "tenantId"  INTEGER NOT NULL,
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+      CONSTRAINT "Trabajador_tenantId_fkey"
+        FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id")
+        ON DELETE RESTRICT ON UPDATE CASCADE
+    )
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Inspeccion"
+      ADD COLUMN IF NOT EXISTS "trabajadorId" INTEGER
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Inspeccion_trabajadorId_fkey'
+      ) THEN
+        ALTER TABLE "Inspeccion"
+          ADD CONSTRAINT "Inspeccion_trabajadorId_fkey"
+          FOREIGN KEY ("trabajadorId") REFERENCES "Trabajador"("id")
+          ON DELETE SET NULL ON UPDATE CASCADE;
+      END IF;
+    END $$;
+  `)
+
   // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

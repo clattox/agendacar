@@ -18,8 +18,9 @@ import {
 import AdminLayout from '../../components/admin/AdminLayout'
 import { Alert, Button, Input } from '../../components/ui'
 import { getInspeccion, guardarInspeccion, confirmarInspeccion } from '../../services/inspeccionService'
+import { listarTrabajadores } from '../../services/trabajadorService'
 import { formatFullDate, formatTimeFromISO } from '../../lib/dates'
-import { getToken, getUsuario } from '../../lib/auth'
+import { getUsuario } from '../../lib/auth'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 
 // ── Tipos de daño ────────────────────────────────────────────────────────────
@@ -478,17 +479,17 @@ export default function Inspeccion() {
   const [error, setError]             = useState('')
   const [exito, setExito]             = useState('')
 
-  const [reserva, setReserva]         = useState(null)
-  const [inspeccion, setInspeccion]   = useState(null)
-  const [usuarios, setUsuarios]       = useState([])
+  const [reserva, setReserva]           = useState(null)
+  const [inspeccion, setInspeccion]     = useState(null)
+  const [trabajadores, setTrabajadores] = useState([])
 
   // Estado del formulario
-  const [vistaActiva, setVistaActiva]       = useState('lateral')
-  const [tipoActivo, setTipoActivo]         = useState('rayon')
-  const [danos, setDanos]                   = useState([])
-  const [observaciones, setObservaciones]   = useState('')
-  const [realizadaPorId, setRealizadaPorId] = useState('')
-  const [editandoIdx, setEditandoIdx]       = useState(null)
+  const [vistaActiva, setVistaActiva]         = useState('lateral')
+  const [tipoActivo, setTipoActivo]           = useState('rayon')
+  const [danos, setDanos]                     = useState([])
+  const [observaciones, setObservaciones]     = useState('')
+  const [trabajadorId, setTrabajadorId]       = useState('')
+  const [editandoIdx, setEditandoIdx]         = useState(null)
   const [danoForm, setDanoForm]             = useState({ ubicacion: '', descripcion: '' })
   const [clienteConfirmo, setClienteConfirmo] = useState(false)
 
@@ -496,22 +497,19 @@ export default function Inspeccion() {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const { reserva: r, inspeccion: ins } = await getInspeccion(reservaId)
+        const [{ reserva: r, inspeccion: ins }, trabs] = await Promise.all([
+          getInspeccion(reservaId),
+          listarTrabajadores().catch(() => [])
+        ])
         setReserva(r)
+        setTrabajadores(trabs.filter(t => t.activo))
         if (ins) {
           setInspeccion(ins)
           setDanos(ins.danos || [])
           setObservaciones(ins.observaciones || '')
-          setRealizadaPorId(ins.realizadaPorId ? String(ins.realizadaPorId) : String(usuario?.id || ''))
+          setTrabajadorId(ins.trabajadorId ? String(ins.trabajadorId) : '')
           setClienteConfirmo(ins.clienteConfirmo || false)
-        } else {
-          setRealizadaPorId(String(usuario?.id || ''))
         }
-        // Cargar usuarios del tenant para el selector de responsable
-        // Reutilizamos el endpoint de auth que devuelve el perfil con tenant
-        const api = import.meta.env.VITE_API_URL
-        const resU = await fetch(`${api}/auth/usuarios`, { headers: { Authorization: `Bearer ${getToken()}` } })
-        if (resU.ok) setUsuarios(await resU.json())
       } catch (e) {
         setError(e?.message || 'No se pudo cargar la información de la reserva.')
       } finally {
@@ -572,7 +570,7 @@ export default function Inspeccion() {
     try {
       const resultado = await guardarInspeccion(reservaId, {
         observaciones,
-        realizadaPorId: realizadaPorId ? parseInt(realizadaPorId) : null,
+        trabajadorId: trabajadorId ? parseInt(trabajadorId) : null,
         danos
       })
       setInspeccion(resultado)
@@ -690,16 +688,25 @@ export default function Inspeccion() {
                 <User className="h-3.5 w-3.5" />
                 Responsable de la inspección
               </label>
-              <select
-                value={realizadaPorId}
-                onChange={e => setRealizadaPorId(e.target.value)}
-                className="w-full rounded-lg border border-line bg-background px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-500"
-              >
-                <option value="">Sin asignar</option>
-                {usuarios.map(u => (
-                  <option key={u.id} value={u.id}>{u.nombre}</option>
-                ))}
-              </select>
+              {trabajadores.length === 0 ? (
+                <p className="text-xs text-ink-muted italic">
+                  No hay trabajadores registrados.{' '}
+                  <a href="/admin/trabajadores" className="text-accent-600 hover:underline">Agregar uno</a>.
+                </p>
+              ) : (
+                <select
+                  value={trabajadorId}
+                  onChange={e => setTrabajadorId(e.target.value)}
+                  className="w-full rounded-lg border border-line bg-background px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-500"
+                >
+                  <option value="">Sin asignar</option>
+                  {trabajadores.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.nombre}{t.cargo ? ` — ${t.cargo}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Estado de inspección */}
@@ -710,8 +717,11 @@ export default function Inspeccion() {
                   <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
                   <span className="text-ink">Inspección registrada</span>
                 </div>
-                {inspeccion?.realizadaPor && (
-                  <p className="text-xs text-ink-muted">Por: {inspeccion.realizadaPor.nombre}</p>
+                {inspeccion?.trabajador && (
+                  <p className="text-xs text-ink-muted">
+                    Por: {inspeccion.trabajador.nombre}
+                    {inspeccion.trabajador.cargo ? ` (${inspeccion.trabajador.cargo})` : ''}
+                  </p>
                 )}
                 {inspeccion?.clienteConfirmo ? (
                   <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
@@ -969,7 +979,10 @@ export default function Inspeccion() {
             <div className="space-y-1">
               <p className="text-xs text-ink-muted">Responsable de la inspección</p>
               <div className="h-12 border-b border-ink-muted" />
-              <p className="text-xs text-ink-muted">{inspeccion?.realizadaPor?.nombre || ''}</p>
+              <p className="text-xs text-ink-muted">
+                {inspeccion?.trabajador?.nombre || ''}
+                {inspeccion?.trabajador?.cargo ? ` · ${inspeccion.trabajador.cargo}` : ''}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-ink-muted">Firma del cliente — He revisado el estado del vehículo</p>

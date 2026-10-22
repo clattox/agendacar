@@ -25,9 +25,10 @@ model Tenant {
   servicios  Servicio[]
   reservas   Reserva[]
   horarios   Horario[]
-  vehiculos  Vehiculo[]
-  bloqueos   Bloqueo[]
-  slots      SlotDisponible[]
+  vehiculos    Vehiculo[]
+  bloqueos     Bloqueo[]
+  slots        SlotDisponible[]
+  trabajadores Trabajador[]
 }
 
 model SlotDisponible {
@@ -129,12 +130,25 @@ model Inspeccion {
   tenantId            Int
   realizadaPorId      Int?
   realizadaPor        Usuario?         @relation(fields: [realizadaPorId], references: [id])
+  trabajadorId        Int?
+  trabajador          Trabajador?      @relation(fields: [trabajadorId], references: [id])
   observaciones       String?
   clienteConfirmo     Boolean          @default(false)
   fechaConfirmacion   DateTime?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   danos               DanoInspeccion[]
+}
+
+model Trabajador {
+  id           Int          @id @default(autoincrement())
+  nombre       String
+  cargo        String?      // Ej: "Mecánico", "Recepcionista"
+  activo       Boolean      @default(true)
+  tenantId     Int
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  inspecciones Inspeccion[]
+  createdAt    DateTime     @default(now())
 }
 
 model DanoInspeccion {

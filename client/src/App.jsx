@@ -14,6 +14,7 @@ import Login from './pages/admin/Login'
 import Dashboard from './pages/admin/Dashboard'
 import Agenda from './pages/admin/Agenda'
 import Configuracion from './pages/admin/Configuracion'
+import Trabajadores from './pages/admin/Trabajadores'
 import Inspeccion from './pages/admin/Inspeccion'
 
 // Páginas superadmin
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/admin" element={<ProtectedRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="agenda" element={<Agenda />} />
+          <Route path="trabajadores" element={<Trabajadores />} />
           <Route path="configuracion" element={<Configuracion />} />
           <Route path="inspeccion/:reservaId" element={<Inspeccion />} />
         </Route>

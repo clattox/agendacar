@@ -37,6 +37,7 @@ app.use('/api/bloqueos', require('./routes/bloqueos'))
 app.use('/api/slots', require('./routes/slots'))
 app.use('/api/superadmin', require('./routes/superadmin'))
 app.use('/api/inspecciones', require('./routes/inspecciones'))
+app.use('/api/trabajadores', require('./routes/trabajadores'))
 
 // Health check
 app.get('/api/health', (req, res) => {

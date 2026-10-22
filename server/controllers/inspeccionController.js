@@ -6,7 +6,6 @@ const prisma = new PrismaClient()
 const getInspeccion = async (req, res) => {
   const tenantId = req.usuario.tenantId
   const reservaId = parseInt(req.params.reservaId)
-  console.log(`[inspeccion] GET reservaId=${reservaId} tenantId=${tenantId}`)
 
   try {
     // Verificar que la reserva pertenece al tenant
@@ -15,10 +14,15 @@ const getInspeccion = async (req, res) => {
       include: {
         servicio: true,
         vehiculo: true,
-        inspeccion: { include: { danos: { orderBy: { createdAt: 'asc' } }, realizadaPor: true } }
+        inspeccion: {
+          include: {
+            danos: { orderBy: { createdAt: 'asc' } },
+            realizadaPor: true,
+            trabajador: true
+          }
+        }
       }
     })
-    console.log(`[inspeccion] reserva:`, reserva ? `id=${reserva.id}` : 'null')
     if (!reserva) return res.status(404).json({ error: `Reserva ${reservaId} no encontrada para tenant ${tenantId}` })
 
     res.json({ reserva, inspeccion: reserva.inspeccion || null })
@@ -33,7 +37,7 @@ const getInspeccion = async (req, res) => {
 const upsertInspeccion = async (req, res) => {
   const tenantId = req.usuario.tenantId
   const reservaId = parseInt(req.params.reservaId)
-  const { observaciones, realizadaPorId, danos } = req.body
+  const { observaciones, realizadaPorId, trabajadorId, danos } = req.body
 
   try {
     // Verificar que la reserva pertenece al tenant
@@ -42,12 +46,20 @@ const upsertInspeccion = async (req, res) => {
     })
     if (!reserva) return res.status(404).json({ error: 'Reserva no encontrada' })
 
-    // Verificar que el responsable pertenece al mismo tenant (si se envía)
+    // Verificar que el responsable (usuario) pertenece al mismo tenant (si se envía)
     if (realizadaPorId) {
       const usuario = await prisma.usuario.findFirst({
         where: { id: parseInt(realizadaPorId), tenantId }
       })
       if (!usuario) return res.status(403).json({ error: 'Usuario no autorizado' })
+    }
+
+    // Verificar que el trabajador pertenece al mismo tenant (si se envía)
+    if (trabajadorId) {
+      const trabajador = await prisma.trabajador.findFirst({
+        where: { id: parseInt(trabajadorId), tenantId }
+      })
+      if (!trabajador) return res.status(403).json({ error: 'Trabajador no autorizado' })
     }
 
     // Upsert de la inspección principal
@@ -57,10 +69,12 @@ const upsertInspeccion = async (req, res) => {
         reservaId,
         tenantId,
         realizadaPorId: realizadaPorId ? parseInt(realizadaPorId) : null,
+        trabajadorId:   trabajadorId   ? parseInt(trabajadorId)   : null,
         observaciones: observaciones || null
       },
       update: {
         realizadaPorId: realizadaPorId ? parseInt(realizadaPorId) : null,
+        trabajadorId:   trabajadorId !== undefined ? (trabajadorId ? parseInt(trabajadorId) : null) : undefined,
         observaciones: observaciones || null,
         updatedAt: new Date()
       }
@@ -92,7 +106,7 @@ const upsertInspeccion = async (req, res) => {
     // Devolver la inspección completa
     const resultado = await prisma.inspeccion.findUnique({
       where: { id: inspeccion.id },
-      include: { danos: { orderBy: { createdAt: 'asc' } }, realizadaPor: true }
+      include: { danos: { orderBy: { createdAt: 'asc' } }, realizadaPor: true, trabajador: true }
     })
 
     res.json(resultado)
@@ -119,7 +133,7 @@ const confirmarInspeccion = async (req, res) => {
     const inspeccion = await prisma.inspeccion.update({
       where: { id: reserva.inspeccion.id },
       data: { clienteConfirmo: true, fechaConfirmacion: new Date() },
-      include: { danos: { orderBy: { createdAt: 'asc' } }, realizadaPor: true }
+      include: { danos: { orderBy: { createdAt: 'asc' } }, realizadaPor: true, trabajador: true }
     })
 
     res.json(inspeccion)
@@ -140,7 +154,7 @@ const getHistorialVehiculo = async (req, res) => {
       where: { tenantId, patente: { contains: patente, mode: 'insensitive' } },
       include: {
         servicio: true,
-        inspeccion: { include: { danos: true, realizadaPor: true } }
+        inspeccion: { include: { danos: true, realizadaPor: true, trabajador: true } }
       },
       orderBy: { fecha: 'desc' }
     })
