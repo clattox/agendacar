@@ -240,7 +240,7 @@ export default function Inicio({ slugOverride = null }) {
             />
             <div className="relative z-10 p-6 sm:p-8 lg:p-10">
             <div className="grid gap-6 md:grid-cols-[1fr_280px] md:gap-6 lg:grid-cols-[1fr_300px] lg:gap-8">
-              <div className="min-w-0">
+              <div className="min-w-0 max-w-lg">
                 <span className="micro-label inline-flex items-center gap-2 text-graphite-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
                   Reserva online
@@ -260,11 +260,11 @@ export default function Inicio({ slugOverride = null }) {
                   Elige el servicio, revisa la disponibilidad del taller y confirma tu cita en pocos pasos.
                 </p>
 
-                <div className="mt-7 flex flex-col gap-2 sm:flex-row">
+                <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:justify-start">
                   <Button
                     size="lg"
                     rightIcon={ArrowRight}
-                    className="w-full whitespace-nowrap sm:w-auto"
+                    className="whitespace-nowrap"
                     onClick={() => reservar()}
                   >
                     Reservar hora
@@ -272,7 +272,7 @@ export default function Inicio({ slugOverride = null }) {
                   {tenant.telefono && (
                     <a
                       href={`tel:${tenant.telefono.replace(/\s+/g, '')}`}
-                      className="focus-ring inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md border border-white/25 bg-white/5 px-5 text-base font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/10 sm:w-auto"
+                      className="focus-ring inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-white/25 bg-white/5 px-5 text-base font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/10"
                     >
                       <Phone className="h-4 w-4" aria-hidden="true" />
                       Llamar al taller
