@@ -168,4 +168,4 @@ const resetPasswordTenant = async (req, res) => {
   }
 }
 
-module.exports = { getTenants, createTenant, toggleTenant, getStats, resetPasswordTenant }
+module.exports = { getTenants, createTenant, toggleTenant, updateTenant, getStats, resetPasswordTenant }
