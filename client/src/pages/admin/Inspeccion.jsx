@@ -19,7 +19,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import { Alert, Button, Input } from '../../components/ui'
 import { getInspeccion, guardarInspeccion, confirmarInspeccion } from '../../services/inspeccionService'
 import { formatFullDate, formatTimeFromISO } from '../../lib/dates'
-import { getAuthHeaders, getUsuario } from '../../lib/auth'
+import { getToken, getUsuario } from '../../lib/auth'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 
 // ── Tipos de daño ────────────────────────────────────────────────────────────
@@ -211,7 +211,7 @@ export default function Inspeccion() {
         // Cargar usuarios del tenant para el selector de responsable
         // Reutilizamos el endpoint de auth que devuelve el perfil con tenant
         const api = import.meta.env.VITE_API_URL
-        const resU = await fetch(`${api}/api/auth/usuarios`, { headers: getAuthHeaders() })
+        const resU = await fetch(`${api}/api/auth/usuarios`, { headers: { Authorization: `Bearer ${getToken()}` } })
         if (resU.ok) setUsuarios(await resU.json())
       } catch (e) {
         setError('No se pudo cargar la información de la reserva.')
