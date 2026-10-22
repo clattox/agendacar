@@ -942,21 +942,27 @@ export default function Configuracion() {
             </div>
             <div>
               <label className="block text-xs font-medium text-ink-muted mb-1">Desde (opcional)</label>
-              <Input
-                type="time"
+              <select
                 value={nuevoBloqueo.horaInicio}
                 onChange={e => setNuevoBloqueo(prev => ({ ...prev, horaInicio: e.target.value }))}
-                placeholder="08:00"
-              />
+                aria-label="Hora de inicio del bloqueo"
+                className={selectClass(false)}
+              >
+                <option value="">— día completo</option>
+                {HORAS_DIA.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-ink-muted mb-1">Hasta (opcional)</label>
-              <Input
-                type="time"
+              <select
                 value={nuevoBloqueo.horaFin}
                 onChange={e => setNuevoBloqueo(prev => ({ ...prev, horaFin: e.target.value }))}
-                placeholder="12:00"
-              />
+                aria-label="Hora de fin del bloqueo"
+                className={selectClass(false)}
+              >
+                <option value="">—</option>
+                {HORAS_DIA.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-ink-muted mb-1">Motivo (opcional)</label>
