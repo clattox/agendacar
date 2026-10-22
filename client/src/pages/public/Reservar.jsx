@@ -5,10 +5,14 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
+  Car,
   ChevronLeft,
   ChevronRight,
   Clock,
+  MessageCircle,
   RefreshCw,
+  Sun,
+  UtensilsCrossed,
   Wrench
 } from 'lucide-react'
 import useTenant from '../../hooks/useTenant'
@@ -48,6 +52,8 @@ const SUBTITULOS = {
 }
 
 const CAMPOS = ['nombre', 'telefono', 'email', 'patente']
+
+const NOMBRES_DIAS_CERRADO = ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados']
 
 // Marcas comunes en Chile con sus modelos principales
 const MARCAS_MODELOS = {
@@ -308,6 +314,23 @@ export default function Reservar() {
   const esHoySeleccionado = Boolean(fechaSeleccionadaKey) && fechaSeleccionadaKey === hoyKey
   const horasDelDia = filtrarHorasVigentes(horasDisponibles, fechaSeleccionadaKey, ahora)
 
+  // Colación del día seleccionado — para agrupar slots en Mañana/Tarde
+  const horarioDelDiaSeleccionado = fechaSeleccionada
+    ? (horarios || []).find(h => h.diaSemana === fechaSeleccionada.getDay() && h.activo)
+    : null
+  const inicioColacionDia = horarioDelDiaSeleccionado?.inicioColacion || null
+  const finColacionDia = horarioDelDiaSeleccionado?.finColacion || null
+  const tieneColacionDia = !!(inicioColacionDia && finColacionDia)
+  const slotsManana = tieneColacionDia
+    ? todosLosSlots.filter(h => minutosDeHora(h) < minutosDeHora(inicioColacionDia))
+    : todosLosSlots
+  const slotsTarde = tieneColacionDia
+    ? todosLosSlots.filter(h => minutosDeHora(h) >= minutosDeHora(finColacionDia))
+    : []
+  const diasCerradosTexto = horarios !== null
+    ? NOMBRES_DIAS_CERRADO.filter((_, i) => !(horarios || []).some(h => h.diaSemana === i && h.activo))
+    : []
+
   const diasDelMes = () => {
     const año = mesActual.getFullYear()
     const mes = mesActual.getMonth()
@@ -320,10 +343,11 @@ export default function Reservar() {
     for (let dia = 1; dia <= totalDias; dia++) {
       const fecha = new Date(año, mes, dia)
       const esHoy = fecha.getTime() === hoy.getTime()
+      const cerrado = horarios !== null && !(horarios || []).some(h => h.diaSemana === fecha.getDay() && h.activo)
       dias.push({
         fecha,
         pasado: fecha < hoy,
-        esDomingo: fecha.getDay() === 0,
+        cerrado,
         esHoy,
         sinCuposHoy: esHoy && hoySinDisponibilidad
       })
@@ -624,180 +648,340 @@ export default function Reservar() {
 
 
         {paso === 2 && (
-          <div className="space-y-3">
-            <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <button
-                type="button"
-                onClick={() => cambiarMes(-1)}
-                disabled={!puedeRetroceder}
-                aria-label="Mes anterior"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink focus-ring disabled:pointer-events-none disabled:opacity-40"
-              >
-                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <p className="text-sm font-semibold text-ink">{formatMonthYear(mesActual)}</p>
-              <button
-                type="button"
-                onClick={() => cambiarMes(1)}
-                aria-label="Mes siguiente"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink focus-ring"
-              >
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="p-4">
-              <div className="mb-1 grid grid-cols-7 gap-1">
-                {DIAS_CORTOS.map(dia => (
-                  <div
-                    key={dia}
-                    className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft"
-                  >
-                    {dia}
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 gap-1">
-                {diasDelMes().map((dia, index) => {
-                  if (!dia) return <div key={`vacio-${index}`} aria-hidden="true" />
-
-                  const seleccionado = fechaSeleccionada && toDateKey(fechaSeleccionada) === toDateKey(dia.fecha)
-                  const deshabilitado = dia.pasado || dia.esDomingo || dia.sinCuposHoy
-                  const motivo = dia.esDomingo
-                    ? ' (cerrado)'
-                    : dia.sinCuposHoy
-                      ? ' (sin horarios disponibles)'
-                      : ''
-
-                  return (
-                    <button
-                      key={toDateKey(dia.fecha)}
-                      type="button"
-                      disabled={deshabilitado}
-                      onClick={() => seleccionarFecha(dia.fecha)}
-                      aria-label={`${formatLongDate(dia.fecha)}${motivo}`}
-                      title={dia.sinCuposHoy ? 'Ya no quedan horarios disponibles para hoy' : undefined}
-                      aria-pressed={Boolean(seleccionado)}
-                      className={`flex h-10 items-center justify-center rounded-md text-sm font-medium transition-colors focus-ring ${
-                        seleccionado
-                          ? 'bg-accent-400 text-white'
-                          : deshabilitado
-                            ? 'cursor-not-allowed text-graphite-300'
-                            : dia.esHoy
-                              ? 'bg-graphite-100 text-ink ring-1 ring-inset ring-graphite-300 hover:bg-accent-50'
-                              : 'text-ink hover:bg-accent-50'
-                      }`}
-                    >
-                      <span className="font-tabular">{dia.fecha.getDate()}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
-                <Clock className="h-3.5 w-3.5 text-graphite-400" aria-hidden="true" />
-                Los domingos el taller permanece cerrado.
-              </p>
-            </div>
-          </div>
-
-        {fechaSeleccionada && (
-          <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold text-ink">{formatLongDate(fechaSeleccionada)}</p>
-                <p className="mt-0.5 text-xs text-ink-muted">
-                  {servicioSeleccionado?.nombre} · {servicioSeleccionado?.duracion} minutos
-                </p>
-              </div>
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-graphite-50 px-2.5 py-1 text-xs font-medium text-ink-muted">
-                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-                {horaSeleccionada ? `Hora elegida: ${horaSeleccionada}` : 'Elige una hora'}
-              </span>
-            </div>
-
-            <div className="p-4">
-              {cargandoHoras ? (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {[0, 1, 2, 3, 4, 5, 6, 7].map(item => (
-                    <div key={item} className="h-11 animate-pulse rounded-md bg-graphite-100" />
-                  ))}
+          <div className="space-y-4">
+            {/* Resumen del servicio seleccionado */}
+            <div className="grid grid-cols-2 gap-3 rounded-xl border border-line bg-surface p-4 shadow-card">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-graphite-100">
+                  <Clock className="h-5 w-5 text-graphite-600" aria-hidden="true" />
                 </div>
-              ) : horasError ? (
-                <Alert variant="warning" title="Disponibilidad no confirmada">
-                  <div className="mt-1 flex flex-wrap items-center gap-3">
-                    <span>{horasError}</span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      leftIcon={RefreshCw}
-                      onClick={() => setRecargaHoras(value => value + 1)}
-                    >
-                      Reintentar
-                    </Button>
+                <div className="min-w-0">
+                  <p className="text-xs text-ink-muted">Duración</p>
+                  <p className="text-sm font-semibold text-ink">{servicioSeleccionado?.duracion} min</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-graphite-100">
+                  <Car className="h-5 w-5 text-graphite-600" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-ink-muted">Servicio</p>
+                  <p className="truncate text-sm font-semibold text-ink">{servicioSeleccionado?.nombre}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Layout 2 columnas en desktop */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* Calendario */}
+              <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+                <div className="flex items-center justify-between border-b border-line px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => cambiarMes(-1)}
+                    disabled={!puedeRetroceder}
+                    aria-label="Mes anterior"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink focus-ring disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                  <p className="text-sm font-semibold capitalize text-ink">{formatMonthYear(mesActual)}</p>
+                  <button
+                    type="button"
+                    onClick={() => cambiarMes(1)}
+                    aria-label="Mes siguiente"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink focus-ring"
+                  >
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+
+                <div className="p-3 sm:p-4">
+                  <div className="mb-1 grid grid-cols-7 gap-1">
+                    {DIAS_CORTOS.map(dia => (
+                      <div
+                        key={dia}
+                        className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft"
+                      >
+                        {dia}
+                      </div>
+                    ))}
                   </div>
-                </Alert>
-              ) : todosLosSlots.length === 0 ? (
-                <EmptyState
-                  icon={Clock}
-                  title="Sin horas disponibles"
-                  description={
-                    esHoySeleccionado
-                      ? 'Ya pasó el último horario disponible para hoy. Elige otra fecha en el calendario.'
-                      : 'No quedan cupos para este día. Elige otra fecha en el calendario.'
-                  }
-                />
-              ) : (
-                <>
-                  <p className="mb-3 text-xs text-ink-muted">
-                    Horarios generados según la duración del servicio.
-                  </p>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {todosLosSlots.map(hora => {
-                      const seleccionada = horaSeleccionada === hora
-                      const disponible = horasDelDia.includes(hora)
+
+                  <div className="grid grid-cols-7 gap-1">
+                    {diasDelMes().map((dia, index) => {
+                      if (!dia) return <div key={`vacio-${index}`} aria-hidden="true" />
+
+                      const seleccionado = fechaSeleccionada && toDateKey(fechaSeleccionada) === toDateKey(dia.fecha)
+                      const deshabilitado = dia.pasado || dia.cerrado || dia.sinCuposHoy
+                      const tieneHorario = horarios !== null && (horarios || []).some(h => h.diaSemana === dia.fecha.getDay() && h.activo)
+                      const motivo = dia.cerrado
+                        ? ' (cerrado)'
+                        : dia.sinCuposHoy
+                          ? ' (sin horarios disponibles)'
+                          : ''
+
                       return (
                         <button
-                          key={hora}
+                          key={toDateKey(dia.fecha)}
                           type="button"
-                          disabled={!disponible}
-                          onClick={() => disponible && seleccionarHora(hora)}
-                          aria-pressed={seleccionada}
-                          aria-label={disponible ? hora : `${hora} — no disponible`}
-                          className={`h-11 rounded-md border text-sm font-semibold font-tabular transition-colors focus-ring ${
-                            seleccionada
-                              ? 'border-accent-400 bg-accent-400 text-white'
-                              : disponible
-                                ? 'border-line bg-surface text-ink hover:border-accent-300 hover:bg-accent-50'
-                                : 'cursor-not-allowed border-line bg-graphite-50 text-graphite-300 line-through'
+                          disabled={deshabilitado}
+                          onClick={() => seleccionarFecha(dia.fecha)}
+                          aria-label={`${formatLongDate(dia.fecha)}${motivo}`}
+                          title={dia.sinCuposHoy ? 'Ya no quedan horarios disponibles para hoy' : undefined}
+                          aria-pressed={Boolean(seleccionado)}
+                          className={`flex flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-sm font-medium transition-colors focus-ring ${
+                            seleccionado
+                              ? 'bg-accent-400 text-white'
+                              : deshabilitado
+                                ? 'cursor-not-allowed text-graphite-300'
+                                : dia.esHoy
+                                  ? 'bg-graphite-100 text-ink ring-1 ring-inset ring-graphite-300 hover:bg-accent-50'
+                                  : 'text-ink hover:bg-accent-50'
                           }`}
                         >
-                          {hora}
+                          <span className="font-tabular leading-none">{dia.fecha.getDate()}</span>
+                          {!dia.pasado && (
+                            <span
+                              aria-hidden="true"
+                              className={`h-1 w-1 rounded-full ${
+                                seleccionado
+                                  ? 'bg-white/70'
+                                  : tieneHorario && !dia.cerrado && !dia.sinCuposHoy
+                                    ? 'bg-green-500'
+                                    : 'bg-graphite-300'
+                              }`}
+                            />
+                          )}
                         </button>
                       )
                     })}
                   </div>
-                  {horasDelDia.length === 0 && (
-                    <p className="mt-3 text-center text-xs text-ink-muted">
-                      Todos los horarios de este día ya están reservados.
+
+                  {/* Leyenda */}
+                  <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-3">
+                    <span className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+                      <span className="h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
+                      Con disponibilidad
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+                      <span className="h-2 w-2 rounded-full bg-graphite-300" aria-hidden="true" />
+                      Sin disponibilidad
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+                      <span className="h-2 w-2 rounded-full bg-accent-400" aria-hidden="true" />
+                      Día seleccionado
+                    </span>
+                  </div>
+
+                  {/* Días siempre cerrados */}
+                  {diasCerradosTexto.length > 0 && (
+                    <p className="mt-2 text-[11px] text-ink-muted">
+                      {'El taller no atiende los '}
+                      {diasCerradosTexto.length === 1
+                        ? diasCerradosTexto[0]
+                        : `${diasCerradosTexto.slice(0, -1).join(', ')} ni los ${diasCerradosTexto.at(-1)}`}
+                      {'.'}
                     </p>
                   )}
-                </>
-              )}
-
-              {!cargandoHoras && !horasError && horaSeleccionada && horasDelDia.includes(horaSeleccionada) && (
-                <div className="mt-4 flex justify-end border-t border-line pt-4">
-                  <Button rightIcon={ArrowRight} onClick={() => setPaso(3)}>
-                    Continuar con las {horaSeleccionada}
-                  </Button>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+              </div>
 
+              {/* Panel de slots */}
+              <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+                {!fechaSeleccionada ? (
+                  <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 px-4 py-8 text-center">
+                    <CalendarDays className="h-8 w-8 text-graphite-300" aria-hidden="true" />
+                    <p className="text-sm font-medium text-ink-muted">Selecciona una fecha</p>
+                    <p className="text-xs text-graphite-400">Los horarios disponibles aparecerán aquí</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="border-b border-line px-4 py-3">
+                      <p className="text-sm font-semibold text-ink">{formatLongDate(fechaSeleccionada)}</p>
+                      <p className="mt-0.5 text-xs text-ink-muted">Horarios disponibles</p>
+                    </div>
+
+                    <div className="p-4">
+                      {cargandoHoras ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {[0, 1, 2, 3, 4, 5, 6, 7].map(item => (
+                            <div key={item} className="h-11 animate-pulse rounded-md bg-graphite-100" />
+                          ))}
+                        </div>
+                      ) : horasError ? (
+                        <Alert variant="warning" title="Disponibilidad no confirmada">
+                          <div className="mt-1 flex flex-wrap items-center gap-3">
+                            <span>{horasError}</span>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              leftIcon={RefreshCw}
+                              onClick={() => setRecargaHoras(value => value + 1)}
+                            >
+                              Reintentar
+                            </Button>
+                          </div>
+                        </Alert>
+                      ) : todosLosSlots.length === 0 ? (
+                        <EmptyState
+                          icon={Clock}
+                          title="Sin horas disponibles"
+                          description={
+                            esHoySeleccionado
+                              ? 'Ya pasó el último horario disponible para hoy. Elige otra fecha en el calendario.'
+                              : 'No quedan cupos para este día. Elige otra fecha en el calendario.'
+                          }
+                        />
+                      ) : (
+                        <div className="space-y-4">
+                          {/* Bloque Mañana */}
+                          {slotsManana.length > 0 && (
+                            <div>
+                              <div className="mb-2 flex items-center gap-1.5">
+                                <Sun className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+                                  {tieneColacionDia ? 'Mañana' : 'Horarios'}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2">
+                                {slotsManana.map(hora => {
+                                  const seleccionada = horaSeleccionada === hora
+                                  const disponible = horasDelDia.includes(hora)
+                                  return (
+                                    <button
+                                      key={hora}
+                                      type="button"
+                                      disabled={!disponible}
+                                      onClick={() => disponible && seleccionarHora(hora)}
+                                      aria-pressed={seleccionada}
+                                      aria-label={disponible ? hora : `${hora} — no disponible`}
+                                      className={`h-11 rounded-md border text-sm font-semibold font-tabular transition-colors focus-ring ${
+                                        seleccionada
+                                          ? 'border-accent-400 bg-accent-400 text-white'
+                                          : disponible
+                                            ? 'border-line bg-surface text-ink hover:border-accent-300 hover:bg-accent-50'
+                                            : 'cursor-not-allowed border-line bg-graphite-50 text-graphite-300 line-through'
+                                      }`}
+                                    >
+                                      {hora}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Banner de colación */}
+                          {tieneColacionDia && (
+                            <div className="flex items-center gap-2 rounded-lg bg-graphite-50 px-3 py-2">
+                              <UtensilsCrossed className="h-3.5 w-3.5 shrink-0 text-graphite-400" aria-hidden="true" />
+                              <span className="text-xs text-ink-muted">
+                                Colación {inicioColacionDia} – {finColacionDia}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Bloque Tarde */}
+                          {tieneColacionDia && slotsTarde.length > 0 && (
+                            <div>
+                              <div className="mb-2 flex items-center gap-1.5">
+                                <Sun className="h-3.5 w-3.5 text-orange-400" aria-hidden="true" />
+                                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
+                                  Tarde
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2">
+                                {slotsTarde.map(hora => {
+                                  const seleccionada = horaSeleccionada === hora
+                                  const disponible = horasDelDia.includes(hora)
+                                  return (
+                                    <button
+                                      key={hora}
+                                      type="button"
+                                      disabled={!disponible}
+                                      onClick={() => disponible && seleccionarHora(hora)}
+                                      aria-pressed={seleccionada}
+                                      aria-label={disponible ? hora : `${hora} — no disponible`}
+                                      className={`h-11 rounded-md border text-sm font-semibold font-tabular transition-colors focus-ring ${
+                                        seleccionada
+                                          ? 'border-accent-400 bg-accent-400 text-white'
+                                          : disponible
+                                            ? 'border-line bg-surface text-ink hover:border-accent-300 hover:bg-accent-50'
+                                            : 'cursor-not-allowed border-line bg-graphite-50 text-graphite-300 line-through'
+                                      }`}
+                                    >
+                                      {hora}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {horasDelDia.length === 0 && (
+                            <p className="text-center text-xs text-ink-muted">
+                              Todos los horarios de este día ya están reservados.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Franja WhatsApp */}
+            {tenant.telefono && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 shadow-card">
+                <div className="flex items-center gap-2.5">
+                  <MessageCircle className="h-4 w-4 shrink-0 text-green-600" aria-hidden="true" />
+                  <p className="text-sm text-ink-muted">
+                    ¿No encuentras un horario? Contáctanos por WhatsApp.
+                  </p>
+                </div>
+                <a
+                  href={`https://wa.me/${String(tenant.telefono).replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-green-700 focus-ring"
+                >
+                  Escribir por WhatsApp
+                </a>
+              </div>
+            )}
+
+            {/* Navegación inferior */}
+            <div className="flex items-stretch gap-3">
+              <button
+                type="button"
+                onClick={volver}
+                className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-4 py-3 text-left shadow-card transition-colors hover:bg-graphite-50 focus-ring"
+              >
+                <ArrowLeft className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
+                <div>
+                  <p className="text-xs font-semibold text-ink">Volver</p>
+                  <p className="text-[11px] text-ink-muted">Cambiar servicio</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                disabled={!fechaSeleccionada || !horaSeleccionada}
+                onClick={() => setPaso(3)}
+                className="flex flex-1 items-center justify-between gap-2.5 rounded-xl border border-accent-400 bg-accent-400 px-4 py-3 shadow-card transition-colors hover:bg-accent-500 focus-ring disabled:cursor-not-allowed disabled:border-graphite-200 disabled:bg-graphite-100"
+              >
+                <div className="text-left">
+                  <p className={`text-xs font-semibold ${!fechaSeleccionada || !horaSeleccionada ? 'text-graphite-400' : 'text-white'}`}>
+                    Continuar
+                  </p>
+                  <p className={`text-[11px] ${!fechaSeleccionada || !horaSeleccionada ? 'text-graphite-400' : 'text-white/80'}`}>
+                    {horaSeleccionada ? `Con la hora ${horaSeleccionada}` : 'Elige una fecha y hora'}
+                  </p>
+                </div>
+                <ArrowRight className={`h-4 w-4 shrink-0 ${!fechaSeleccionada || !horaSeleccionada ? 'text-graphite-400' : 'text-white'}`} aria-hidden="true" />
+              </button>
+            </div>
           </div>
         )}
 
