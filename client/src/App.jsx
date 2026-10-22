@@ -14,6 +14,7 @@ import Login from './pages/admin/Login'
 import Dashboard from './pages/admin/Dashboard'
 import Agenda from './pages/admin/Agenda'
 import Configuracion from './pages/admin/Configuracion'
+import Inspeccion from './pages/admin/Inspeccion'
 
 // Páginas superadmin
 import SuperadminLogin from './pages/superadmin/Login'
@@ -40,6 +41,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="configuracion" element={<Configuracion />} />
+          <Route path="inspeccion/:reservaId" element={<Inspeccion />} />
         </Route>
 
         {/* Rutas superadmin */}

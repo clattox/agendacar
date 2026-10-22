@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CalendarClock,
   CalendarDays,
@@ -7,6 +8,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Clock,
   History,
   Mail,
@@ -21,6 +23,7 @@ import {
   XCircle
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
+import { getUsuario } from '../../lib/auth'
 import {
   addDays,
   formatDateFromISO,
@@ -71,6 +74,8 @@ const FILTROS = [
 ]
 
 export default function Agenda() {
+  const usuario = getUsuario()
+  const inspeccionActiva = usuario?.tenant?.inspeccionActiva ?? false
   const [vista, setVista] = useState('dia')
   const [fecha, setFecha] = useState(() => new Date())
   const [reservas, setReservas] = useState([])
@@ -400,6 +405,7 @@ export default function Agenda() {
                 onOpen={() => setDetalle(reserva)}
                 onEstado={cambiarEstado}
                 actualizando={actualizando}
+                inspeccionActiva={inspeccionActiva}
               />
             ))
           )}
@@ -757,12 +763,17 @@ function IndicadorOperativo({ icon: Icon, label, value, detail }) {
   )
 }
 
-function ReservaCard({ reserva, onOpen, onEstado, actualizando }) {
+function ReservaCard({ reserva, onOpen, onEstado, actualizando, inspeccionActiva }) {
+  const navigate = useNavigate()
+  const requiereInspeccion = inspeccionActiva && reserva.servicio?.requiereInspeccion
+  const yaInspeccionada = reserva.estado === 'inspeccionada'
+
   return (
     <article className={`overflow-hidden rounded-xl border bg-surface shadow-card ${
-      reserva.estado === 'atendida'  ? 'border-l-4 border-l-green-500 border-line' :
-      reserva.estado === 'cancelada' ? 'border-l-4 border-l-graphite-400 border-line' :
-                                       'border-l-4 border-l-accent-500 border-line'
+      reserva.estado === 'atendida'      ? 'border-l-4 border-l-green-500 border-line' :
+      reserva.estado === 'cancelada'     ? 'border-l-4 border-l-graphite-400 border-line' :
+      reserva.estado === 'inspeccionada' ? 'border-l-4 border-l-yellow-400 border-line' :
+                                           'border-l-4 border-l-accent-500 border-line'
     }`}>
       <button
         type="button"
@@ -814,27 +825,42 @@ function ReservaCard({ reserva, onOpen, onEstado, actualizando }) {
         </div>
       </button>
 
-      {reserva.estado === 'confirmada' && (
+      {(reserva.estado === 'confirmada' || reserva.estado === 'inspeccionada' || requiereInspeccion) && (
         <div className="flex flex-col gap-2 border-t border-line bg-graphite-50 px-4 py-2.5 sm:flex-row sm:justify-end">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onEstado(reserva.id, 'cancelada')}
-            loading={actualizando === reserva.id}
-            disabled={actualizando !== null}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="success"
-            size="sm"
-            leftIcon={CheckCircle2}
-            onClick={() => onEstado(reserva.id, 'atendida')}
-            loading={actualizando === reserva.id}
-            disabled={actualizando !== null}
-          >
-            Marcar atendida
-          </Button>
+          {requiereInspeccion && (
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={ClipboardList}
+              onClick={() => navigate(`/admin/inspeccion/${reserva.id}`)}
+              disabled={actualizando !== null}
+            >
+              {yaInspeccionada ? 'Ver inspección' : 'Inspeccionar'}
+            </Button>
+          )}
+          {(reserva.estado === 'confirmada' || reserva.estado === 'inspeccionada') && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onEstado(reserva.id, 'cancelada')}
+                loading={actualizando === reserva.id}
+                disabled={actualizando !== null}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="success"
+                size="sm"
+                leftIcon={CheckCircle2}
+                onClick={() => onEstado(reserva.id, 'atendida')}
+                loading={actualizando === reserva.id}
+                disabled={actualizando !== null}
+              >
+                Marcar atendida
+              </Button>
+            </>
+          )}
         </div>
       )}
     </article>

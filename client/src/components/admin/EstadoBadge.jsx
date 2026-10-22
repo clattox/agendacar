@@ -1,9 +1,10 @@
 import Badge from '../ui/Badge'
 
 export const ESTADOS_RESERVA = {
-  confirmada: { label: 'Confirmada', variant: 'accent' },
-  atendida: { label: 'Atendida', variant: 'success' },
-  cancelada: { label: 'Cancelada', variant: 'neutral' }
+  confirmada:    { label: 'Confirmada',    variant: 'accent' },
+  inspeccionada: { label: 'Inspeccionada', variant: 'warning' },
+  atendida:      { label: 'Atendida',      variant: 'success' },
+  cancelada:     { label: 'Cancelada',     variant: 'neutral' }
 }
 
 export default function EstadoBadge({ estado, size = 'md' }) {

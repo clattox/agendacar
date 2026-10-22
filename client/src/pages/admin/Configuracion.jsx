@@ -116,7 +116,8 @@ export default function Configuracion() {
     email: usuario?.tenant?.email || '',
     telefono: usuario?.tenant?.telefono || '',
     direccion: usuario?.tenant?.direccion || '',
-    logoUrl: usuario?.tenant?.logoUrl || ''
+    logoUrl: usuario?.tenant?.logoUrl || '',
+    inspeccionActiva: usuario?.tenant?.inspeccionActiva ?? false
   })
   const [logoPreviewError, setLogoPreviewError] = useState(false)
   const [subiendoLogo, setSubiendoLogo] = useState(false)
@@ -282,6 +283,19 @@ export default function Configuracion() {
       setErrorEdicion(getApiErrorMessage(err, 'No pudimos actualizar el servicio.'))
     } finally {
       setGuardandoEdicion(false)
+    }
+  }
+
+  const toggleRequiereInspeccion = async (servicio) => {
+    try {
+      const actualizado = await actualizarServicio(servicio.id, {
+        nombre: servicio.nombre,
+        duracion: servicio.duracion,
+        requiereInspeccion: !servicio.requiereInspeccion
+      })
+      setServicios(prev => prev.map(s => s.id === actualizado.id ? actualizado : s))
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No pudimos actualizar el servicio.'))
     }
   }
 
@@ -532,7 +546,8 @@ export default function Configuracion() {
         email: perfil.email.trim() || null,
         telefono: perfil.telefono.trim() || null,
         direccion: perfil.direccion.trim() || null,
-        logoUrl: perfil.logoUrl.trim() || null
+        logoUrl: perfil.logoUrl.trim() || null,
+        inspeccionActiva: perfil.inspeccionActiva
       })
       // Actualizar sesión local para que sidebar refleje cambios de inmediato
       saveSession({
@@ -691,6 +706,26 @@ export default function Configuracion() {
             </div>
           </div>
 
+          {/* Toggle inspección previa */}
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-line bg-graphite-50 p-4">
+            <div>
+              <p className="text-sm font-semibold text-ink">Inspección previa de vehículos</p>
+              <p className="mt-0.5 text-xs text-ink-muted">
+                Activa este módulo para registrar el estado del vehículo antes de cada atención.
+                Puedes habilitarlo por servicio en la sección de Servicios.
+              </p>
+            </div>
+            <label className="relative flex cursor-pointer items-center shrink-0 mt-0.5">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={perfil.inspeccionActiva}
+                onChange={e => setPerfil(prev => ({ ...prev, inspeccionActiva: e.target.checked }))}
+              />
+              <div className="h-5 w-9 rounded-full border border-line bg-graphite-200 peer-checked:bg-accent-600 peer-focus:ring-2 peer-focus:ring-accent-400/30 transition-colors after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:border after:border-line after:transition-all peer-checked:after:translate-x-4" />
+            </label>
+          </div>
+
           <div className="flex justify-end border-t border-line pt-4">
             <Button
               type="submit"
@@ -788,7 +823,24 @@ export default function Configuracion() {
                           <p className="truncate text-sm font-medium text-ink">{servicio.nombre}</p>
                           <p className="text-xs text-ink-muted">{servicio.duracion} minutos</p>
                         </div>
-                        <div className="flex shrink-0 items-center gap-1">
+                        <div className="flex shrink-0 items-center gap-2">
+                          {perfil.inspeccionActiva && (
+                            <label
+                              className="flex items-center gap-1.5 cursor-pointer select-none"
+                              title={servicio.requiereInspeccion ? 'Requiere inspección previa (activa)' : 'No requiere inspección previa'}
+                            >
+                              <span className="text-[10px] text-ink-soft hidden sm:inline">Inspección</span>
+                              <div className="relative flex items-center">
+                                <input
+                                  type="checkbox"
+                                  className="sr-only peer"
+                                  checked={!!servicio.requiereInspeccion}
+                                  onChange={() => toggleRequiereInspeccion(servicio)}
+                                />
+                                <div className="h-4 w-7 rounded-full border border-line bg-graphite-200 peer-checked:bg-accent-600 transition-colors after:absolute after:top-0.5 after:left-0.5 after:h-3 after:w-3 after:rounded-full after:bg-white after:border after:border-line after:transition-all peer-checked:after:translate-x-3" />
+                              </div>
+                            </label>
+                          )}
                           <button
                             type="button"
                             onClick={() => iniciarEdicion(servicio)}

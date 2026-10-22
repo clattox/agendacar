@@ -15,12 +15,14 @@ const getTenant = async (req, res) => {
 }
 
 const updateTenant = async (req, res) => {
-  const { nombre, telefono, direccion, email, logoUrl } = req.body
+  const { nombre, telefono, direccion, email, logoUrl, inspeccionActiva } = req.body
   const tenantId = req.user.tenantId
   try {
+    const data = { nombre, telefono, direccion: direccion || null, email, logoUrl }
+    if (inspeccionActiva !== undefined) data.inspeccionActiva = inspeccionActiva
     const tenant = await prisma.tenant.update({
       where: { id: tenantId },
-      data: { nombre, telefono, direccion: direccion || null, email, logoUrl }
+      data
     })
     res.json(tenant)
   } catch (error) {

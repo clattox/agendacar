@@ -46,6 +46,56 @@ async function main () {
       ADD COLUMN IF NOT EXISTS "direccion" TEXT
   `)
 
+  // ── Migración: modulo_inspeccion ─────────────────────────────────────────────
+  console.log('[migrate] modulo_inspeccion...')
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+      ADD COLUMN IF NOT EXISTS "inspeccionActiva" BOOLEAN NOT NULL DEFAULT false
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Servicio"
+      ADD COLUMN IF NOT EXISTS "requiereInspeccion" BOOLEAN NOT NULL DEFAULT false
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Inspeccion" (
+      "id"                SERIAL PRIMARY KEY,
+      "reservaId"         INTEGER NOT NULL UNIQUE,
+      "tenantId"          INTEGER NOT NULL,
+      "realizadaPorId"    INTEGER,
+      "observaciones"     TEXT,
+      "clienteConfirmo"   BOOLEAN NOT NULL DEFAULT false,
+      "fechaConfirmacion" TIMESTAMPTZ,
+      "createdAt"         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      "updatedAt"         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT "Inspeccion_reservaId_fkey"
+        FOREIGN KEY ("reservaId") REFERENCES "Reserva"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "Inspeccion_realizadaPorId_fkey"
+        FOREIGN KEY ("realizadaPorId") REFERENCES "Usuario"("id")
+        ON DELETE SET NULL ON UPDATE CASCADE
+    )
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "DanoInspeccion" (
+      "id"           SERIAL PRIMARY KEY,
+      "inspeccionId" INTEGER NOT NULL,
+      "tipo"         TEXT NOT NULL,
+      "vista"        TEXT NOT NULL,
+      "posX"         FLOAT8 NOT NULL,
+      "posY"         FLOAT8 NOT NULL,
+      "ubicacion"    TEXT,
+      "descripcion"  TEXT,
+      "createdAt"    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT "DanoInspeccion_inspeccionId_fkey"
+        FOREIGN KEY ("inspeccionId") REFERENCES "Inspeccion"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `)
+
   // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

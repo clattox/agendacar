@@ -80,4 +80,18 @@ const cambiarPassword = async (req, res) => {
   }
 }
 
-module.exports = { login, cambiarPassword }
+const getUsuariosTenant = async (req, res) => {
+  try {
+    const tenantId = req.usuario.tenantId
+    const usuarios = await prisma.usuario.findMany({
+      where: { tenantId },
+      select: { id: true, nombre: true, email: true, rol: true }
+    })
+    res.json(usuarios)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error del servidor.' })
+  }
+}
+
+module.exports = { login, cambiarPassword, getUsuariosTenant }

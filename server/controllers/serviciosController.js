@@ -28,12 +28,14 @@ const createServicio = async (req, res) => {
 
 const updateServicio = async (req, res) => {
   const { id } = req.params
-  const { nombre, duracion, activo } = req.body
+  const { nombre, duracion, activo, requiereInspeccion } = req.body
   const tenantId = req.user.tenantId
   try {
+    const data = { nombre, duracion, activo }
+    if (requiereInspeccion !== undefined) data.requiereInspeccion = requiereInspeccion
     const servicio = await prisma.servicio.update({
       where: { id: parseInt(id), tenantId },
-      data: { nombre, duracion, activo }
+      data
     })
     res.json(servicio)
   } catch (error) {

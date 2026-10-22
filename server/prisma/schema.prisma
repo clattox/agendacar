@@ -17,7 +17,8 @@ model Tenant {
   logoUrl    String?
   activo     Boolean    @default(true)
   vencimiento DateTime?
-  capacidad  Int        @default(1) // vehículos simultáneos (1-4)
+  capacidad          Int        @default(1) // vehículos simultáneos (1-4)
+  inspeccionActiva   Boolean    @default(false)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]
@@ -44,20 +45,22 @@ model Usuario {
   nombre    String
   email     String   @unique
   password  String
-  rol       String   @default("admin")
-  tenantId  Int?
-  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
-  createdAt DateTime @default(now())
+  rol           String       @default("admin")
+  tenantId      Int?
+  tenant        Tenant?      @relation(fields: [tenantId], references: [id])
+  inspecciones  Inspeccion[]
+  createdAt     DateTime     @default(now())
 }
 
 model Servicio {
-  id       Int       @id @default(autoincrement())
-  nombre   String
-  duracion Int // minutos
-  activo   Boolean   @default(true)
-  tenantId Int
-  tenant   Tenant    @relation(fields: [tenantId], references: [id])
-  reservas Reserva[]
+  id                  Int       @id @default(autoincrement())
+  nombre              String
+  duracion            Int // minutos
+  activo              Boolean   @default(true)
+  requiereInspeccion  Boolean   @default(false)
+  tenantId            Int
+  tenant              Tenant    @relation(fields: [tenantId], references: [id])
+  reservas            Reserva[]
 }
 
 model Horario {
@@ -100,20 +103,49 @@ model Vehiculo {
 }
 
 model Reserva {
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   nombre      String
   telefono    String
   email       String?
   patente     String
   fecha       DateTime
-  estado      String    @default("confirmada") // confirmada | atendida | cancelada
+  estado      String     @default("confirmada") // confirmada | inspeccionada | atendida | cancelada
   notas       String?
   tenantId    Int
-  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
   servicioId  Int
-  servicio    Servicio  @relation(fields: [servicioId], references: [id])
+  servicio    Servicio   @relation(fields: [servicioId], references: [id])
   vehiculoId  Int?
-  vehiculo    Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  vehiculo    Vehiculo?  @relation(fields: [vehiculoId], references: [id])
   kilometraje Int?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime   @default(now())
+  inspeccion  Inspeccion?
+}
+
+model Inspeccion {
+  id                  Int              @id @default(autoincrement())
+  reservaId           Int              @unique
+  reserva             Reserva          @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  tenantId            Int
+  realizadaPorId      Int?
+  realizadaPor        Usuario?         @relation(fields: [realizadaPorId], references: [id])
+  observaciones       String?
+  clienteConfirmo     Boolean          @default(false)
+  fechaConfirmacion   DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  danos               DanoInspeccion[]
+}
+
+model DanoInspeccion {
+  id            Int        @id @default(autoincrement())
+  inspeccionId  Int
+  inspeccion    Inspeccion @relation(fields: [inspeccionId], references: [id], onDelete: Cascade)
+  tipo          String     // rayon | abolladura | piquete | otro
+  vista         String     // lateral | frontal | trasera | superior
+  posX          Float      // porcentaje 0-100 sobre el SVG
+  posY          Float      // porcentaje 0-100 sobre el SVG
+  ubicacion     String?    // descripción textual de la zona
+  descripcion   String?    // nota libre
+  createdAt     DateTime   @default(now())
 }
