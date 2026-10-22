@@ -120,7 +120,7 @@ const getHorasDisponibles = async (req, res) => {
       !slotsOcupados.includes(s) && !slotBloqueado(s) && !slotEnColacion(s)
     )
 
-    res.json({ horasDisponibles })
+    res.json({ horasDisponibles, todosLosSlots: slots })
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Error al obtener horas disponibles' })

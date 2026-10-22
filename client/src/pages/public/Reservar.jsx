@@ -156,6 +156,7 @@ export default function Reservar() {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(null)
   const [horaSeleccionada, setHoraSeleccionada] = useState(null)
   const [horasDisponibles, setHorasDisponibles] = useState([])
+  const [todosLosSlots, setTodosLosSlots] = useState([])
   const [cargandoHoras, setCargandoHoras] = useState(false)
   const [horasError, setHorasError] = useState('')
   const [recargaHoras, setRecargaHoras] = useState(0)
@@ -266,11 +267,15 @@ export default function Reservar() {
       servicioId: servicioSeleccionado.id
     })
       .then(data => {
-        if (activo) setHorasDisponibles(data?.horasDisponibles || [])
+        if (activo) {
+          setHorasDisponibles(data?.horasDisponibles || [])
+          setTodosLosSlots(data?.todosLosSlots || data?.horasDisponibles || [])
+        }
       })
       .catch(err => {
         if (activo) {
           setHorasDisponibles([])
+          setTodosLosSlots([])
           setHorasError(getApiErrorMessage(err, 'No pudimos consultar la disponibilidad del taller.'))
         }
       })
@@ -734,7 +739,7 @@ export default function Reservar() {
                     </Button>
                   </div>
                 </Alert>
-              ) : horasDelDia.length === 0 ? (
+              ) : todosLosSlots.length === 0 ? (
                 <EmptyState
                   icon={Clock}
                   title="Sin horas disponibles"
@@ -750,18 +755,23 @@ export default function Reservar() {
                     Horarios generados según la duración del servicio.
                   </p>
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {horasDelDia.map(hora => {
+                    {todosLosSlots.map(hora => {
                       const seleccionada = horaSeleccionada === hora
+                      const disponible = horasDelDia.includes(hora)
                       return (
                         <button
                           key={hora}
                           type="button"
-                          onClick={() => seleccionarHora(hora)}
+                          disabled={!disponible}
+                          onClick={() => disponible && seleccionarHora(hora)}
                           aria-pressed={seleccionada}
+                          aria-label={disponible ? hora : `${hora} — no disponible`}
                           className={`h-11 rounded-md border text-sm font-semibold font-tabular transition-colors focus-ring ${
                             seleccionada
                               ? 'border-accent-400 bg-accent-400 text-white'
-                              : 'border-line bg-surface text-ink hover:border-accent-300 hover:bg-accent-50'
+                              : disponible
+                                ? 'border-line bg-surface text-ink hover:border-accent-300 hover:bg-accent-50'
+                                : 'cursor-not-allowed border-line bg-graphite-50 text-graphite-300 line-through'
                           }`}
                         >
                           {hora}
@@ -769,6 +779,11 @@ export default function Reservar() {
                       )
                     })}
                   </div>
+                  {horasDelDia.length === 0 && (
+                    <p className="mt-3 text-center text-xs text-ink-muted">
+                      Todos los horarios de este día ya están reservados.
+                    </p>
+                  )}
                 </>
               )}
 

@@ -655,13 +655,13 @@ export default function Configuracion() {
                       />
 
                       {/* Colación */}
-                      <span className="text-xs text-ink-soft pl-1">| colación</span>
+                      <span className="text-xs text-ink-soft pl-1" title="Ingresa en formato 24h, ej: 13:00 y 14:00">| colación (24h)</span>
                       <input
                         type="time"
                         value={horario.inicioColacion ?? ''}
                         disabled={!horario.activo}
                         onChange={event => updateHorario(index, 'inicioColacion', event.target.value || null)}
-                        aria-label={`Inicio colación de ${DIAS_SEMANA[index]}`}
+                        aria-label={`Inicio colación de ${DIAS_SEMANA[index]} (formato 24 horas)`}
                         placeholder="--:--"
                         className="h-9 w-24 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
                       />
@@ -671,7 +671,7 @@ export default function Configuracion() {
                         value={horario.finColacion ?? ''}
                         disabled={!horario.activo}
                         onChange={event => updateHorario(index, 'finColacion', event.target.value || null)}
-                        aria-label={`Fin colación de ${DIAS_SEMANA[index]}`}
+                        aria-label={`Fin colación de ${DIAS_SEMANA[index]} (formato 24 horas)`}
                         placeholder="--:--"
                         className="h-9 w-24 rounded-md border border-line bg-surface px-2 text-sm text-ink transition-colors focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400/25 disabled:cursor-not-allowed disabled:bg-graphite-50"
                       />
