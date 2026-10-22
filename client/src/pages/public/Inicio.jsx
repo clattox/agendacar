@@ -5,7 +5,8 @@ import {
   Building2,
   Mail,
   Phone,
-  RefreshCw
+  RefreshCw,
+  UtensilsCrossed,
 } from 'lucide-react'
 import {
   IconCalendarDot,
@@ -129,6 +130,43 @@ export default function Inicio({ slugOverride = null }) {
   }
 
   const horariosOrdenados = [...horarios].sort((a, b) => a.diaSemana - b.diaSemana)
+
+  // Agrupa horarios: lunes–viernes en un bloque si todos comparten exactamente el mismo horario
+  const bloqueHorarios = (() => {
+    const activos = horariosOrdenados.filter(h => h.activo !== false)
+    const semana = activos.filter(h => h.diaSemana >= 1 && h.diaSemana <= 5)
+    const sabado = activos.find(h => h.diaSemana === 6) || null
+    const resto  = activos.filter(h => h.diaSemana === 0) // domingo u otros
+
+    const bloques = []
+
+    if (semana.length > 0) {
+      const primero = semana[0]
+      const todoIgual = semana.every(
+        h =>
+          h.horaInicio     === primero.horaInicio &&
+          h.horaFin        === primero.horaFin &&
+          (h.inicioColacion ?? null) === (primero.inicioColacion ?? null) &&
+          (h.finColacion   ?? null) === (primero.finColacion   ?? null)
+      )
+      if (todoIgual && semana.length === 5) {
+        // Bloque unificado lunes–viernes
+        bloques.push({ label: 'Lunes a viernes', horario: primero })
+      } else {
+        // Días individuales
+        semana.forEach(h => bloques.push({ label: DIAS_SEMANA[h.diaSemana], horario: h }))
+      }
+    }
+
+    if (sabado) {
+      bloques.push({ label: DIAS_SEMANA[6], horario: sabado })
+    }
+
+    // Domingo (raro, pero por si acaso)
+    resto.forEach(h => bloques.push({ label: DIAS_SEMANA[h.diaSemana], horario: h }))
+
+    return bloques
+  })()
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
@@ -255,26 +293,28 @@ export default function Inicio({ slugOverride = null }) {
                     <SkeletonText lines={4} className="mt-3" />
                   ) : horariosError ? (
                     <p className="mt-2 text-xs leading-relaxed text-ink-muted">{horariosError}</p>
-                  ) : horariosOrdenados.length === 0 ? (
+                  ) : bloqueHorarios.length === 0 ? (
                     <p className="mt-2 text-xs leading-relaxed text-ink-muted">
                       El taller aún no tiene horarios publicados.
                     </p>
                   ) : (
-                    <ul className="mt-2.5 space-y-1.5">
-                      {horariosOrdenados.map(horario => (
-                        <li
-                          key={`${horario.diaSemana}-${horario.horaInicio}-${horario.horaFin}`}
-                          className="flex items-start justify-between gap-3 text-xs"
-                        >
-                          <span className="text-ink-muted">{DIAS_SEMANA[horario.diaSemana]}</span>
-                          <span className="text-right font-tabular font-medium text-ink">
-                            {horario.horaInicio} – {horario.horaFin}
-                            {horario.inicioColacion && horario.finColacion && (
-                              <span className="block font-normal text-ink-muted">
-                                colación {horario.inicioColacion} – {horario.finColacion}
+                    <ul className="mt-2.5 space-y-2">
+                      {bloqueHorarios.map(({ label, horario }, idx) => (
+                        <li key={`${label}-${idx}`} className="text-xs">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="text-ink-muted">{label}</span>
+                            <span className="font-tabular font-medium text-ink tabular-nums">
+                              {horario.horaInicio} – {horario.horaFin}
+                            </span>
+                          </div>
+                          {horario.inicioColacion && horario.finColacion && (
+                            <div className="mt-0.5 flex items-center justify-end gap-1 text-accent-500">
+                              <UtensilsCrossed className="h-3 w-3 shrink-0" aria-hidden="true" />
+                              <span className="font-tabular tabular-nums text-ink-muted">
+                                {horario.inicioColacion} – {horario.finColacion}
                               </span>
-                            )}
-                          </span>
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>
