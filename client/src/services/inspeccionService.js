@@ -1,11 +1,11 @@
 import { getToken } from '../lib/auth'
 
-const API = import.meta.env.VITE_API_URL
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 const authHeaders = () => ({ Authorization: `Bearer ${getToken()}` })
 
 export const getInspeccion = async (reservaId) => {
-  const res = await fetch(`${API}/api/inspecciones/${reservaId}`, {
+  const res = await fetch(`${API}/inspecciones/${reservaId}`, {
     headers: authHeaders()
   })
   if (!res.ok) {
@@ -16,7 +16,7 @@ export const getInspeccion = async (reservaId) => {
 }
 
 export const guardarInspeccion = async (reservaId, data) => {
-  const res = await fetch(`${API}/api/inspecciones/${reservaId}`, {
+  const res = await fetch(`${API}/inspecciones/${reservaId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(data)
@@ -26,7 +26,7 @@ export const guardarInspeccion = async (reservaId, data) => {
 }
 
 export const confirmarInspeccion = async (reservaId) => {
-  const res = await fetch(`${API}/api/inspecciones/${reservaId}/confirmar`, {
+  const res = await fetch(`${API}/inspecciones/${reservaId}/confirmar`, {
     method: 'PATCH',
     headers: authHeaders()
   })
@@ -35,7 +35,7 @@ export const confirmarInspeccion = async (reservaId) => {
 }
 
 export const getHistorialVehiculo = async (patente) => {
-  const res = await fetch(`${API}/api/inspecciones/vehiculo/${encodeURIComponent(patente)}`, {
+  const res = await fetch(`${API}/inspecciones/vehiculo/${encodeURIComponent(patente)}`, {
     headers: authHeaders()
   })
   if (!res.ok) throw new Error('Error al obtener historial')
