@@ -16,6 +16,7 @@ model Tenant {
   logoUrl    String?
   activo     Boolean    @default(true)
   vencimiento DateTime?
+  capacidad  Int        @default(1) // vehículos simultáneos (1-4)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]
@@ -24,6 +25,17 @@ model Tenant {
   horarios   Horario[]
   vehiculos  Vehiculo[]
   bloqueos   Bloqueo[]
+  slots      SlotDisponible[]
+}
+
+model SlotDisponible {
+  id         Int    @id @default(autoincrement())
+  diaSemana  Int    // 0=Domingo, 1=Lunes ... 6=Sábado
+  hora       String // "09:00"
+  tenantId   Int
+  tenant     Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, diaSemana, hora])
 }
 
 model Usuario {

@@ -13,6 +13,7 @@ import {
   Save,
   Store,
   Trash2,
+  Users,
   UtensilsCrossed,
   Wrench,
   X
@@ -36,6 +37,12 @@ import {
   eliminarBloqueo,
   listarBloqueos
 } from '../../services/bloqueosService'
+import {
+  getCapacidad,
+  guardarSlotsDia,
+  listarSlots,
+  setCapacidad
+} from '../../services/slotsService'
 import { cambiarPassword } from '../../services/authService'
 import { actualizarTenant } from '../../services/tenantService'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -76,6 +83,17 @@ export default function Configuracion() {
   const [errorBloqueo, setErrorBloqueo] = useState('')
   const [guardandoBloqueo, setGuardandoBloqueo] = useState(false)
   const [eliminandoBloqueo, setEliminandoBloqueo] = useState(null)
+
+  // Disponibilidad (capacidad + slots personalizados)
+  const [capacidad, setCapacidadLocal] = useState(1)
+  const [guardandoCapacidad, setGuardandoCapacidad] = useState(false)
+  const [okCapacidad, setOkCapacidad] = useState(false)
+  // slotsPorDia: { [diaSemana]: Set<string> }
+  const [slotsPorDia, setSlotsPorDia] = useState({})
+  const [diaActivoSlots, setDiaActivoSlots] = useState(1) // día seleccionado en la cuadrícula
+  const [guardandoSlots, setGuardandoSlots] = useState(false)
+  const [okSlots, setOkSlots] = useState(false)
+  const [errorDisponibilidad, setErrorDisponibilidad] = useState('')
 
   // Cambio de contraseña
   const [formPassword, setFormPassword] = useState({ actual: '', nueva: '', confirmar: '' })
@@ -163,8 +181,14 @@ export default function Configuracion() {
     setLoading(true)
     setError('')
 
-    Promise.all([listarServicios(tenantId), listarHorarios(tenantId), listarBloqueos()])
-      .then(([serviciosData, horariosData, bloqueosData]) => {
+    Promise.all([
+      listarServicios(tenantId),
+      listarHorarios(tenantId),
+      listarBloqueos(),
+      listarSlots(),
+      getCapacidad()
+    ])
+      .then(([serviciosData, horariosData, bloqueosData, slotsData, capacidadData]) => {
         if (!activo) return
         setServicios(serviciosData)
         const todos = DIAS_SEMANA.map((nombre, index) => {
@@ -178,6 +202,14 @@ export default function Configuracion() {
         })
         setHorarios(todos)
         setBloqueos(bloqueosData)
+        // Construir mapa de slots por día
+        const mapa = {}
+        for (const s of slotsData) {
+          if (!mapa[s.diaSemana]) mapa[s.diaSemana] = new Set()
+          mapa[s.diaSemana].add(s.hora)
+        }
+        setSlotsPorDia(mapa)
+        setCapacidadLocal(capacidadData)
       })
       .catch(err => {
         if (activo) setError(getApiErrorMessage(err, 'No pudimos cargar la configuración.'))
@@ -404,6 +436,76 @@ export default function Configuracion() {
       setErrorPassword(getApiErrorMessage(err, 'No pudimos cambiar la contraseña.'))
     } finally {
       setGuardandoPassword(false)
+    }
+  }
+
+  // Horas disponibles para la cuadrícula de slots (cada 30 min)
+  const HORAS_CUADRICULA = Array.from({ length: 30 }, (_, i) => {
+    // 07:00 a 21:30
+    const totalMin = 7 * 60 + i * 30
+    const h = Math.floor(totalMin / 60).toString().padStart(2, '0')
+    const m = (totalMin % 60).toString().padStart(2, '0')
+    return `${h}:${m}`
+  })
+
+  const toggleSlot = (hora) => {
+    setSlotsPorDia(prev => {
+      const actual = new Set(prev[diaActivoSlots] || [])
+      if (actual.has(hora)) {
+        actual.delete(hora)
+      } else {
+        actual.add(hora)
+      }
+      return { ...prev, [diaActivoSlots]: actual }
+    })
+  }
+
+  const seleccionarTodosSlots = () => {
+    setSlotsPorDia(prev => ({
+      ...prev,
+      [diaActivoSlots]: new Set(HORAS_CUADRICULA)
+    }))
+  }
+
+  const limpiarSlots = () => {
+    setSlotsPorDia(prev => ({
+      ...prev,
+      [diaActivoSlots]: new Set()
+    }))
+  }
+
+  const guardarSlotsDelDia = async () => {
+    if (guardandoSlots) return
+    setGuardandoSlots(true)
+    setOkSlots(false)
+    setErrorDisponibilidad('')
+    try {
+      const horas = Array.from(slotsPorDia[diaActivoSlots] || []).sort()
+      await guardarSlotsDia(diaActivoSlots, horas)
+      setOkSlots(true)
+      window.setTimeout(() => setOkSlots(false), 2500)
+    } catch (err) {
+      setErrorDisponibilidad(getApiErrorMessage(err, 'No pudimos guardar las horas.'))
+    } finally {
+      setGuardandoSlots(false)
+    }
+  }
+
+  const guardarCapacidadTaller = async (nuevaCap) => {
+    const cap = parseInt(nuevaCap)
+    if (Number.isNaN(cap) || cap < 1 || cap > 4) return
+    setGuardandoCapacidad(true)
+    setOkCapacidad(false)
+    setErrorDisponibilidad('')
+    try {
+      await setCapacidad(cap)
+      setCapacidadLocal(cap)
+      setOkCapacidad(true)
+      window.setTimeout(() => setOkCapacidad(false), 2000)
+    } catch (err) {
+      setErrorDisponibilidad(getApiErrorMessage(err, 'No pudimos actualizar la capacidad.'))
+    } finally {
+      setGuardandoCapacidad(false)
     }
   }
 
@@ -1010,6 +1112,162 @@ export default function Configuracion() {
           </div>
         )}
       </div>
+
+      {/* Sección disponibilidad */}
+      <section className="mt-4 rounded-xl border border-line bg-surface shadow-card">
+        <div className="flex items-start gap-3 border-b border-line px-4 py-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
+            <Users className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Disponibilidad</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Cuántos vehículos pueden reservar al mismo tiempo y qué horas ofreces cada día.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-6">
+          {errorDisponibilidad && (
+            <Alert variant="error" onDismiss={() => setErrorDisponibilidad('')}>{errorDisponibilidad}</Alert>
+          )}
+
+          {/* Capacidad simultánea */}
+          <div>
+            <p className="text-xs font-semibold text-ink mb-1">Vehículos simultáneos</p>
+            <p className="text-xs text-ink-muted mb-3">
+              Cuántas reservas se pueden aceptar al mismo tiempo. Si tienes un solo par de mecánicos, elige 1.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4].map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => guardarCapacidadTaller(n)}
+                  disabled={guardandoCapacidad}
+                  className={`flex h-12 w-14 flex-col items-center justify-center rounded-xl border-2 text-sm font-bold transition-all focus-ring disabled:opacity-60 ${
+                    capacidad === n
+                      ? 'border-accent-400 bg-accent-50 text-accent-700'
+                      : 'border-line bg-surface text-ink hover:border-graphite-300 hover:bg-graphite-50'
+                  }`}
+                  aria-pressed={capacidad === n}
+                  aria-label={`${n} vehículo${n > 1 ? 's' : ''} simultáneo${n > 1 ? 's' : ''}`}
+                >
+                  <span className="text-lg leading-none">{n}</span>
+                  <span className="mt-0.5 text-[10px] font-normal opacity-70">
+                    {n === 1 ? 'auto' : 'autos'}
+                  </span>
+                </button>
+              ))}
+              {okCapacidad && (
+                <span className="flex items-center gap-1 text-xs text-emerald-600 self-center ml-1">
+                  <Check className="h-3.5 w-3.5" /> Guardado
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Horas de inicio personalizadas */}
+          <div>
+            <p className="text-xs font-semibold text-ink mb-1">Horas de inicio por día</p>
+            <p className="text-xs text-ink-muted mb-3">
+              Selecciona qué horas ofreces para iniciar una reserva. Si un día no tiene horas marcadas, se generan automáticamente desde el horario de atención.
+            </p>
+
+            {/* Selector de día */}
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {DIAS_SEMANA.map((dia, i) => {
+                const count = (slotsPorDia[i] || new Set()).size
+                return (
+                  <button
+                    key={dia}
+                    type="button"
+                    onClick={() => setDiaActivoSlots(i)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors focus-ring ${
+                      diaActivoSlots === i
+                        ? 'bg-graphite-800 text-white'
+                        : 'bg-graphite-100 text-ink hover:bg-graphite-200'
+                    }`}
+                  >
+                    {dia.slice(0, 3)}
+                    {count > 0 && (
+                      <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                        diaActivoSlots === i ? 'bg-white/20 text-white' : 'bg-accent-100 text-accent-700'
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Cuadrícula de horas */}
+            <div className="rounded-xl border border-line bg-graphite-50/50 p-3">
+              <p className="mb-2 text-xs font-semibold text-ink">
+                {DIAS_SEMANA[diaActivoSlots]}
+                {(slotsPorDia[diaActivoSlots] || new Set()).size > 0 ? (
+                  <span className="ml-2 font-normal text-ink-muted">
+                    {(slotsPorDia[diaActivoSlots] || new Set()).size} hora{(slotsPorDia[diaActivoSlots] || new Set()).size !== 1 ? 's' : ''} seleccionada{(slotsPorDia[diaActivoSlots] || new Set()).size !== 1 ? 's' : ''}
+                  </span>
+                ) : (
+                  <span className="ml-2 font-normal text-ink-soft">automático</span>
+                )}
+              </p>
+
+              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-8">
+                {HORAS_CUADRICULA.map(hora => {
+                  const activo = (slotsPorDia[diaActivoSlots] || new Set()).has(hora)
+                  return (
+                    <button
+                      key={hora}
+                      type="button"
+                      onClick={() => toggleSlot(hora)}
+                      aria-pressed={activo}
+                      className={`rounded-lg py-2 text-xs font-medium transition-all focus-ring ${
+                        activo
+                          ? 'bg-accent-500 text-white shadow-sm'
+                          : 'bg-surface border border-line text-ink-muted hover:border-graphite-300 hover:text-ink'
+                      }`}
+                    >
+                      {hora}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={seleccionarTodosSlots}
+                    className="text-xs text-ink-muted underline hover:text-ink transition-colors"
+                  >
+                    Seleccionar todas
+                  </button>
+                  <span className="text-ink-soft text-xs">·</span>
+                  <button
+                    type="button"
+                    onClick={limpiarSlots}
+                    className="text-xs text-ink-muted underline hover:text-ink transition-colors"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+                <Button
+                  size="sm"
+                  variant={okSlots ? 'success' : 'dark'}
+                  leftIcon={okSlots ? Check : Save}
+                  loading={guardandoSlots}
+                  onClick={guardarSlotsDelDia}
+                >
+                  {okSlots ? 'Guardado' : `Guardar ${DIAS_SEMANA[diaActivoSlots].slice(0, 3)}.`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Sección bloqueos */}
       <section className="mt-4 rounded-xl border border-line bg-surface shadow-card">

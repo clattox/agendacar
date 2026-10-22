@@ -59,8 +59,24 @@ const getHorasDisponibles = async (req, res) => {
       return res.json({ horasDisponibles: [] })
     }
 
-    // Generar slots según duración del servicio
-    const slots = generarSlots(horario.horaInicio, horario.horaFin, servicio.duracion)
+    // Determinar slots base: personalizados si el tenant los configuró, automáticos si no
+    const slotsPersonalizados = await prisma.slotDisponible.findMany({
+      where: { tenantId: parseInt(tenantId), diaSemana },
+      orderBy: { hora: 'asc' }
+    })
+
+    let slots
+    if (slotsPersonalizados.length > 0) {
+      // Modo personalizado: solo las horas configuradas que permitan completar el servicio
+      const finMinutos = horario.horaFin.split(':').map(Number).reduce((h, m) => h * 60 + m)
+      const toMin = t => t.split(':').map(Number).reduce((h, m) => h * 60 + m)
+      slots = slotsPersonalizados
+        .map(s => s.hora)
+        .filter(hora => toMin(hora) + servicio.duracion <= finMinutos)
+    } else {
+      // Modo automático: comportamiento original intacto
+      slots = generarSlots(horario.horaInicio, horario.horaFin, servicio.duracion)
+    }
 
     // Obtener reservas del día para filtrar ocupadas
     const fechaInicio = new Date(fecha)
@@ -169,6 +185,32 @@ const createReserva = async (req, res) => {
     const fechaReserva = construirFechaReserva(fecha, hora)
 
     const reserva = await prisma.$transaction(async tx => {
+      // Verificar capacidad antes de crear la reserva
+      const servicio = await tx.servicio.findUnique({
+        where: { id: parseInt(servicioId) }
+      })
+      if (!servicio) throw Object.assign(new Error('Servicio no encontrado'), { status: 404 })
+
+      const tenant = await tx.tenant.findUnique({
+        where: { id: tenantIdNumerico },
+        select: { capacidad: true }
+      })
+      if (!tenant) throw Object.assign(new Error('Taller no encontrado'), { status: 404 })
+
+      // Contar reservas que se solapan con el intervalo de esta reserva
+      const finReserva = new Date(fechaReserva.getTime() + servicio.duracion * 60 * 1000)
+      const solapadas = await tx.reserva.count({
+        where: {
+          tenantId: tenantIdNumerico,
+          estado: { not: 'cancelada' },
+          fecha: { gte: fechaReserva, lt: finReserva }
+        }
+      })
+
+      if (solapadas >= tenant.capacidad) {
+        throw Object.assign(new Error('SIN_CAPACIDAD'), { status: 409 })
+      }
+
       const vehiculo = await tx.vehiculo.upsert({
         where: {
           patente_tenantId: {
@@ -215,6 +257,12 @@ const createReserva = async (req, res) => {
 
     res.status(201).json(reserva)
   } catch (error) {
+    if (error.message === 'SIN_CAPACIDAD') {
+      return res.status(409).json({ error: 'El horario seleccionado ya no tiene disponibilidad. Por favor elige otra hora.' })
+    }
+    if (error.status === 404) {
+      return res.status(404).json({ error: error.message })
+    }
     console.error(error)
     res.status(500).json({ error: 'Error al crear reserva' })
   }

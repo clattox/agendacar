@@ -34,6 +34,7 @@ app.use('/api/tenant', require('./routes/tenant'))
 app.use('/api/vehiculos', require('./routes/vehiculos'))
 app.use('/api/estadisticas', require('./routes/estadisticas'))
 app.use('/api/bloqueos', require('./routes/bloqueos'))
+app.use('/api/slots', require('./routes/slots'))
 app.use('/api/superadmin', require('./routes/superadmin'))
 
 // Health check
