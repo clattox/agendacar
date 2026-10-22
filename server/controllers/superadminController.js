@@ -89,6 +89,38 @@ const toggleTenant = async (req, res) => {
   }
 }
 
+// PUT /api/superadmin/tenants/:id — editar datos del tenant
+const updateTenant = async (req, res) => {
+  const id = parseInt(req.params.id)
+  const { nombre, email, telefono, direccion, subdominio } = req.body
+  try {
+    const tenant = await prisma.tenant.findUnique({ where: { id } })
+    if (!tenant) return res.status(404).json({ error: 'Tenant no encontrado' })
+
+    // Verificar subdominio único si cambió
+    if (subdominio && subdominio !== tenant.subdominio) {
+      const existe = await prisma.tenant.findUnique({ where: { subdominio } })
+      if (existe) return res.status(400).json({ error: 'Ese subdominio ya está en uso.' })
+    }
+
+    const actualizado = await prisma.tenant.update({
+      where: { id },
+      data: {
+        nombre: nombre ?? tenant.nombre,
+        email: email ?? tenant.email,
+        telefono: telefono ?? tenant.telefono,
+        direccion: direccion ?? tenant.direccion,
+        subdominio: subdominio ?? tenant.subdominio,
+      },
+      include: { _count: { select: { reservas: true, usuarios: true } } }
+    })
+    res.json(actualizado)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al actualizar tenant' })
+  }
+}
+
 // GET /api/superadmin/stats
 const getStats = async (req, res) => {
   try {

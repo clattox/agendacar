@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Building2, CalendarClock, CheckCircle2, Eye, EyeOff, MapPin, Pencil, Plus, PowerOff, RotateCcw, Users, X } from 'lucide-react'
 import SuperadminLayout from '../../components/superadmin/SuperadminLayout'
-import { getTenants, createTenant, toggleTenant, getStats, actualizarVencimiento, resetPasswordTenant } from '../../services/superadminService'
+import { getTenants, createTenant, toggleTenant, editarTenant, getStats, actualizarVencimiento, resetPasswordTenant } from '../../services/superadminService'
 import { getApiErrorMessage } from '../../lib/errors'
 import { Button, Input } from '../../components/ui'
 
@@ -23,6 +23,34 @@ export default function SuperadminDashboard() {
   const [editandoVenc, setEditandoVenc] = useState(null) // id del tenant editando
   const [vencInput, setVencInput] = useState('')
   const [guardandoVenc, setGuardandoVenc] = useState(false)
+
+  // Editar tenant
+  const [editando, setEditando] = useState(null) // objeto tenant
+  const [editForm, setEditForm] = useState({})
+  const [editError, setEditError] = useState('')
+  const [guardandoEdit, setGuardandoEdit] = useState(false)
+
+  const abrirEditar = (t) => {
+    setEditando(t)
+    setEditForm({ nombre: t.nombre || '', email: t.email || '', telefono: t.telefono || '', direccion: t.direccion || '', subdominio: t.subdominio || '' })
+    setEditError('')
+  }
+
+  const handleEditar = async (e) => {
+    e.preventDefault()
+    if (guardandoEdit) return
+    setGuardandoEdit(true)
+    setEditError('')
+    try {
+      const actualizado = await editarTenant(editando.id, editForm)
+      setTenants(prev => prev.map(t => t.id === actualizado.id ? actualizado : t))
+      setEditando(null)
+    } catch (err) {
+      setEditError(getApiErrorMessage(err, 'No se pudo actualizar el cliente.'))
+    } finally {
+      setGuardandoEdit(false)
+    }
+  }
 
   // Reset password de admin de taller
   const [resetId, setResetId] = useState(null) // id del tenant al que se le resetea
@@ -321,6 +349,14 @@ export default function SuperadminDashboard() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        onClick={() => abrirEditar(t)}
+                        title="Editar datos del cliente"
+                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span className="hidden lg:inline">Editar</span>
+                      </button>
+                      <button
                         onClick={() => abrirReset(t.id)}
                         title="Resetear contraseña del admin"
                         className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink"
@@ -398,6 +434,54 @@ export default function SuperadminDashboard() {
                 <Button type="submit" size="sm" loading={guardandoReset} leftIcon={RotateCcw}>
                   Resetear
                 </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal editar cliente */}
+      {editando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-xl border border-line bg-surface shadow-xl">
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <div className="flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-ink-muted" />
+                <h3 className="text-sm font-semibold text-ink">Editar cliente</h3>
+              </div>
+              <button onClick={() => setEditando(null)} className="text-ink-soft hover:text-ink">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={handleEditar} className="p-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-ink-muted mb-1">Nombre del taller</label>
+                  <Input value={editForm.nombre} onChange={e => setEditForm(p => ({ ...p, nombre: e.target.value }))} required />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">Subdominio</label>
+                  <Input value={editForm.subdominio} onChange={e => setEditForm(p => ({ ...p, subdominio: e.target.value }))} required />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">Teléfono</label>
+                  <Input value={editForm.telefono} onChange={e => setEditForm(p => ({ ...p, telefono: e.target.value }))} />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-ink-muted mb-1">Email</label>
+                  <Input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
+                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />Dirección física</span>
+                  </label>
+                  <Input value={editForm.direccion} onChange={e => setEditForm(p => ({ ...p, direccion: e.target.value }))} placeholder="Av. Principal 123, Ciudad" />
+                </div>
+              </div>
+              {editError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{editError}</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="secondary" size="sm" onClick={() => setEditando(null)}>Cancelar</Button>
+                <Button type="submit" size="sm" loading={guardandoEdit} leftIcon={Pencil}>Guardar</Button>
               </div>
             </form>
           </div>
