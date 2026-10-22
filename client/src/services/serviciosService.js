@@ -10,8 +10,8 @@ export async function crearServicio({ nombre, duracion }) {
   return data
 }
 
-export async function actualizarServicio(id, { nombre, duracion }) {
-  const { data } = await api.put(`/servicios/${id}`, { nombre, duracion })
+export async function actualizarServicio(id, { nombre, duracion, requiereInspeccion }) {
+  const { data } = await api.put(`/servicios/${id}`, { nombre, duracion, requiereInspeccion })
   return data
 }
 
