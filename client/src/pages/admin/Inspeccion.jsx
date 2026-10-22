@@ -380,7 +380,7 @@ export default function Inspeccion() {
                 <div><dt className="text-ink-muted">Patente</dt><dd className="font-mono font-bold text-ink">{reserva.patente}</dd></div>
                 <div><dt className="text-ink-muted">Vehículo</dt><dd className="text-ink">{nombreVehiculo}</dd></div>
                 <div><dt className="text-ink-muted">Servicio</dt><dd className="text-ink">{reserva.servicio?.nombre}</dd></div>
-                <div><dt className="text-ink-muted">Fecha</dt><dd className="text-ink">{formatFullDate(reserva.fecha)}</dd></div>
+                <div><dt className="text-ink-muted">Fecha</dt><dd className="text-ink">{formatFullDate(new Date(reserva.fecha))}</dd></div>
                 <div><dt className="text-ink-muted">Hora</dt><dd className="text-ink">{formatTimeFromISO(reserva.fecha)}</dd></div>
               </dl>
             </div>
