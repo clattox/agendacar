@@ -21,6 +21,7 @@ import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { listarServicios } from '../../services/serviciosService'
 import { listarHorarios } from '../../services/horariosService'
 import { crearReserva, listarHorasDisponibles } from '../../services/reservasService'
+import { listarCatalogo } from '../../services/vehiculosService'
 import { getApiErrorMessage } from '../../lib/errors'
 import { getTenantFromQuery } from '../../lib/tenant'
 import {
@@ -153,6 +154,9 @@ export default function Reservar() {
   const servicioIdInicial = state?.servicioId ?? null
   const { tenant, loading: cargandoTenant, error: tenantError, recargar: recargarTenant } = useTenant(tenantInicial)
 
+  // Catálogo dinámico de marcas/modelos (se mezcla con los defaults hardcodeados)
+  const [marcasModelosMerged, setMarcasModelosMerged] = useState(MARCAS_MODELOS)
+
   const [paso, setPaso] = useState(1)
   const [servicios, setServicios] = useState([])
   const [cargandoServicios, setCargandoServicios] = useState(true)
@@ -245,6 +249,26 @@ export default function Reservar() {
 
     return () => { activo = false }
   }, [tenant?.id, recargaServicios])
+
+  // Cargar catálogo personalizado de marcas/modelos y combinar con defaults
+  useEffect(() => {
+    if (!tenant?.id) return
+    listarCatalogo(tenant.id)
+      .then(entradas => {
+        if (!entradas.length) return
+        setMarcasModelosMerged(prev => {
+          const merged = { ...prev }
+          entradas.forEach(({ marca, modelo }) => {
+            if (!merged[marca]) merged[marca] = []
+            if (modelo && !merged[marca].includes(modelo)) {
+              merged[marca] = [...merged[marca], modelo]
+            }
+          })
+          return merged
+        })
+      })
+      .catch(() => { /* silencioso: si falla, se usan los defaults */ })
+  }, [tenant?.id])
 
   useEffect(() => {
     if (preseleccionAplicada.current || servicioIdInicial == null || servicios.length === 0) return
@@ -1145,14 +1169,14 @@ export default function Reservar() {
                     className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
                   >
                     <option value="">Selecciona una marca</option>
-                    {MARCAS.map(marca => (
+                    {Object.keys(marcasModelosMerged).sort((a, b) => a.localeCompare(b, 'es')).map(marca => (
                       <option key={marca} value={marca}>{marca}</option>
                     ))}
                   </select>
                 </FormField>
 
                 <FormField id="modelo" label="Modelo (opcional)">
-                  {form.marca && form.marca !== 'Otro' && MARCAS_MODELOS[form.marca]?.length > 0 ? (
+                  {form.marca && form.marca !== 'Otro' && marcasModelosMerged[form.marca]?.length > 0 ? (
                     <select
                       id="modelo"
                       name="modelo"
@@ -1161,7 +1185,7 @@ export default function Reservar() {
                       className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
                     >
                       <option value="">Selecciona un modelo</option>
-                      {MARCAS_MODELOS[form.marca].map(modelo => (
+                      {marcasModelosMerged[form.marca].map(modelo => (
                         <option key={modelo} value={modelo}>{modelo}</option>
                       ))}
                     </select>

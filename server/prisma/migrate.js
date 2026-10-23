@@ -157,6 +157,27 @@ async function main () {
       ON "_ReservaTrabajador"("B")
   `)
 
+  // ── Migración: catalogo_vehiculos ────────────────────────────────────────────
+  console.log('[migrate] catalogo_vehiculos...')
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "CatalogoVehiculo" (
+      "id"       SERIAL       NOT NULL,
+      "marca"    TEXT         NOT NULL,
+      "modelo"   TEXT         NOT NULL DEFAULT '',
+      "tenantId" INTEGER      NOT NULL,
+      CONSTRAINT "CatalogoVehiculo_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "CatalogoVehiculo_tenantId_fkey"
+        FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "CatalogoVehiculo_marca_modelo_tenantId_key"
+      ON "CatalogoVehiculo"("marca", "modelo", "tenantId")
+  `)
+
   // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

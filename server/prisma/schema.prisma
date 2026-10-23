@@ -29,7 +29,9 @@ model Tenant {
   bloqueos     Bloqueo[]
   slots        SlotDisponible[]
   trabajadores Trabajador[]
+  catalogoVehiculos CatalogoVehiculo[]
 }
+
 
 model SlotDisponible {
   id         Int    @id @default(autoincrement())
@@ -164,4 +166,14 @@ model DanoInspeccion {
   ubicacion     String?    // descripción textual de la zona
   descripcion   String?    // nota libre
   createdAt     DateTime   @default(now())
+}
+
+model CatalogoVehiculo {
+  id       Int    @id @default(autoincrement())
+  marca    String
+  modelo   String
+  tenantId Int
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([marca, modelo, tenantId])
 }

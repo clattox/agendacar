@@ -1,27 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
-import { Car, Pencil, Plus, Save, Search, X } from 'lucide-react'
+import { Car, ListChecks, Pencil, Plus, Save, Search, Trash2, X } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { Alert, Button, Dialog, FormField, Input } from '../../components/ui'
-import { crearVehiculo, listarVehiculos, actualizarVehiculo } from '../../services/vehiculosService'
+import {
+  crearVehiculo, listarVehiculos, actualizarVehiculo,
+  listarCatalogo, agregarCatalogo, eliminarCatalogo
+} from '../../services/vehiculosService'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
+import { getUsuario } from '../../lib/auth'
 
 const FORM_VACIO = { patente: '', marca: '', modelo: '', anio: '', kilometraje: '' }
 
-export default function Vehiculos() {
-  useDocumentTitle('Vehículos')
+// ── Tab Vehículos ────────────────────────────────────────────────────────────
 
+function TabVehiculos() {
   const [lista, setLista]         = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
   const [busqueda, setBusqueda]   = useState('')
 
-  // Modal nuevo vehículo
   const [modalNuevo, setModalNuevo]   = useState(false)
   const [formNuevo, setFormNuevo]     = useState(FORM_VACIO)
   const [creando, setCreando]         = useState(false)
   const [errorNuevo, setErrorNuevo]   = useState('')
 
-  // Fila en edición: { id, patente, marca, modelo, anio, kilometraje }
   const [editando, setEditando]   = useState(null)
   const [form, setForm]           = useState({})
   const [guardando, setGuardando] = useState(false)
@@ -123,23 +125,9 @@ export default function Vehiculos() {
   })
 
   return (
-    <AdminLayout>
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        {/* Encabezado */}
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">Vehículos</h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              Marca, modelo y datos de los vehículos registrados en el sistema
-            </p>
-          </div>
-          <Button variant="primary" leftIcon={Plus} onClick={abrirNuevo}>
-            Nuevo vehículo
-          </Button>
-        </div>
-
-        {/* Buscador */}
-        <div className="mb-4 relative">
+    <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="relative flex-1 min-w-0">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
           <Input
             placeholder="Buscar por patente, marca o modelo…"
@@ -148,156 +136,158 @@ export default function Vehiculos() {
             className="pl-9"
           />
         </div>
+        <Button variant="primary" leftIcon={Plus} onClick={abrirNuevo}>
+          Nuevo vehículo
+        </Button>
+      </div>
 
-        {/* Estado */}
-        {error && <Alert variant="error" className="mb-4">{error}</Alert>}
+      {error && <Alert variant="error" className="mb-4">{error}</Alert>}
 
-        {loading ? (
-          <div className="space-y-2">
-            {[0, 1, 2, 3].map(i => (
-              <div key={i} className="h-14 animate-pulse rounded-lg bg-graphite-50" />
-            ))}
-          </div>
-        ) : listaFiltrada.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <Car className="h-10 w-10 text-ink-soft" />
-            <p className="text-sm text-ink-muted">
-              {busqueda ? 'Sin resultados para esa búsqueda.' : 'No hay vehículos registrados todavía.'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-line">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line bg-graphite-50">
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Patente</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Marca</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Modelo</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Año</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Km</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Atenciones</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {listaFiltrada.map(v => {
-                  const enEdicion = editando === v.patente
-                  return (
-                    <tr key={v.patente} className={enEdicion ? 'bg-accent-50' : 'hover:bg-graphite-50'}>
-                      <td className="px-4 py-3 font-mono font-semibold uppercase text-ink">
-                        {v.patente}
-                      </td>
+      {loading ? (
+        <div className="space-y-2">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="h-14 animate-pulse rounded-lg bg-graphite-50" />
+          ))}
+        </div>
+      ) : listaFiltrada.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <Car className="h-10 w-10 text-ink-soft" />
+          <p className="text-sm text-ink-muted">
+            {busqueda ? 'Sin resultados para esa búsqueda.' : 'No hay vehículos registrados todavía.'}
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-line">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-line bg-graphite-50">
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Patente</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Marca</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Modelo</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Año</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Km</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-ink-soft">Atenciones</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {listaFiltrada.map(v => {
+                const enEdicion = editando === v.patente
+                return (
+                  <tr key={v.patente} className={enEdicion ? 'bg-accent-50' : 'hover:bg-graphite-50'}>
+                    <td className="px-4 py-3 font-mono font-semibold uppercase text-ink">
+                      {v.patente}
+                    </td>
 
-                      {enEdicion ? (
-                        <>
-                          <td className="px-2 py-2">
-                            <input
-                              ref={marcaRef}
-                              type="text"
-                              value={form.marca}
-                              onChange={e => setForm(f => ({ ...f, marca: e.target.value }))}
-                              placeholder="Marca"
-                              className="w-full rounded border border-line bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
-                            />
-                          </td>
-                          <td className="px-2 py-2">
-                            <input
-                              type="text"
-                              value={form.modelo}
-                              onChange={e => setForm(f => ({ ...f, modelo: e.target.value }))}
-                              placeholder="Modelo"
-                              className="w-full rounded border border-line bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
-                            />
-                          </td>
-                          <td className="px-2 py-2">
-                            <input
-                              type="number"
-                              value={form.anio}
-                              onChange={e => setForm(f => ({ ...f, anio: e.target.value }))}
-                              placeholder="Año"
-                              min="1900" max="2099"
-                              className="w-20 rounded border border-line bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
-                            />
-                          </td>
-                          <td className="px-2 py-2">
-                            <input
-                              type="number"
-                              value={form.kilometraje}
-                              onChange={e => setForm(f => ({ ...f, kilometraje: e.target.value }))}
-                              placeholder="km"
-                              min="0"
-                              className="w-24 rounded border border-line bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-ink-muted">
-                            {v._count?.reservas ?? 0}
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="flex items-center gap-1.5">
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                leftIcon={Save}
-                                loading={guardando}
-                                onClick={() => guardar(v.patente)}
-                              >
-                                Guardar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                leftIcon={X}
-                                disabled={guardando}
-                                onClick={cancelarEdicion}
-                              >
-                                Cancelar
-                              </Button>
-                            </div>
-                            {errorEdit && (
-                              <p className="mt-1 text-xs text-red-500">{errorEdit}</p>
-                            )}
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-4 py-3 text-ink">
-                            {v.marca || <span className="text-ink-soft">—</span>}
-                          </td>
-                          <td className="px-4 py-3 text-ink">
-                            {v.modelo || <span className="text-ink-soft">—</span>}
-                          </td>
-                          <td className="px-4 py-3 text-ink">
-                            {v.anio || <span className="text-ink-soft">—</span>}
-                          </td>
-                          <td className="px-4 py-3 text-ink">
-                            {v.kilometraje != null
-                              ? `${Number(v.kilometraje).toLocaleString('es-CL')} km`
-                              : <span className="text-ink-soft">—</span>
-                            }
-                          </td>
-                          <td className="px-4 py-3 text-ink-muted">
-                            {v._count?.reservas ?? 0}
-                          </td>
-                          <td className="px-3 py-3 text-right">
+                    {enEdicion ? (
+                      <>
+                        <td className="px-2 py-2">
+                          <input
+                            ref={marcaRef}
+                            type="text"
+                            value={form.marca}
+                            onChange={e => setForm(f => ({ ...f, marca: e.target.value }))}
+                            placeholder="Marca"
+                            className="w-full rounded border border-line bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="text"
+                            value={form.modelo}
+                            onChange={e => setForm(f => ({ ...f, modelo: e.target.value }))}
+                            placeholder="Modelo"
+                            className="w-full rounded border border-line bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            value={form.anio}
+                            onChange={e => setForm(f => ({ ...f, anio: e.target.value }))}
+                            placeholder="Año"
+                            min="1900" max="2099"
+                            className="w-20 rounded border border-line bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            value={form.kilometraje}
+                            onChange={e => setForm(f => ({ ...f, kilometraje: e.target.value }))}
+                            placeholder="km"
+                            min="0"
+                            className="w-24 rounded border border-line bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-ink-muted">
+                          {v._count?.reservas ?? 0}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              leftIcon={Save}
+                              loading={guardando}
+                              onClick={() => guardar(v.patente)}
+                            >
+                              Guardar
+                            </Button>
                             <Button
                               size="sm"
                               variant="secondary"
-                              leftIcon={Pencil}
-                              onClick={() => iniciarEdicion(v)}
+                              leftIcon={X}
+                              disabled={guardando}
+                              onClick={cancelarEdicion}
                             >
-                              Editar
+                              Cancelar
                             </Button>
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                          </div>
+                          {errorEdit && (
+                            <p className="mt-1 text-xs text-red-500">{errorEdit}</p>
+                          )}
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-4 py-3 text-ink">
+                          {v.marca || <span className="text-ink-soft">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-ink">
+                          {v.modelo || <span className="text-ink-soft">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-ink">
+                          {v.anio || <span className="text-ink-soft">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-ink">
+                          {v.kilometraje != null
+                            ? `${Number(v.kilometraje).toLocaleString('es-CL')} km`
+                            : <span className="text-ink-soft">—</span>
+                          }
+                        </td>
+                        <td className="px-4 py-3 text-ink-muted">
+                          {v._count?.reservas ?? 0}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            leftIcon={Pencil}
+                            onClick={() => iniciarEdicion(v)}
+                          >
+                            Editar
+                          </Button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* ── Modal nuevo vehículo ── */}
       <Dialog
@@ -368,6 +358,242 @@ export default function Vehiculos() {
           </div>
         </div>
       </Dialog>
+    </>
+  )
+}
+
+// ── Tab Catálogo ─────────────────────────────────────────────────────────────
+
+function TabCatalogo() {
+  const tenantId = getUsuario()?.tenantId
+
+  const [entradas, setEntradas]   = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState('')
+
+  // Modal agregar
+  const [modal, setModal]         = useState(false)
+  const [formMarca, setFormMarca] = useState('')
+  const [formModelo, setFormModelo] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [errorModal, setErrorModal] = useState('')
+
+  // Eliminando
+  const [eliminandoId, setEliminandoId] = useState(null)
+
+  const cargar = async () => {
+    if (!tenantId) return
+    setLoading(true)
+    setError('')
+    try {
+      setEntradas(await listarCatalogo(tenantId))
+    } catch {
+      setError('No se pudo cargar el catálogo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { cargar() }, [])
+
+  const abrirModal = () => {
+    setFormMarca('')
+    setFormModelo('')
+    setErrorModal('')
+    setModal(true)
+  }
+
+  const guardar = async () => {
+    if (!formMarca.trim()) {
+      setErrorModal('La marca es obligatoria.')
+      return
+    }
+    setGuardando(true)
+    setErrorModal('')
+    try {
+      const nueva = await agregarCatalogo({ marca: formMarca.trim(), modelo: formModelo.trim() })
+      setEntradas(prev => [...prev, nueva].sort((a, b) =>
+        a.marca.localeCompare(b.marca, 'es') || a.modelo.localeCompare(b.modelo, 'es')
+      ))
+      setModal(false)
+    } catch (err) {
+      setErrorModal(err.response?.data?.error || 'Ya existe esa entrada o hubo un error.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const eliminar = async (id) => {
+    setEliminandoId(id)
+    try {
+      await eliminarCatalogo(id)
+      setEntradas(prev => prev.filter(e => e.id !== id))
+    } catch {
+      setError('No se pudo eliminar la entrada.')
+    } finally {
+      setEliminandoId(null)
+    }
+  }
+
+  // Agrupar por marca para mostrar ordenado
+  const porMarca = entradas.reduce((acc, e) => {
+    if (!acc[e.marca]) acc[e.marca] = []
+    acc[e.marca].push(e)
+    return acc
+  }, {})
+  const marcas = Object.keys(porMarca).sort((a, b) => a.localeCompare(b, 'es'))
+
+  return (
+    <>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-sm text-ink-muted">
+          Agrega marcas y modelos que no aparecen en el formulario público de reservas.
+          Los cambios se aplican de inmediato al formulario.
+        </p>
+        <Button variant="primary" leftIcon={Plus} onClick={abrirModal} className="shrink-0">
+          Agregar
+        </Button>
+      </div>
+
+      {error && <Alert variant="error" className="mb-4">{error}</Alert>}
+
+      {loading ? (
+        <div className="space-y-2">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="h-12 animate-pulse rounded-lg bg-graphite-50" />
+          ))}
+        </div>
+      ) : marcas.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line py-16 text-center">
+          <ListChecks className="h-10 w-10 text-ink-soft" />
+          <div>
+            <p className="text-sm font-medium text-ink">Sin entradas personalizadas</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Las marcas y modelos predeterminados ya están disponibles.<br />
+              Agrega aquí solo los que no aparecen en la lista.
+            </p>
+          </div>
+          <Button variant="secondary" leftIcon={Plus} size="sm" onClick={abrirModal}>
+            Agregar primera entrada
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {marcas.map(marca => (
+            <div key={marca} className="overflow-hidden rounded-xl border border-line">
+              <div className="border-b border-line bg-graphite-50 px-4 py-2.5">
+                <span className="text-sm font-semibold text-ink">{marca}</span>
+              </div>
+              <div className="divide-y divide-line">
+                {porMarca[marca].map(e => (
+                  <div key={e.id} className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-sm text-ink">
+                      {e.modelo || <span className="italic text-ink-soft">(sin modelo)</span>}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => eliminar(e.id)}
+                      disabled={eliminandoId === e.id}
+                      className="ml-4 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-danger-50 hover:text-danger-600 disabled:opacity-40"
+                      aria-label={`Eliminar ${marca} ${e.modelo}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Eliminar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Modal agregar ── */}
+      <Dialog
+        open={modal}
+        onClose={() => { if (!guardando) setModal(false) }}
+        title="Agregar marca o modelo"
+        description="Ingresa la marca y, opcionalmente, el modelo. Aparecerán en el formulario público de reservas."
+        footer={
+          <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="secondary" onClick={() => setModal(false)} disabled={guardando}>
+              Cancelar
+            </Button>
+            <Button variant="primary" leftIcon={Save} onClick={guardar} loading={guardando}>
+              Agregar
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {errorModal && <Alert variant="error">{errorModal}</Alert>}
+
+          <FormField label="Marca" required>
+            <Input
+              value={formMarca}
+              onChange={e => setFormMarca(e.target.value)}
+              placeholder="Ej: Tesla, Chery, BYD…"
+              autoFocus
+            />
+          </FormField>
+
+          <FormField
+            label="Modelo"
+            hint="Déjalo vacío si solo quieres agregar la marca (el cliente podrá escribir el modelo manualmente)."
+          >
+            <Input
+              value={formModelo}
+              onChange={e => setFormModelo(e.target.value)}
+              placeholder="Ej: Model 3, Tiggo 8, Atto 3…"
+            />
+          </FormField>
+        </div>
+      </Dialog>
+    </>
+  )
+}
+
+// ── Página principal ─────────────────────────────────────────────────────────
+
+export default function Vehiculos() {
+  useDocumentTitle('Vehículos')
+  const [tab, setTab] = useState('vehiculos')
+
+  return (
+    <AdminLayout>
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        {/* Encabezado */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-ink">Vehículos</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Gestiona los vehículos registrados y el catálogo de marcas del formulario de reservas.
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-6 flex gap-1 rounded-lg border border-line bg-graphite-50 p-1">
+          {[
+            { id: 'vehiculos', label: 'Vehículos', icon: Car },
+            { id: 'catalogo', label: 'Catálogo de marcas', icon: ListChecks }
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                tab === id
+                  ? 'bg-white text-ink shadow-sm'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'vehiculos' ? <TabVehiculos /> : <TabCatalogo />}
+      </div>
     </AdminLayout>
   )
 }
