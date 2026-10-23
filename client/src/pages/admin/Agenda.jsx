@@ -46,7 +46,7 @@ import {
   listarReservasPorFecha,
   reagendarReserva
 } from '../../services/reservasService'
-import { obtenerHistorialVehiculo } from '../../services/vehiculosService'
+import { actualizarVehiculo, obtenerHistorialVehiculo } from '../../services/vehiculosService'
 import { listarTrabajadores } from '../../services/trabajadorService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import EstadoBadge, { ESTADOS_RESERVA } from '../../components/admin/EstadoBadge'
@@ -918,10 +918,59 @@ function DetalleReserva({ reserva, onActualizar }) {
   const haycambios = asignadosOriginales !== asignadosActuales
   const vehiculo = reserva.vehiculo
   const kilometraje = reserva.kilometraje ?? vehiculo?.kilometraje
+
+  // Estado local para edición inline de marca/modelo
+  const [marcaLocal, setMarcaLocal] = useState(vehiculo?.marca || '')
+  const [modeloLocal, setModeloLocal] = useState(vehiculo?.modelo || '')
+  const [guardandoVehiculo, setGuardandoVehiculo] = useState(false)
+
+  const guardarCampoVehiculo = async (campo, valor) => {
+    if (!vehiculo) return
+    const trimmed = valor.trim()
+    const original = campo === 'marca' ? (vehiculo.marca || '') : (vehiculo.modelo || '')
+    if (trimmed === original) return // sin cambios
+    setGuardandoVehiculo(true)
+    try {
+      await actualizarVehiculo(reserva.patente, { [campo]: trimmed || null })
+    } catch {
+      // silencioso — el valor en pantalla ya cambió localmente
+    } finally {
+      setGuardandoVehiculo(false)
+    }
+  }
+
   const datosVehiculo = [
     { label: 'Patente', value: <span className="font-mono uppercase">{reserva.patente}</span> },
-    { label: 'Marca', value: vehiculo?.marca },
-    { label: 'Modelo', value: vehiculo?.modelo },
+    {
+      label: 'Marca',
+      value: vehiculo?.marca
+        ? vehiculo.marca
+        : vehiculo
+          ? <input
+              type="text"
+              value={marcaLocal}
+              onChange={e => setMarcaLocal(e.target.value)}
+              onBlur={e => guardarCampoVehiculo('marca', e.target.value)}
+              placeholder="Ingresar marca…"
+              className="w-full rounded border border-line bg-transparent px-2 py-1 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
+            />
+          : null
+    },
+    {
+      label: 'Modelo',
+      value: vehiculo?.modelo
+        ? vehiculo.modelo
+        : vehiculo
+          ? <input
+              type="text"
+              value={modeloLocal}
+              onChange={e => setModeloLocal(e.target.value)}
+              onBlur={e => guardarCampoVehiculo('modelo', e.target.value)}
+              placeholder="Ingresar modelo…"
+              className="w-full rounded border border-line bg-transparent px-2 py-1 text-sm text-ink placeholder:text-ink-soft focus:border-accent-500 focus:outline-none"
+            />
+          : null
+    },
     { label: 'Año', value: vehiculo?.anio },
     {
       label: 'Kilometraje',
