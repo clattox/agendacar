@@ -372,8 +372,8 @@ export default function Inspeccion() {
             </div>
 
             {/* Diagrama SVG */}
-            <div className="rounded-xl border border-line bg-surface overflow-hidden">
-              <div className="px-4 py-2 border-b border-line bg-surface-raised print:hidden">
+            <div className="rounded-xl border border-line bg-surface overflow-visible">
+              <div className="px-4 py-2 border-b border-line bg-surface-raised print:hidden rounded-t-xl overflow-hidden">
                 <p className="text-xs text-ink-muted">Haz clic sobre el diagrama para marcar un daño visible</p>
               </div>
               {/* Vista de impresión: mostrar las 4 vistas */}
@@ -401,34 +401,44 @@ export default function Inspeccion() {
                 })}
               </div>
               {/* Vista normal: una vista activa */}
-              <div
-                className="print:hidden relative cursor-crosshair select-none"
-                style={{ aspectRatio: vistaActiva === 'superior' ? '220/380' : '400/200' }}
-                ref={svgRef}
-                onClick={handleSvgClick}
-              >
-                {SVG_MAP[vistaActiva]}
-                {/* Marcadores de daño */}
-                {danosDeLaVista.map((d, i) => {
-                  const tipo = TIPOS_DANO.find(t => t.value === d.tipo)
-                  const numeral = danos.filter(x => x.vista === vistaActiva).indexOf(d) + 1
-                  return (
-                    <div
-                      key={d._tempId || d.id || i}
-                      className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
-                      style={{ left: `${d.posX}%`, top: `${d.posY}%` }}
-                      onClick={e => { e.stopPropagation(); abrirEdicion(d.idx) }}
-                      title={tipo?.label}
-                    >
+              {/* Wrapper de centrado — necesario para superior (−30%) y lateral (+15%) */}
+              <div className={`print:hidden${vistaActiva === 'superior' ? ' flex justify-center' : ''}`}>
+                <div
+                  className="relative cursor-crosshair select-none"
+                  style={{
+                    aspectRatio: vistaActiva === 'superior' ? '220/380' : '400/200',
+                    ...(vistaActiva === 'superior'
+                      ? { width: '70%' }
+                      : vistaActiva === 'lateral'
+                      ? { width: '115%', marginLeft: '-7.5%' }
+                      : {})
+                  }}
+                  ref={svgRef}
+                  onClick={handleSvgClick}
+                >
+                  {SVG_MAP[vistaActiva]}
+                  {/* Marcadores de daño */}
+                  {danosDeLaVista.map((d, i) => {
+                    const tipo = TIPOS_DANO.find(t => t.value === d.tipo)
+                    const numeral = danos.filter(x => x.vista === vistaActiva).indexOf(d) + 1
+                    return (
                       <div
-                        className="h-6 w-6 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-md"
-                        style={{ backgroundColor: tipo?.color || '#6B7280' }}
+                        key={d._tempId || d.id || i}
+                        className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                        style={{ left: `${d.posX}%`, top: `${d.posY}%` }}
+                        onClick={e => { e.stopPropagation(); abrirEdicion(d.idx) }}
+                        title={tipo?.label}
                       >
-                        {numeral}
+                        <div
+                          className="h-6 w-6 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-md"
+                          style={{ backgroundColor: tipo?.color || '#6B7280' }}
+                        >
+                          {numeral}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
 
