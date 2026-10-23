@@ -74,6 +74,7 @@ const FILTROS = [
 ]
 
 export default function Agenda() {
+  const navigate = useNavigate()
   const usuario = getUsuario()
   const inspeccionActiva = usuario?.tenant?.inspeccionActiva ?? false
   const [vista, setVista] = useState('dia')
