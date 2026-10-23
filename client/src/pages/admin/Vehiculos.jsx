@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Car, Pencil, Save, Search, X } from 'lucide-react'
+import { Car, Pencil, Plus, Save, Search, X } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { Alert, Button, Input } from '../../components/ui'
-import { listarVehiculos, actualizarVehiculo } from '../../services/vehiculosService'
+import { Alert, Button, Dialog, FormField, Input } from '../../components/ui'
+import { crearVehiculo, listarVehiculos, actualizarVehiculo } from '../../services/vehiculosService'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
+
+const FORM_VACIO = { patente: '', marca: '', modelo: '', anio: '', kilometraje: '' }
 
 export default function Vehiculos() {
   useDocumentTitle('Vehículos')
@@ -12,6 +14,12 @@ export default function Vehiculos() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
   const [busqueda, setBusqueda]   = useState('')
+
+  // Modal nuevo vehículo
+  const [modalNuevo, setModalNuevo]   = useState(false)
+  const [formNuevo, setFormNuevo]     = useState(FORM_VACIO)
+  const [creando, setCreando]         = useState(false)
+  const [errorNuevo, setErrorNuevo]   = useState('')
 
   // Fila en edición: { id, patente, marca, modelo, anio, kilometraje }
   const [editando, setEditando]   = useState(null)
@@ -74,6 +82,36 @@ export default function Vehiculos() {
     }
   }
 
+  const abrirNuevo = () => {
+    setFormNuevo(FORM_VACIO)
+    setErrorNuevo('')
+    setModalNuevo(true)
+  }
+
+  const crearNuevo = async () => {
+    if (!formNuevo.patente.trim()) {
+      setErrorNuevo('La patente es obligatoria.')
+      return
+    }
+    setCreando(true)
+    setErrorNuevo('')
+    try {
+      const nuevo = await crearVehiculo({
+        patente:     formNuevo.patente.trim(),
+        marca:       formNuevo.marca.trim()       || null,
+        modelo:      formNuevo.modelo.trim()      || null,
+        anio:        formNuevo.anio        !== '' ? Number(formNuevo.anio)        : null,
+        kilometraje: formNuevo.kilometraje !== '' ? Number(formNuevo.kilometraje) : null
+      })
+      setLista(prev => [{ ...nuevo, _count: { reservas: 0 } }, ...prev])
+      setModalNuevo(false)
+    } catch (err) {
+      setErrorNuevo(err.response?.data?.error || 'No se pudo crear el vehículo.')
+    } finally {
+      setCreando(false)
+    }
+  }
+
   const listaFiltrada = lista.filter(v => {
     if (!busqueda.trim()) return true
     const q = busqueda.toLowerCase()
@@ -95,6 +133,9 @@ export default function Vehiculos() {
               Marca, modelo y datos de los vehículos registrados en el sistema
             </p>
           </div>
+          <Button variant="primary" leftIcon={Plus} onClick={abrirNuevo}>
+            Nuevo vehículo
+          </Button>
         </div>
 
         {/* Buscador */}
@@ -257,6 +298,76 @@ export default function Vehiculos() {
           </div>
         )}
       </div>
+
+      {/* ── Modal nuevo vehículo ── */}
+      <Dialog
+        open={modalNuevo}
+        onClose={() => { if (!creando) setModalNuevo(false) }}
+        title="Nuevo vehículo"
+        description="Ingresa los datos del vehículo. Solo la patente es obligatoria."
+        footer={
+          <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="secondary" onClick={() => setModalNuevo(false)} disabled={creando}>
+              Cancelar
+            </Button>
+            <Button variant="primary" leftIcon={Save} onClick={crearNuevo} loading={creando}>
+              Guardar
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {errorNuevo && <Alert variant="error">{errorNuevo}</Alert>}
+
+          <FormField label="Patente" required>
+            <Input
+              value={formNuevo.patente}
+              onChange={e => setFormNuevo(f => ({ ...f, patente: e.target.value.toUpperCase() }))}
+              placeholder="Ej: HJYPP44"
+              className="font-mono uppercase"
+              autoFocus
+            />
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Marca">
+              <Input
+                value={formNuevo.marca}
+                onChange={e => setFormNuevo(f => ({ ...f, marca: e.target.value }))}
+                placeholder="Ej: Toyota"
+              />
+            </FormField>
+            <FormField label="Modelo">
+              <Input
+                value={formNuevo.modelo}
+                onChange={e => setFormNuevo(f => ({ ...f, modelo: e.target.value }))}
+                placeholder="Ej: Hilux"
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Año">
+              <Input
+                type="number"
+                value={formNuevo.anio}
+                onChange={e => setFormNuevo(f => ({ ...f, anio: e.target.value }))}
+                placeholder="Ej: 2020"
+                min="1900" max="2099"
+              />
+            </FormField>
+            <FormField label="Kilometraje">
+              <Input
+                type="number"
+                value={formNuevo.kilometraje}
+                onChange={e => setFormNuevo(f => ({ ...f, kilometraje: e.target.value }))}
+                placeholder="Ej: 45000"
+                min="0"
+              />
+            </FormField>
+          </div>
+        </div>
+      </Dialog>
     </AdminLayout>
   )
 }

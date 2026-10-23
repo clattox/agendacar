@@ -4,6 +4,39 @@ const prisma = new PrismaClient()
 
 const normalizarPatente = patente => String(patente || '').trim().toUpperCase()
 
+// Crear un vehículo manualmente en el tenant.
+const crearVehiculo = async (req, res) => {
+  const tenantId = req.usuario?.tenantId
+  if (!tenantId) return res.status(401).json({ error: 'Token sin tenant asociado' })
+
+  const patente = normalizarPatente(req.body.patente)
+  if (!patente) return res.status(400).json({ error: 'La patente es obligatoria.' })
+
+  const { marca, modelo, anio, kilometraje } = req.body
+
+  try {
+    const existe = await prisma.vehiculo.findUnique({
+      where: { patente_tenantId: { patente, tenantId } }
+    })
+    if (existe) return res.status(409).json({ error: `La patente ${patente} ya está registrada.` })
+
+    const vehiculo = await prisma.vehiculo.create({
+      data: {
+        patente,
+        tenantId,
+        marca:       marca       || null,
+        modelo:      modelo      || null,
+        anio:        anio        ? Number(anio)        : null,
+        kilometraje: kilometraje ? Number(kilometraje) : null
+      }
+    })
+    res.status(201).json(vehiculo)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al crear el vehículo.' })
+  }
+}
+
 // Listar todos los vehículos del tenant con sus datos.
 const listarVehiculos = async (req, res) => {
   const tenantId = req.usuario?.tenantId
@@ -104,4 +137,4 @@ const actualizarVehiculo = async (req, res) => {
   }
 }
 
-module.exports = { listarVehiculos, obtenerHistorialVehiculo, actualizarVehiculo }
+module.exports = { crearVehiculo, listarVehiculos, obtenerHistorialVehiculo, actualizarVehiculo }

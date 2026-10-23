@@ -1,5 +1,10 @@
 import api from '../lib/api'
 
+export async function crearVehiculo(datos) {
+  const { data } = await api.post('/vehiculos', datos)
+  return data
+}
+
 export async function listarVehiculos() {
   const { data } = await api.get('/vehiculos')
   return data
