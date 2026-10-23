@@ -1192,17 +1192,24 @@ function HistorialVehiculoDialog({ patente, telefono, onClose }) {
             {reservas.map(reserva => (
               <li
                 key={reserva.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                className="px-4 py-3"
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink">
-                    {reserva.servicio?.nombre || 'Servicio sin nombre'}
-                  </p>
-                  <p className="mt-0.5 text-xs capitalize text-ink-muted">
-                    {formatDateFromISO(reserva.fecha)} · {formatTimeFromISO(reserva.fecha)}
-                  </p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink">
+                      {reserva.servicio?.nombre || 'Servicio sin nombre'}
+                    </p>
+                    <p className="mt-0.5 text-xs capitalize text-ink-muted">
+                      {formatDateFromISO(reserva.fecha)} · {formatTimeFromISO(reserva.fecha)}
+                    </p>
+                  </div>
+                  <EstadoBadge estado={reserva.estado} size="sm" />
                 </div>
-                <EstadoBadge estado={reserva.estado} size="sm" />
+                {reserva.notas && (
+                  <p className="mt-1.5 text-xs text-ink-muted italic border-l-2 border-line pl-2">
+                    {reserva.notas}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
@@ -1230,7 +1237,8 @@ function labelEstadoVehiculo(estado) {
 
 function textoReservaHistorial(reserva) {
   const servicio = reserva.servicio?.nombre || 'Servicio sin nombre'
-  return `${formatDateFromISO(reserva.fecha)} · ${formatTimeFromISO(reserva.fecha)} — ${servicio} (${labelEstadoVehiculo(reserva.estado)})`
+  const base = `${formatDateFromISO(reserva.fecha)} · ${formatTimeFromISO(reserva.fecha)} — ${servicio} (${labelEstadoVehiculo(reserva.estado)})`
+  return reserva.notas ? `${base}\n  📝 ${reserva.notas}` : base
 }
 
 function normalizarTelefonoWhatsApp(telefono) {
@@ -1289,8 +1297,9 @@ function abrirVistaImpresionHistorial({ patente, detalle, kilometraje, reservas 
           <td class="hora">${escapeHtml(formatTimeFromISO(reserva.fecha))}</td>
           <td>${escapeHtml(reserva.servicio?.nombre || 'Servicio sin nombre')}</td>
           <td>${escapeHtml(labelEstadoVehiculo(reserva.estado))}</td>
+          <td class="notas">${reserva.notas ? escapeHtml(reserva.notas) : '<span class="sin-notas">—</span>'}</td>
         </tr>`).join('')
-    : '<tr><td colspan="4" class="vacio">Sin atenciones registradas.</td></tr>'
+    : '<tr><td colspan="5" class="vacio">Sin atenciones registradas.</td></tr>'
 
   const kilometrajeHtml = kilometraje !== null && kilometraje !== undefined
     ? `<p class="meta">Kilometraje registrado: <strong>${Number(kilometraje).toLocaleString('es-CL')} km</strong></p>`
@@ -1344,6 +1353,8 @@ function abrirVistaImpresionHistorial({ patente, detalle, kilometraje, reservas 
     }
     td { padding: 11px 12px; border-bottom: 1px solid #e1e3e6; vertical-align: top; }
     .hora { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .notas { color: #69717b; font-style: italic; }
+    .sin-notas { color: #b0b5bb; }
     .vacio { padding: 28px 12px; color: #69717b; text-align: center; }
     footer { margin-top: 28px; color: #69717b; font-size: 11px; }
     @media print {
@@ -1365,7 +1376,7 @@ function abrirVistaImpresionHistorial({ patente, detalle, kilometraje, reservas 
   </header>
   <table>
     <thead>
-      <tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Estado</th></tr>
+      <tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Estado</th><th>Observaciones</th></tr>
     </thead>
     <tbody>${filas}</tbody>
   </table>
