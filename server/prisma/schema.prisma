@@ -121,6 +121,7 @@ model Reserva {
   kilometraje Int?
   createdAt   DateTime   @default(now())
   inspeccion  Inspeccion?
+  trabajadores Trabajador[] // quiénes atendieron el vehículo (opcional)
 }
 
 model Inspeccion {
@@ -148,6 +149,7 @@ model Trabajador {
   tenantId     Int
   tenant       Tenant       @relation(fields: [tenantId], references: [id])
   inspecciones Inspeccion[]
+  reservas     Reserva[]    // reservas en las que participó
   createdAt    DateTime     @default(now())
 }
 

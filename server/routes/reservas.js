@@ -10,7 +10,8 @@ const {
   updateEstado,
   deleteReserva,
   getHorasDisponibles,
-  exportarReservasCSV
+  exportarReservasCSV,
+  asignarTrabajadores
 } = require('../controllers/reservasController')
 
 // Rutas públicas (cliente)
@@ -21,6 +22,7 @@ router.post('/nueva', verifyTurnstile, createReserva)
 router.get('/exportar', auth, exportarReservasCSV)
 router.get('/', auth, getReservas)
 router.patch('/:id/estado', auth, updateEstado)
+router.put('/:id/trabajadores', auth, asignarTrabajadores)
 router.patch('/:id', auth, reagendarReserva)
 router.delete('/:id', auth, deleteReserva)
 

@@ -33,6 +33,11 @@ export async function eliminarReserva(id) {
   return data
 }
 
+export async function asignarTrabajadoresReserva(id, trabajadorIds) {
+  const { data } = await api.put(`/reservas/${id}/trabajadores`, { trabajadorIds })
+  return data
+}
+
 export async function exportarReservasCSV({ desde, hasta } = {}) {
   const params = new URLSearchParams()
   if (desde) params.set('desde', desde)

@@ -24,7 +24,7 @@ const getReservas = async (req, res) => {
         tenantId,
         fecha: { gte: fechaInicio, lte: fechaFin }
       },
-      include: { servicio: true, vehiculo: true },
+      include: { servicio: true, vehiculo: true, trabajadores: true },
       orderBy: { fecha: 'asc' }
     })
 
@@ -618,6 +618,47 @@ const exportarReservasCSV = async (req, res) => {
   }
 }
 
+// Asignar trabajadores a una reserva (reemplaza la lista completa)
+const asignarTrabajadores = async (req, res) => {
+  const tenantId = req.usuario.tenantId
+  const reservaId = parseInt(req.params.id)
+  const { trabajadorIds } = req.body // array de ids (puede ser vacío)
+
+  if (!tenantId) return res.status(403).json({ error: 'Sin acceso.' })
+  if (!Array.isArray(trabajadorIds)) return res.status(400).json({ error: 'trabajadorIds debe ser un array.' })
+
+  try {
+    // Verificar que la reserva pertenece al tenant
+    const reserva = await prisma.reserva.findFirst({ where: { id: reservaId, tenantId } })
+    if (!reserva) return res.status(404).json({ error: 'Reserva no encontrada.' })
+
+    // Verificar que los trabajadores pertenecen al tenant
+    if (trabajadorIds.length > 0) {
+      const count = await prisma.trabajador.count({
+        where: { id: { in: trabajadorIds }, tenantId }
+      })
+      if (count !== trabajadorIds.length) {
+        return res.status(400).json({ error: 'Uno o más trabajadores no pertenecen a este tenant.' })
+      }
+    }
+
+    const actualizada = await prisma.reserva.update({
+      where: { id: reservaId },
+      data: {
+        trabajadores: {
+          set: trabajadorIds.map(id => ({ id }))
+        }
+      },
+      include: { servicio: true, vehiculo: true, trabajadores: true }
+    })
+
+    res.json(actualizada)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al asignar trabajadores.' })
+  }
+}
+
 module.exports = {
   getReservas,
   getHorasDisponibles,
@@ -625,5 +666,6 @@ module.exports = {
   reagendarReserva,
   updateEstado,
   deleteReserva,
-  exportarReservasCSV
+  exportarReservasCSV,
+  asignarTrabajadores
 }

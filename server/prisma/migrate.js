@@ -131,6 +131,32 @@ async function main () {
     END $$;
   `)
 
+  // ── Migración: reserva_trabajadores (many-to-many) ──────────────────────────
+  console.log('[migrate] reserva_trabajadores...')
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "_ReservaTrabajador" (
+      "A" INTEGER NOT NULL,
+      "B" INTEGER NOT NULL,
+      CONSTRAINT "_ReservaTrabajador_A_fkey"
+        FOREIGN KEY ("A") REFERENCES "Reserva"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "_ReservaTrabajador_B_fkey"
+        FOREIGN KEY ("B") REFERENCES "Trabajador"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "_ReservaTrabajador_AB_unique"
+      ON "_ReservaTrabajador"("A", "B")
+  `)
+
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "_ReservaTrabajador_B_index"
+      ON "_ReservaTrabajador"("B")
+  `)
+
   // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

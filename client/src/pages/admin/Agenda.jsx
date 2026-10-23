@@ -40,12 +40,14 @@ import {
 import { getApiErrorMessage } from '../../lib/errors'
 import {
   actualizarEstadoReserva,
+  asignarTrabajadoresReserva,
   eliminarReserva,
   exportarReservasCSV,
   listarReservasPorFecha,
   reagendarReserva
 } from '../../services/reservasService'
 import { obtenerHistorialVehiculo } from '../../services/vehiculosService'
+import { listarTrabajadores } from '../../services/trabajadorService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import EstadoBadge, { ESTADOS_RESERVA } from '../../components/admin/EstadoBadge'
 import {
@@ -631,7 +633,7 @@ export default function Agenda() {
           )
         }
       >
-        {detalle && <DetalleReserva reserva={detalle} />}
+        {detalle && <DetalleReserva reserva={detalle} onActualizar={setDetalle} />}
       </Dialog>
 
       <ConfirmDialog
@@ -877,8 +879,43 @@ function ReservaCard({ reserva, onOpen, onEstado, actualizando, inspeccionActiva
   )
 }
 
-function DetalleReserva({ reserva }) {
+function DetalleReserva({ reserva, onActualizar }) {
   const [historialAbierto, setHistorialAbierto] = useState(false)
+  const [trabajadoresTenant, setTrabajadoresTenant] = useState([])
+  const [seleccionados, setSeleccionados] = useState(() =>
+    (reserva.trabajadores ?? []).map(t => t.id)
+  )
+  const [guardando, setGuardando] = useState(false)
+  const [errorTrabajadores, setErrorTrabajadores] = useState('')
+
+  useEffect(() => {
+    listarTrabajadores()
+      .then(lista => setTrabajadoresTenant(lista.filter(t => t.activo)))
+      .catch(() => {}) // silencioso — no bloquea el flujo principal
+  }, [])
+
+  const toggleTrabajador = (id) => {
+    setSeleccionados(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const guardarAsignacion = async () => {
+    setGuardando(true)
+    setErrorTrabajadores('')
+    try {
+      const actualizada = await asignarTrabajadoresReserva(reserva.id, seleccionados)
+      onActualizar?.(actualizada)
+    } catch {
+      setErrorTrabajadores('No se pudo guardar la asignación. Intenta de nuevo.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const asignadosOriginales = (reserva.trabajadores ?? []).map(t => t.id).sort().join(',')
+  const asignadosActuales = [...seleccionados].sort().join(',')
+  const haycambios = asignadosOriginales !== asignadosActuales
   const vehiculo = reserva.vehiculo
   const kilometraje = reserva.kilometraje ?? vehiculo?.kilometraje
   const datosVehiculo = [
@@ -971,6 +1008,52 @@ function DetalleReserva({ reserva }) {
           ))}
         </dl>
       </section>
+
+      {/* ── Sección de trabajadores ─────────────────────────────────────── */}
+      {trabajadoresTenant.length > 0 && (
+        <section className="mt-5 overflow-hidden rounded-lg border border-line">
+          <div className="flex items-center gap-2 border-b border-line bg-graphite-50 px-4 py-3">
+            <UserRound className="h-4 w-4 text-ink-soft" aria-hidden="true" />
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Trabajadores</h3>
+              <p className="text-xs text-ink-muted">Quiénes atendieron este vehículo</p>
+            </div>
+          </div>
+
+          <div className="px-4 py-3 space-y-2">
+            {trabajadoresTenant.map(t => (
+              <label key={t.id} className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={seleccionados.includes(t.id)}
+                  onChange={() => toggleTrabajador(t.id)}
+                  className="h-4 w-4 rounded border-line accent-accent-600"
+                />
+                <span className="text-sm text-ink">{t.nombre}</span>
+                {t.cargo && (
+                  <span className="text-xs text-ink-muted">— {t.cargo}</span>
+                )}
+              </label>
+            ))}
+          </div>
+
+          {errorTrabajadores && (
+            <p className="px-4 pb-2 text-xs text-red-500">{errorTrabajadores}</p>
+          )}
+
+          <div className="border-t border-line px-4 py-3">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={guardarAsignacion}
+              loading={guardando}
+              disabled={!haycambios || guardando}
+            >
+              Guardar asignación
+            </Button>
+          </div>
+        </section>
+      )}
 
       {historialAbierto && (
         <HistorialVehiculoDialog
