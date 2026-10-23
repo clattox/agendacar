@@ -70,6 +70,7 @@ const nav = [
   { to: '/admin', icon: LayoutDashboard, label: 'Panel', exact: true },
   { to: '/admin/agenda', icon: CalendarDays, label: 'Agenda' },
   { to: '/admin/trabajadores', icon: Users, label: 'Trabajadores' },
+  { to: '/admin/vehiculos', icon: Car, label: 'Vehículos' },
   { to: '/admin/configuracion', icon: Settings, label: 'Configuración' }
 ]
 

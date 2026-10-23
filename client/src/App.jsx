@@ -15,6 +15,7 @@ import Dashboard from './pages/admin/Dashboard'
 import Agenda from './pages/admin/Agenda'
 import Configuracion from './pages/admin/Configuracion'
 import Trabajadores from './pages/admin/Trabajadores'
+import Vehiculos from './pages/admin/Vehiculos'
 import Inspeccion from './pages/admin/Inspeccion'
 
 // Páginas superadmin
@@ -42,6 +43,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="trabajadores" element={<Trabajadores />} />
+          <Route path="vehiculos" element={<Vehiculos />} />
           <Route path="configuracion" element={<Configuracion />} />
           <Route path="inspeccion/:reservaId" element={<Inspeccion />} />
         </Route>

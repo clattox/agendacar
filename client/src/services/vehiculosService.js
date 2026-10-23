@@ -1,5 +1,10 @@
 import api from '../lib/api'
 
+export async function listarVehiculos() {
+  const { data } = await api.get('/vehiculos')
+  return data
+}
+
 export async function obtenerHistorialVehiculo(patente) {
   const { data } = await api.get(`/vehiculos/${encodeURIComponent(patente)}`)
   return data

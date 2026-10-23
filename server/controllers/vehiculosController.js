@@ -4,6 +4,32 @@ const prisma = new PrismaClient()
 
 const normalizarPatente = patente => String(patente || '').trim().toUpperCase()
 
+// Listar todos los vehículos del tenant con sus datos.
+const listarVehiculos = async (req, res) => {
+  const tenantId = req.usuario?.tenantId
+  if (!tenantId) return res.status(401).json({ error: 'Token sin tenant asociado' })
+
+  try {
+    const vehiculos = await prisma.vehiculo.findMany({
+      where: { tenantId },
+      orderBy: [{ marca: 'asc' }, { patente: 'asc' }],
+      select: {
+        id: true,
+        patente: true,
+        marca: true,
+        modelo: true,
+        anio: true,
+        kilometraje: true,
+        _count: { select: { reservas: true } }
+      }
+    })
+    res.json(vehiculos)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al listar vehículos' })
+  }
+}
+
 // Historial de atenciones de una patente dentro del tenant del token.
 const obtenerHistorialVehiculo = async (req, res) => {
   const tenantId = req.usuario?.tenantId
@@ -78,4 +104,4 @@ const actualizarVehiculo = async (req, res) => {
   }
 }
 
-module.exports = { obtenerHistorialVehiculo, actualizarVehiculo }
+module.exports = { listarVehiculos, obtenerHistorialVehiculo, actualizarVehiculo }
