@@ -367,6 +367,8 @@ function TabVehiculos() {
 function TabCatalogo() {
   const tenantId = getUsuario()?.tenantId
 
+  const capitalizar = s => s.replace(/\b\w/g, c => c.toUpperCase())
+
   const [entradas, setEntradas]   = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
@@ -531,7 +533,7 @@ function TabCatalogo() {
           <FormField label="Marca" required>
             <Input
               value={formMarca}
-              onChange={e => setFormMarca(e.target.value)}
+              onChange={e => setFormMarca(capitalizar(e.target.value))}
               placeholder="Ej: Tesla, Chery, BYD…"
               autoFocus
             />
@@ -543,7 +545,7 @@ function TabCatalogo() {
           >
             <Input
               value={formModelo}
-              onChange={e => setFormModelo(e.target.value)}
+              onChange={e => setFormModelo(capitalizar(e.target.value))}
               placeholder="Ej: Model 3, Tiggo 8, Atto 3…"
             />
           </FormField>

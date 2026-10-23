@@ -35,8 +35,10 @@ const agregarCatalogo = async (req, res) => {
   const tenantId = req.usuario?.tenantId
   if (!tenantId) return res.status(401).json({ error: 'Token sin tenant asociado' })
 
-  const marca  = String(req.body.marca  || '').trim()
-  const modelo = String(req.body.modelo || '').trim()
+  // Capitalizar primera letra de cada palabra para evitar duplicados por capitalización
+  const capitalizar = s => s.replace(/\b\w/g, c => c.toUpperCase())
+  const marca  = capitalizar(String(req.body.marca  || '').trim())
+  const modelo = capitalizar(String(req.body.modelo || '').trim())
 
   if (!marca) return res.status(400).json({ error: 'La marca es obligatoria.' })
 
