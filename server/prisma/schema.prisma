@@ -18,7 +18,7 @@ model Tenant {
   activo     Boolean    @default(true)
   vencimiento DateTime?
   capacidad          Int        @default(1) // vehículos simultáneos (1-4)
-  inspeccionActiva   Boolean    @default(false)
+  inspeccionActiva   Boolean    @default(true)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]

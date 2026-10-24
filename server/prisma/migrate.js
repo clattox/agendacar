@@ -51,7 +51,7 @@ async function main () {
 
   await prisma.$executeRawUnsafe(`
     ALTER TABLE "Tenant"
-      ADD COLUMN IF NOT EXISTS "inspeccionActiva" BOOLEAN NOT NULL DEFAULT false
+      ADD COLUMN IF NOT EXISTS "inspeccionActiva" BOOLEAN NOT NULL DEFAULT true
   `)
 
   await prisma.$executeRawUnsafe(`
