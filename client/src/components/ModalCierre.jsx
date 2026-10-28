@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Printer, Trash2, X } from 'lucide-react'
+import { Plus, Printer, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
 import Dialog from './ui/Dialog'
 import { guardarCierre } from '../services/cierreService'
 import { getApiErrorMessage } from '../lib/errors'
+import { getUsuario } from '../lib/auth'
 
 // ── Utilidades ────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,8 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   const [error, setError] = useState('')
   const inputRef = useRef(null)
 
+  const tenant = getUsuario()?.tenant
+
   // Reset al abrir
   useEffect(() => {
     if (open) {
@@ -96,18 +99,24 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
 
     const fecha = new Date(reserva.fecha)
     const fechaStr = fecha.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const horaStr = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
     const itemsValidos = items.filter(i => i.descripcion.trim())
+    const nombreTaller = tenant?.nombre || 'Taller'
+    const logoUrl = tenant?.logoUrl || ''
 
     ventana.document.write(`<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Resumen de Atención</title>
+  <title>Resumen de Atención — ${nombreTaller}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; font-size: 13px; color: #111; padding: 40px; }
-    h1 { font-size: 20px; margin-bottom: 4px; }
-    .subtitle { color: #555; margin-bottom: 24px; font-size: 12px; }
+    .header { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
+    .header img { height: 52px; width: auto; object-fit: contain; }
+    .header-text h1 { font-size: 20px; line-height: 1.2; }
+    .header-text .subtitle { color: #555; font-size: 12px; margin-top: 2px; }
+    .divider { border: none; border-top: 1px solid #ddd; margin: 16px 0 20px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin-bottom: 24px; }
     .label { color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
     .value { font-weight: 600; font-size: 13px; }
@@ -122,8 +131,14 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   </style>
 </head>
 <body>
-  <h1>Resumen de Atención</h1>
-  <div class="subtitle">Fecha: ${fechaStr}</div>
+  <div class="header">
+    ${logoUrl ? `<img src="${logoUrl}" alt="${nombreTaller}" />` : ''}
+    <div class="header-text">
+      <h1>${nombreTaller}</h1>
+      <div class="subtitle">Resumen de Atención — ${fechaStr} ${horaStr}</div>
+    </div>
+  </div>
+  <hr class="divider" />
 
   <div class="grid">
     <div>
@@ -161,7 +176,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   ${notas.trim() ? `<div class="notas"><strong>Observaciones:</strong> ${notas.trim()}</div>` : ''}
 
   <div class="footer">
-    <span>AgendaCar</span>
+    <span>${nombreTaller}</span>
     <span>Impreso: ${new Date().toLocaleString('es-CL')}</span>
   </div>
   <script>window.onload = () => { window.print() }</script>
@@ -191,8 +206,20 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
       }
     >
       <div className="space-y-5">
+
+        {/* Cabecera del taller */}
+        <div className="flex items-center gap-3 pb-4 border-b border-[#2A2D35]">
+          {tenant?.logoUrl && (
+            <img src={tenant.logoUrl} alt={tenant.nombre} className="h-10 w-auto object-contain rounded" />
+          )}
+          <div>
+            <p className="text-white font-semibold text-base">{tenant?.nombre || 'Taller'}</p>
+            <p className="text-gray-400 text-xs">Resumen de atención</p>
+          </div>
+        </div>
+
         {/* Info del vehículo */}
-        <div className="bg-[#13151B] rounded-xl p-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+        <div className="bg-[#22252E] border border-[#2A2D35] rounded-xl p-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
           <div>
             <span className="text-gray-400 text-xs uppercase tracking-wide">Cliente</span>
             <p className="text-white font-medium">{reserva?.nombre}</p>
@@ -220,7 +247,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
             <span className="text-xs text-gray-400">Valor en $CLP</span>
           </div>
           <div className="space-y-2" ref={inputRef}>
-            {items.map((item, idx) => (
+            {items.map((item) => (
               <FilaItem
                 key={item._id}
                 item={item}
@@ -239,7 +266,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
 
         {/* Total */}
         <div className="flex justify-end">
-          <div className="bg-[#13151B] rounded-xl px-5 py-3 text-right">
+          <div className="bg-[#22252E] border border-[#2A2D35] rounded-xl px-5 py-3 text-right">
             <span className="text-xs text-gray-400 uppercase tracking-wide">Total</span>
             <p className="text-2xl font-bold text-white">{formatCLP(total)}</p>
           </div>
