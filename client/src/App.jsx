@@ -17,6 +17,7 @@ import Configuracion from './pages/admin/Configuracion'
 import Trabajadores from './pages/admin/Trabajadores'
 import Vehiculos from './pages/admin/Vehiculos'
 import Inspeccion from './pages/admin/Inspeccion'
+import Caja from './pages/admin/Caja'
 
 // Páginas superadmin
 import SuperadminLogin from './pages/superadmin/Login'
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="vehiculos" element={<Vehiculos />} />
           <Route path="configuracion" element={<Configuracion />} />
           <Route path="inspeccion/:reservaId" element={<Inspeccion />} />
+          <Route path="caja" element={<Caja />} />
         </Route>
 
         {/* Rutas superadmin */}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
+  BanknoteIcon,
   CalendarDays,
   Car,
   CheckCircle2,
@@ -71,6 +72,7 @@ const nav = [
   { to: '/admin/agenda', icon: CalendarDays, label: 'Agenda' },
   { to: '/admin/trabajadores', icon: Users, label: 'Trabajadores' },
   { to: '/admin/vehiculos', icon: Car, label: 'Vehículos' },
+  { to: '/admin/caja', icon: BanknoteIcon, label: 'Caja' },
   { to: '/admin/configuracion', icon: Settings, label: 'Configuración' }
 ]
 
