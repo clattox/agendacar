@@ -178,7 +178,9 @@ async function main () {
       ON "CatalogoVehiculo"("marca", "modelo", "tenantId")
   `)
 
-    // CierreAtencion + ItemCierre
+  // ── Migración: cierre_atencion ───────────────────────────────────────────────
+  console.log('[migrate] cierre_atencion...')
+
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "CierreAtencion" (
       "id"        SERIAL       NOT NULL,
