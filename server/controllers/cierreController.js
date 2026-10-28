@@ -87,8 +87,10 @@ const upsertCierre = async (req, res) => {
 
     res.status(201).json(cierre)
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'Error al guardar cierre' })
+    console.error('[cierreController] upsertCierre error:', error?.message)
+    console.error('[cierreController] code:', error?.code)
+    console.error('[cierreController] meta:', JSON.stringify(error?.meta))
+    res.status(500).json({ error: error?.message || 'Error al guardar cierre' })
   }
 }
 
