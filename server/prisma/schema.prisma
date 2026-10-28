@@ -124,6 +124,7 @@ model Reserva {
   createdAt   DateTime   @default(now())
   inspeccion  Inspeccion?
   trabajadores Trabajador[] // quiénes atendieron el vehículo (opcional)
+  cierre      CierreAtencion?
 }
 
 model Inspeccion {
@@ -166,6 +167,24 @@ model DanoInspeccion {
   ubicacion     String?    // descripción textual de la zona
   descripcion   String?    // nota libre
   createdAt     DateTime   @default(now())
+}
+
+model CierreAtencion {
+  id        Int          @id @default(autoincrement())
+  reservaId Int          @unique
+  reserva   Reserva      @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  tenantId  Int
+  notas     String?
+  createdAt DateTime     @default(now())
+  items     ItemCierre[]
+}
+
+model ItemCierre {
+  id          Int            @id @default(autoincrement())
+  cierreId    Int
+  cierre      CierreAtencion @relation(fields: [cierreId], references: [id], onDelete: Cascade)
+  descripcion String
+  valor       Float          @default(0)
 }
 
 model CatalogoVehiculo {

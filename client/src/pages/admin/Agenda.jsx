@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import ModalCierre from '../../components/ModalCierre'
 import { useNavigate } from 'react-router-dom'
 import {
   CalendarClock,
@@ -92,6 +93,7 @@ export default function Agenda() {
   const [eliminando, setEliminando] = useState(false)
   const [reservaAReagendar, setReservaAReagendar] = useState(null)
   const [exportando, setExportando] = useState(false)
+  const [reservaACerrar, setReservaACerrar] = useState(null)
 
   useDocumentTitle('Agenda — AgendaCar')
 
@@ -140,6 +142,11 @@ export default function Agenda() {
     } finally {
       setActualizando(null)
     }
+  }
+
+  const pedirCierre = (reserva) => {
+    setDetalle(null)
+    setReservaACerrar(reserva)
   }
 
   const pedirEliminar = () => {
@@ -407,6 +414,7 @@ export default function Agenda() {
                 reserva={reserva}
                 onOpen={() => setDetalle(reserva)}
                 onEstado={cambiarEstado}
+                onCierre={pedirCierre}
                 actualizando={actualizando}
                 inspeccionActiva={inspeccionActiva}
               />
@@ -621,8 +629,7 @@ export default function Agenda() {
                   <Button
                     variant="success"
                     leftIcon={CheckCircle2}
-                    onClick={() => cambiarEstado(detalle.id, 'atendida')}
-                    loading={actualizando === detalle.id}
+                    onClick={() => { setReservaACerrar(detalle); setDetalle(null) }}
                     disabled={actualizando !== null || eliminando}
                   >
                     Marcar atendida
@@ -655,6 +662,18 @@ export default function Agenda() {
           reserva={reservaAReagendar}
           onClose={() => setReservaAReagendar(null)}
           onSaved={confirmarReagenda}
+        />
+      )}
+
+      {reservaACerrar && (
+        <ModalCierre
+          reserva={reservaACerrar}
+          open={Boolean(reservaACerrar)}
+          onClose={() => setReservaACerrar(null)}
+          onGuardado={async () => {
+            setReservaACerrar(null)
+            await cargar()
+          }}
         />
       )}
     </AdminLayout>
@@ -775,7 +794,7 @@ function IndicadorOperativo({ icon: Icon, label, value, detail }) {
   )
 }
 
-function ReservaCard({ reserva, onOpen, onEstado, actualizando, inspeccionActiva }) {
+function ReservaCard({ reserva, onOpen, onEstado, onCierre, actualizando, inspeccionActiva }) {
   const navigate = useNavigate()
   const requiereInspeccion = inspeccionActiva && reserva.servicio?.requiereInspeccion
   const yaInspeccionada = reserva.estado === 'inspeccionada'
@@ -865,8 +884,7 @@ function ReservaCard({ reserva, onOpen, onEstado, actualizando, inspeccionActiva
                 variant="success"
                 size="sm"
                 leftIcon={CheckCircle2}
-                onClick={() => onEstado(reserva.id, 'atendida')}
-                loading={actualizando === reserva.id}
+                onClick={() => onCierre(reserva)}
                 disabled={actualizando !== null}
               >
                 Marcar atendida

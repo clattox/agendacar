@@ -178,7 +178,36 @@ async function main () {
       ON "CatalogoVehiculo"("marca", "modelo", "tenantId")
   `)
 
-  // ────────────────────────────────────────────────────────────────────────────
+    // CierreAtencion + ItemCierre
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "CierreAtencion" (
+      "id"        SERIAL       NOT NULL,
+      "reservaId" INTEGER      NOT NULL,
+      "tenantId"  INTEGER      NOT NULL,
+      "notas"     TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "CierreAtencion_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "CierreAtencion_reservaId_fkey"
+        FOREIGN KEY ("reservaId") REFERENCES "Reserva"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "CierreAtencion_reservaId_key"
+      ON "CierreAtencion"("reservaId")
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "ItemCierre" (
+      "id"          SERIAL       NOT NULL,
+      "cierreId"    INTEGER      NOT NULL,
+      "descripcion" TEXT         NOT NULL,
+      "valor"       DOUBLE PRECISION NOT NULL DEFAULT 0,
+      CONSTRAINT "ItemCierre_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "ItemCierre_cierreId_fkey"
+        FOREIGN KEY ("cierreId") REFERENCES "CierreAtencion"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `)
+
+// ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }
 
