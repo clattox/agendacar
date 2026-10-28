@@ -40,7 +40,8 @@ const upsertCierre = async (req, res) => {
   const reservaId = parseInt(req.params.reservaId, 10)
   if (!reservaId) return res.status(400).json({ error: 'ID inválido' })
 
-  const { notas = '', items = [] } = req.body
+  const { notas: _notas, items = [] } = req.body
+  const notas = _notas ?? ''
 
   try {
     // Verificar que la reserva pertenece al tenant
