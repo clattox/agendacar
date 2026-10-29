@@ -241,6 +241,21 @@ async function main () {
     )
   `)
 
+  // ── Recordatorio diario ───────────────────────────────────────────────────
+  console.log('[migrate] recordatorio_tenant...')
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+    ADD COLUMN IF NOT EXISTS "recordatorioActivo" BOOLEAN NOT NULL DEFAULT false
+  `)
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+    ADD COLUMN IF NOT EXISTS "recordatorioHora" INTEGER NOT NULL DEFAULT 20
+  `)
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+    ADD COLUMN IF NOT EXISTS "recordatorioDias" TEXT NOT NULL DEFAULT '1,2,3,4,5'
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

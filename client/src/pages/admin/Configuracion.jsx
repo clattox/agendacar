@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Ban,
+  Bell,
   Check,
   ChevronDown,
   ChevronUp,
@@ -124,6 +125,16 @@ export default function Configuracion() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false)
   const [okPerfil, setOkPerfil] = useState(false)
   const [errorPerfil, setErrorPerfil] = useState('')
+
+  // Recordatorio diario
+  const [recordatorio, setRecordatorio] = useState({
+    activo: usuario?.tenant?.recordatorioActivo ?? false,
+    hora: usuario?.tenant?.recordatorioHora ?? 20,
+    dias: (usuario?.tenant?.recordatorioDias ?? '1,2,3,4,5').split(',').map(Number)
+  })
+  const [guardandoRecordatorio, setGuardandoRecordatorio] = useState(false)
+  const [okRecordatorio, setOkRecordatorio] = useState(false)
+  const [errorRecordatorio, setErrorRecordatorio] = useState('')
 
   const comprimirImagen = (file) => new Promise((resolve, reject) => {
     const MAX_PX = 400
@@ -561,6 +572,46 @@ export default function Configuracion() {
     } finally {
       setGuardandoPerfil(false)
     }
+  }
+
+  const guardarRecordatorio = async (e) => {
+    e?.preventDefault()
+    if (guardandoRecordatorio) return
+    setGuardandoRecordatorio(true)
+    setErrorRecordatorio('')
+    setOkRecordatorio(false)
+    try {
+      const tenantActualizado = await actualizarTenant({
+        nombre: perfil.nombre.trim() || usuario?.tenant?.nombre,
+        email: perfil.email.trim() || usuario?.tenant?.email,
+        telefono: perfil.telefono.trim() || null,
+        direccion: perfil.direccion.trim() || null,
+        logoUrl: perfil.logoUrl.trim() || null,
+        inspeccionActiva: perfil.inspeccionActiva,
+        recordatorioActivo: recordatorio.activo,
+        recordatorioHora: recordatorio.hora,
+        recordatorioDias: recordatorio.dias.sort((a, b) => a - b).join(',')
+      })
+      saveSession({
+        token: getToken(),
+        usuario: { ...usuario, tenant: { ...usuario.tenant, ...tenantActualizado } }
+      })
+      setOkRecordatorio(true)
+      window.setTimeout(() => setOkRecordatorio(false), 2500)
+    } catch (err) {
+      setErrorRecordatorio(getApiErrorMessage(err, 'No pudimos guardar la configuración de recordatorio.'))
+    } finally {
+      setGuardandoRecordatorio(false)
+    }
+  }
+
+  const toggleDiaRecordatorio = (dia) => {
+    setRecordatorio(prev => ({
+      ...prev,
+      dias: prev.dias.includes(dia)
+        ? prev.dias.filter(d => d !== dia)
+        : [...prev.dias, dia]
+    }))
   }
 
   const formatearFechaBloqueo = (fechaISO) => {
@@ -1446,6 +1497,106 @@ export default function Configuracion() {
             </ul>
           )}
         </div>
+      </section>
+
+      {/* Sección recordatorio diario */}
+      <section className="mt-4 rounded-xl border border-line bg-surface shadow-card">
+        <div className="flex items-start gap-3 border-b border-line px-4 py-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-500">
+            <Bell className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Recordatorio diario</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Recibe un correo automático con las reservas del día siguiente, antes de empezar la jornada.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={guardarRecordatorio} className="p-4 space-y-4">
+          {errorRecordatorio && (
+            <Alert variant="error" onDismiss={() => setErrorRecordatorio('')}>{errorRecordatorio}</Alert>
+          )}
+
+          {/* Toggle activo */}
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-line bg-graphite-50 p-4">
+            <div>
+              <p className="text-sm font-semibold text-ink">Activar recordatorio</p>
+              <p className="mt-0.5 text-xs text-ink-muted">
+                Se enviará al correo del taller ({perfil.email || usuario?.tenant?.email || 'no configurado'}).
+              </p>
+            </div>
+            <label className="relative flex cursor-pointer items-center shrink-0 mt-0.5">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={recordatorio.activo}
+                onChange={e => setRecordatorio(prev => ({ ...prev, activo: e.target.checked }))}
+              />
+              <div className="h-5 w-9 rounded-full border border-line bg-graphite-200 peer-checked:bg-amber-500 peer-focus:ring-2 peer-focus:ring-amber-400/30 transition-colors after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:border after:border-line after:transition-all peer-checked:after:translate-x-4" />
+            </label>
+          </div>
+
+          {/* Hora de envío */}
+          <div className={`space-y-2 transition-opacity ${recordatorio.activo ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+            <p className="text-xs font-semibold text-ink">Hora de envío (hora Chile)</p>
+            <p className="text-xs text-ink-muted">¿A qué hora del día anterior quieres recibir el resumen?</p>
+            <div className="flex flex-wrap gap-2">
+              {[17, 18, 19, 20, 21, 22].map(h => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => setRecordatorio(prev => ({ ...prev, hora: h }))}
+                  className={`rounded-xl border-2 px-4 py-2 text-sm font-bold transition-all focus-ring ${
+                    recordatorio.hora === h
+                      ? 'border-amber-400 bg-amber-50 text-amber-700'
+                      : 'border-line bg-surface text-ink hover:border-graphite-300 hover:bg-graphite-50'
+                  }`}
+                  aria-pressed={recordatorio.hora === h}
+                >
+                  {h}:00
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Días de la semana */}
+          <div className={`space-y-2 transition-opacity ${recordatorio.activo ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+            <p className="text-xs font-semibold text-ink">Días de envío</p>
+            <p className="text-xs text-ink-muted">En qué días quieres recibir el recordatorio (se envía el día anterior al del trabajo).</p>
+            <div className="flex flex-wrap gap-2">
+              {DIAS_SEMANA.map((dia, i) => {
+                const activo = recordatorio.dias.includes(i)
+                return (
+                  <button
+                    key={dia}
+                    type="button"
+                    onClick={() => toggleDiaRecordatorio(i)}
+                    className={`rounded-xl border-2 px-3 py-2 text-xs font-semibold transition-all focus-ring ${
+                      activo
+                        ? 'border-amber-400 bg-amber-50 text-amber-700'
+                        : 'border-line bg-surface text-ink-soft hover:border-graphite-300'
+                    }`}
+                    aria-pressed={activo}
+                  >
+                    {dia.slice(0, 3)}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end border-t border-line pt-4">
+            <Button
+              type="submit"
+              variant={okRecordatorio ? 'success' : 'dark'}
+              leftIcon={okRecordatorio ? Check : Save}
+              loading={guardandoRecordatorio}
+            >
+              {guardandoRecordatorio ? 'Guardando…' : okRecordatorio ? 'Guardado' : 'Guardar recordatorio'}
+            </Button>
+          </div>
+        </form>
       </section>
 
       {/* Sección cambio de contraseña */}

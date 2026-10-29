@@ -19,6 +19,9 @@ model Tenant {
   vencimiento DateTime?
   capacidad          Int        @default(1) // vehículos simultáneos (1-4)
   inspeccionActiva   Boolean    @default(true)
+  recordatorioActivo Boolean    @default(false)
+  recordatorioHora   Int        @default(20)  // hora en Chile (0-23)
+  recordatorioDias   String     @default("1,2,3,4,5") // días semana JS (0=Dom..6=Sáb)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]

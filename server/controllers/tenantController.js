@@ -15,11 +15,20 @@ const getTenant = async (req, res) => {
 }
 
 const updateTenant = async (req, res) => {
-  const { nombre, telefono, direccion, email, logoUrl, inspeccionActiva } = req.body
+  const {
+    nombre, telefono, direccion, email, logoUrl, inspeccionActiva,
+    recordatorioActivo, recordatorioHora, recordatorioDias
+  } = req.body
   const tenantId = req.user.tenantId
   try {
     const data = { nombre, telefono, direccion: direccion || null, email, logoUrl }
     if (inspeccionActiva !== undefined) data.inspeccionActiva = inspeccionActiva
+
+    // Recordatorio diario
+    if (recordatorioActivo !== undefined) data.recordatorioActivo = Boolean(recordatorioActivo)
+    if (recordatorioHora   !== undefined) data.recordatorioHora   = Number(recordatorioHora)
+    if (recordatorioDias   !== undefined) data.recordatorioDias   = String(recordatorioDias)
+
     const tenant = await prisma.tenant.update({
       where: { id: tenantId },
       data
