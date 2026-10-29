@@ -8,16 +8,22 @@ const MAIL_FROM = process.env.MAIL_FROM || 'AgendaCar <reservas@agendacar.cl>'
 // Hora actual en Chile (America/Santiago)
 const horaChile = () => {
   const ahora = new Date()
-  return parseInt(
-    ahora.toLocaleString('es-CL', { hour: 'numeric', hour12: false, timeZone: 'America/Santiago' }),
-    10
-  )
+  const partes = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    hour12: false,
+    timeZone: 'America/Santiago'
+  }).formatToParts(ahora)
+  return parseInt(partes.find(p => p.type === 'hour').value, 10)
 }
 
 // Día de semana actual en Chile (0=Dom, 1=Lun ... 6=Sáb)
 const diaChile = () => {
   const ahora = new Date()
-  const str = ahora.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Santiago' })
+  const partes = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    timeZone: 'America/Santiago'
+  }).formatToParts(ahora)
+  const str = partes.find(p => p.type === 'weekday').value
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(str)
 }
 
