@@ -8,10 +8,17 @@ const getTenants = async (req, res) => {
     const tenants = await prisma.tenant.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        _count: { select: { reservas: true, usuarios: true } }
+        _count: { select: { reservas: true, usuarios: true } },
+        usuarios: { where: { rol: 'admin' }, select: { email: true }, take: 1 }
       }
     })
-    res.json(tenants)
+    // Aplanar: agregar adminEmail al objeto tenant
+    const result = tenants.map(t => ({
+      ...t,
+      adminEmail: t.usuarios?.[0]?.email || null,
+      usuarios: undefined
+    }))
+    res.json(result)
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Error al obtener tenants' })
@@ -89,10 +96,10 @@ const toggleTenant = async (req, res) => {
   }
 }
 
-// PUT /api/superadmin/tenants/:id — editar datos del tenant
+// PUT /api/superadmin/tenants/:id — editar datos del tenant (y opcionalmente email de login del admin)
 const updateTenant = async (req, res) => {
   const id = parseInt(req.params.id)
-  const { nombre, email, telefono, direccion, subdominio } = req.body
+  const { nombre, email, telefono, direccion, subdominio, adminEmail } = req.body
   try {
     const tenant = await prisma.tenant.findUnique({ where: { id } })
     if (!tenant) return res.status(404).json({ error: 'Tenant no encontrado' })
@@ -101,6 +108,14 @@ const updateTenant = async (req, res) => {
     if (subdominio && subdominio !== tenant.subdominio) {
       const existe = await prisma.tenant.findUnique({ where: { subdominio } })
       if (existe) return res.status(400).json({ error: 'Ese subdominio ya está en uso.' })
+    }
+
+    // Verificar que el nuevo adminEmail no esté en uso por otro usuario
+    if (adminEmail) {
+      const emailEnUso = await prisma.usuario.findFirst({
+        where: { email: adminEmail, tenantId: { not: id } }
+      })
+      if (emailEnUso) return res.status(400).json({ error: 'Ese email ya está en uso por otro taller.' })
     }
 
     const actualizado = await prisma.tenant.update({
@@ -112,9 +127,22 @@ const updateTenant = async (req, res) => {
         direccion: direccion ?? tenant.direccion,
         subdominio: subdominio ?? tenant.subdominio,
       },
-      include: { _count: { select: { reservas: true, usuarios: true } } }
+      include: {
+        _count: { select: { reservas: true, usuarios: true } },
+        usuarios: { where: { rol: 'admin' }, select: { email: true }, take: 1 }
+      }
     })
-    res.json(actualizado)
+
+    // Actualizar email del usuario admin si se envió
+    if (adminEmail) {
+      await prisma.usuario.updateMany({
+        where: { tenantId: id, rol: 'admin' },
+        data: { email: adminEmail }
+      })
+    }
+
+    const adminEmailFinal = adminEmail || actualizado.usuarios?.[0]?.email || null
+    res.json({ ...actualizado, adminEmail: adminEmailFinal, usuarios: undefined })
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Error al actualizar tenant' })

@@ -32,7 +32,7 @@ export default function SuperadminDashboard() {
 
   const abrirEditar = (t) => {
     setEditando(t)
-    setEditForm({ nombre: t.nombre || '', email: t.email || '', telefono: t.telefono || '', direccion: t.direccion || '', subdominio: t.subdominio || '' })
+    setEditForm({ nombre: t.nombre || '', email: t.email || '', telefono: t.telefono || '', direccion: t.direccion || '', subdominio: t.subdominio || '', adminEmail: t.adminEmail || '' })
     setEditError('')
   }
 
@@ -296,6 +296,7 @@ export default function SuperadminDashboard() {
                   <td className="px-4 py-3">
                     <p className="font-medium text-ink">{t.nombre}</p>
                     <p className="text-xs text-ink-muted">{t.email}</p>
+                    {t.adminEmail && <p className="text-xs text-ink-soft">🔑 {t.adminEmail}</p>}
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <code className="text-xs bg-graphite-100 px-1.5 py-0.5 rounded">{t.subdominio}</code>
@@ -468,8 +469,12 @@ export default function SuperadminDashboard() {
                   <Input value={editForm.telefono} onChange={e => setEditForm(p => ({ ...p, telefono: e.target.value }))} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-ink-muted mb-1">Email</label>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">Email del taller (recordatorios)</label>
                   <Input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+                <div className="col-span-2 border-t border-line pt-3">
+                  <label className="block text-xs font-medium text-ink-muted mb-1">Email de acceso (login admin)</label>
+                  <Input type="email" value={editForm.adminEmail} onChange={e => setEditForm(p => ({ ...p, adminEmail: e.target.value }))} placeholder="admin@taller.cl" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-ink-muted mb-1">
