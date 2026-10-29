@@ -76,7 +76,7 @@ const nav = [
   { to: '/admin/configuracion', icon: Settings, label: 'Configuración' }
 ]
 
-export default function AdminLayout({ children }) {
+export default function AdminLayout({ children, hideBanner = false }) {
   const location = useLocation()
   const navigate = useNavigate()
   const usuario = getUsuario() || {}
@@ -209,7 +209,7 @@ export default function AdminLayout({ children }) {
 
       <div className="md:pl-60">
         <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-5 sm:px-6 md:pb-10 md:pt-8">
-          {tenant?.subdominio && (
+          {!hideBanner && tenant?.subdominio && (
             <div className="mb-5">
               <BannerSuscripcion subdominio={tenant.subdominio} />
             </div>

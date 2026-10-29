@@ -188,7 +188,7 @@ export default function Inspeccion() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (loading) return (
-    <AdminLayout>
+    <AdminLayout hideBanner>
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-ink-muted" />
       </div>
@@ -196,7 +196,7 @@ export default function Inspeccion() {
   )
 
   if (!reserva) return (
-    <AdminLayout>
+    <AdminLayout hideBanner>
       <div className="mx-auto max-w-3xl px-4 py-8">
         <Alert variant="error">{error || 'No se encontró la reserva.'}</Alert>
       </div>
@@ -209,7 +209,7 @@ export default function Inspeccion() {
   const yaInspeccionado = !!inspeccion
 
   return (
-    <AdminLayout>
+    <AdminLayout hideBanner>
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 print:px-0 print:py-0 print:space-y-4">
 
         {/* Cabecera */}
