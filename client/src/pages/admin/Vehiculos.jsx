@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { Car, ListChecks, Pencil, Plus, Save, Search, Trash2, X } from 'lucide-react'
+import { Car, ChevronDown, ChevronUp, ClipboardList, History, ListChecks, Pencil, Plus, Save, Search, Trash2, X } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { Alert, Button, Dialog, FormField, Input } from '../../components/ui'
 import {
   crearVehiculo, listarVehiculos, actualizarVehiculo,
+  obtenerHistorialVehiculo,
   listarCatalogo, agregarCatalogo, eliminarCatalogo
 } from '../../services/vehiculosService'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { getUsuario } from '../../lib/auth'
+import { formatFullDate, formatTimeFromISO } from '../../lib/dates'
 
 const FORM_VACIO = { patente: '', marca: '', modelo: '', anio: '', kilometraje: '' }
 
@@ -28,6 +30,8 @@ function TabVehiculos() {
   const [form, setForm]           = useState({})
   const [guardando, setGuardando] = useState(false)
   const [errorEdit, setErrorEdit] = useState('')
+  const [historialVehiculo, setHistorialVehiculo] = useState(null)
+  const [cargandoHistorial, setCargandoHistorial] = useState(false)
   const marcaRef = useRef(null)
 
   const cargar = async () => {
@@ -39,6 +43,19 @@ function TabVehiculos() {
       setError('No se pudieron cargar los vehículos.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const abrirHistorial = async (v) => {
+    setHistorialVehiculo({ vehiculo: v, reservas: null })
+    setCargandoHistorial(true)
+    try {
+      const data = await obtenerHistorialVehiculo(v.patente)
+      setHistorialVehiculo({ vehiculo: v, reservas: data.reservas || [] })
+    } catch {
+      setHistorialVehiculo({ vehiculo: v, reservas: [] })
+    } finally {
+      setCargandoHistorial(false)
     }
   }
 
@@ -270,14 +287,26 @@ function TabVehiculos() {
                           {v._count?.reservas ?? 0}
                         </td>
                         <td className="px-3 py-3 text-right">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            leftIcon={Pencil}
-                            onClick={() => iniciarEdicion(v)}
-                          >
-                            Editar
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {(v._count?.reservas ?? 0) > 0 && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                leftIcon={History}
+                                onClick={() => abrirHistorial(v)}
+                              >
+                                Historial
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              leftIcon={Pencil}
+                              onClick={() => iniciarEdicion(v)}
+                            >
+                              Editar
+                            </Button>
+                          </div>
                         </td>
                       </>
                     )}
@@ -358,7 +387,118 @@ function TabVehiculos() {
           </div>
         </div>
       </Dialog>
+
+      {/* Modal historial */}
+      {historialVehiculo && (
+        <Dialog
+          open={Boolean(historialVehiculo)}
+          onClose={() => setHistorialVehiculo(null)}
+          title={`Historial — ${historialVehiculo.vehiculo.patente}`}
+          size="lg"
+        >
+          <div className="space-y-2">
+            <p className="text-sm text-ink-muted mb-4">
+              {[historialVehiculo.vehiculo.marca, historialVehiculo.vehiculo.modelo, historialVehiculo.vehiculo.anio]
+                .filter(Boolean).join(' ')}
+            </p>
+
+            {cargandoHistorial ? (
+              <p className="text-sm text-ink-muted py-6 text-center">Cargando historial...</p>
+            ) : !historialVehiculo.reservas?.length ? (
+              <p className="text-sm text-ink-muted py-6 text-center">Sin atenciones registradas.</p>
+            ) : (
+              <div className="space-y-3">
+                {historialVehiculo.reservas.map(r => (
+                  <FilaHistorial key={r.id} reserva={r} />
+                ))}
+              </div>
+            )}
+          </div>
+        </Dialog>
+      )}
     </>
+  )
+}
+
+// ── Fila de historial (acordeón) ─────────────────────────────────────────────
+
+const formatCLP = v =>
+  new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(v || 0)
+
+function FilaHistorial({ reserva }) {
+  const [abierto, setAbierto] = useState(false)
+  const tieneCierre = Boolean(reserva.cierre)
+  const total = reserva.cierre?.items?.reduce((s, i) => s + (i.valor || 0), 0) ?? 0
+
+  const estadoColor = {
+    pendiente:  'text-yellow-600 bg-yellow-50 border-yellow-200',
+    confirmada: 'text-blue-600 bg-blue-50 border-blue-200',
+    atendida:   'text-green-600 bg-green-50 border-green-200',
+    cancelada:  'text-red-500 bg-red-50 border-red-200',
+  }[reserva.estado] || 'text-ink-muted bg-surface border-line'
+
+  return (
+    <div className="rounded-xl border border-line bg-surface overflow-hidden">
+      <button
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-raised transition-colors"
+        onClick={() => setAbierto(a => !a)}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-ink">
+              {formatFullDate(new Date(reserva.fecha))} · {formatTimeFromISO(reserva.fecha)}
+            </span>
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${estadoColor}`}>
+              {reserva.estado}
+            </span>
+          </div>
+          <p className="text-xs text-ink-muted mt-0.5">{reserva.servicio?.nombre || '—'} · {reserva.nombre}</p>
+        </div>
+        {tieneCierre && (
+          <span className="text-xs font-semibold text-green-600 shrink-0">{formatCLP(total)}</span>
+        )}
+        {abierto ? <ChevronUp size={16} className="text-ink-muted shrink-0" /> : <ChevronDown size={16} className="text-ink-muted shrink-0" />}
+      </button>
+
+      {abierto && (
+        <div className="border-t border-line px-4 py-3 bg-surface-raised space-y-3 text-sm">
+          {tieneCierre ? (
+            <>
+              {reserva.cierre.items?.length > 0 && (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs text-ink-muted uppercase">
+                      <th className="text-left pb-1">Trabajo realizado</th>
+                      <th className="text-right pb-1">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reserva.cierre.items.map((item, i) => (
+                      <tr key={i} className="border-t border-line">
+                        <td className="py-1.5 text-ink">{item.descripcion}</td>
+                        <td className="py-1.5 text-right text-ink font-medium">{formatCLP(item.valor)}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-t border-line font-semibold">
+                      <td className="pt-2 text-ink">Total</td>
+                      <td className="pt-2 text-right text-green-600">{formatCLP(total)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+              {reserva.cierre.notas && (
+                <p className="text-xs text-ink-muted border-l-2 border-line pl-3">{reserva.cierre.notas}</p>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center gap-2 text-ink-muted">
+              <ClipboardList size={14} />
+              <span className="text-xs">Sin cierre registrado</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 

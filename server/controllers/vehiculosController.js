@@ -87,8 +87,11 @@ const obtenerHistorialVehiculo = async (req, res) => {
       include: {
         reservas: {
           orderBy: { fecha: 'desc' },
-          take: 20,
-          include: { servicio: true }
+          take: 30,
+          include: {
+            servicio: { select: { nombre: true } },
+            cierre: { select: { notas: true, items: { select: { descripcion: true, valor: true } } } }
+          }
         }
       }
     })
