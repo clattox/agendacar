@@ -212,6 +212,17 @@ export default function Inspeccion() {
     <AdminLayout hideBanner>
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 print:px-0 print:py-0 print:space-y-4">
 
+        {/* Encabezado solo visible al imprimir */}
+        <div className="hidden print:flex items-center gap-3 pb-4 border-b border-line mb-2">
+          {usuario?.tenant?.logoUrl && (
+            <img src={usuario.tenant.logoUrl} alt={usuario.tenant.nombre} className="h-12 w-auto object-contain" />
+          )}
+          <div>
+            <p className="text-lg font-bold text-ink">{usuario?.tenant?.nombre || 'Taller'}</p>
+            <p className="text-xs text-ink-muted">Inspección previa del vehículo</p>
+          </div>
+        </div>
+
         {/* Cabecera */}
         <div className="print:hidden flex items-center gap-3">
           <button
@@ -584,7 +595,7 @@ export default function Inspeccion() {
             </div>
           </div>
           <p className="text-xs text-ink-muted mt-4 text-center">
-            AgendaCar · Inspección previa registrada el {new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {usuario?.tenant?.nombre || 'Taller'} · Inspección previa registrada el {new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
 
