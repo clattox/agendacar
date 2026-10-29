@@ -592,9 +592,15 @@ export default function Configuracion() {
         recordatorioHora: recordatorio.hora,
         recordatorioDias: recordatorio.dias.sort((a, b) => a - b).join(',')
       })
+      const usuarioActual = getUsuario() || usuario
       saveSession({
         token: getToken(),
-        usuario: { ...usuario, tenant: { ...usuario.tenant, ...tenantActualizado } }
+        usuario: { ...usuarioActual, tenant: { ...usuarioActual.tenant, ...tenantActualizado } }
+      })
+      setRecordatorio({
+        activo: tenantActualizado.recordatorioActivo ?? recordatorio.activo,
+        hora: tenantActualizado.recordatorioHora ?? recordatorio.hora,
+        dias: (tenantActualizado.recordatorioDias ?? recordatorio.dias.join(',')).split(',').map(Number)
       })
       setOkRecordatorio(true)
       window.setTimeout(() => setOkRecordatorio(false), 2500)
