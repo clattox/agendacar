@@ -598,9 +598,9 @@ export default function Configuracion() {
         usuario: { ...usuarioActual, tenant: { ...usuarioActual.tenant, ...tenantActualizado } }
       })
       setRecordatorio({
-        activo: tenantActualizado.recordatorioActivo ?? recordatorio.activo,
-        hora: tenantActualizado.recordatorioHora ?? recordatorio.hora,
-        dias: (tenantActualizado.recordatorioDias ?? recordatorio.dias.join(',')).split(',').map(Number)
+        activo: tenantActualizado.recordatorioActivo !== undefined ? Boolean(tenantActualizado.recordatorioActivo) : recordatorio.activo,
+        hora: tenantActualizado.recordatorioHora !== undefined ? Number(tenantActualizado.recordatorioHora) : recordatorio.hora,
+        dias: (tenantActualizado.recordatorioDias !== undefined ? tenantActualizado.recordatorioDias : recordatorio.dias.join(',')).split(',').map(Number)
       })
       setOkRecordatorio(true)
       window.setTimeout(() => setOkRecordatorio(false), 2500)
