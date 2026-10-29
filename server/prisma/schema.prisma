@@ -125,6 +125,7 @@ model Reserva {
   inspeccion  Inspeccion?
   trabajadores Trabajador[] // quiénes atendieron el vehículo (opcional)
   cierre      CierreAtencion?
+  cotizacion  Cotizacion?
 }
 
 model Inspeccion {
@@ -185,6 +186,25 @@ model ItemCierre {
   cierre      CierreAtencion @relation(fields: [cierreId], references: [id], onDelete: Cascade)
   descripcion String
   valor       Float          @default(0)
+}
+
+model Cotizacion {
+  id        Int              @id @default(autoincrement())
+  reservaId Int              @unique
+  reserva   Reserva          @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  tenantId  Int
+  notas     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  items     ItemCotizacion[]
+}
+
+model ItemCotizacion {
+  id          Int        @id @default(autoincrement())
+  cotizacionId Int
+  cotizacion  Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  descripcion String
+  valor       Float      @default(0)
 }
 
 model CatalogoVehiculo {

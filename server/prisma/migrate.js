@@ -209,6 +209,38 @@ async function main () {
     )
   `)
 
+  // ── Migración: cotizacion ────────────────────────────────────────────────────
+  console.log('[migrate] cotizacion...')
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Cotizacion" (
+      "id"        SERIAL       NOT NULL,
+      "reservaId" INTEGER      NOT NULL,
+      "tenantId"  INTEGER      NOT NULL,
+      "notas"     TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "Cotizacion_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "Cotizacion_reservaId_fkey"
+        FOREIGN KEY ("reservaId") REFERENCES "Reserva"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "Cotizacion_reservaId_key"
+      ON "Cotizacion"("reservaId")
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "ItemCotizacion" (
+      "id"           SERIAL           NOT NULL,
+      "cotizacionId" INTEGER          NOT NULL,
+      "descripcion"  TEXT             NOT NULL,
+      "valor"        DOUBLE PRECISION NOT NULL DEFAULT 0,
+      CONSTRAINT "ItemCotizacion_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "ItemCotizacion_cotizacionId_fkey"
+        FOREIGN KEY ("cotizacionId") REFERENCES "Cotizacion"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

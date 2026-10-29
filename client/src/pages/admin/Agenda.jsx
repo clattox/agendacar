@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import ModalCierre from '../../components/ModalCierre'
+import ModalCotizacion from '../../components/ModalCotizacion'
 import { useNavigate } from 'react-router-dom'
 import {
   CalendarClock,
@@ -16,6 +17,7 @@ import {
   MessageCircle,
   Phone,
   Download,
+  FileText,
   Printer,
   RefreshCw,
   Search,
@@ -94,6 +96,7 @@ export default function Agenda() {
   const [reservaAReagendar, setReservaAReagendar] = useState(null)
   const [exportando, setExportando] = useState(false)
   const [reservaACerrar, setReservaACerrar] = useState(null)
+  const [reservaACotizar, setReservaACotizar] = useState(null)
 
   useDocumentTitle('Agenda — AgendaCar')
 
@@ -627,6 +630,14 @@ export default function Agenda() {
                     Cancelar reserva
                   </Button>
                   <Button
+                    variant="ghost"
+                    leftIcon={FileText}
+                    onClick={() => { setReservaACotizar(detalle); setDetalle(null) }}
+                    disabled={actualizando !== null || eliminando}
+                  >
+                    Cotización
+                  </Button>
+                  <Button
                     variant="success"
                     leftIcon={CheckCircle2}
                     onClick={() => { setReservaACerrar(detalle); setDetalle(null) }}
@@ -672,6 +683,18 @@ export default function Agenda() {
           onClose={() => setReservaACerrar(null)}
           onGuardado={async () => {
             setReservaACerrar(null)
+            await cargar()
+          }}
+        />
+      )}
+
+      {reservaACotizar && (
+        <ModalCotizacion
+          reserva={reservaACotizar}
+          open={Boolean(reservaACotizar)}
+          onClose={() => setReservaACotizar(null)}
+          onGuardado={async () => {
+            setReservaACotizar(null)
             await cargar()
           }}
         />

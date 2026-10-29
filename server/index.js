@@ -39,6 +39,7 @@ app.use('/api/superadmin', require('./routes/superadmin'))
 app.use('/api/inspecciones', require('./routes/inspecciones'))
 app.use('/api/trabajadores', require('./routes/trabajadores'))
 app.use('/api/cierres', require('./routes/cierres'))
+app.use('/api/cotizaciones', require('./routes/cotizaciones'))
 app.use('/api/caja', require('./routes/caja'))
 
 // Health check
