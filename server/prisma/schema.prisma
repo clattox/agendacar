@@ -22,6 +22,8 @@ model Tenant {
   recordatorioActivo Boolean    @default(false)
   recordatorioHora   Int        @default(20)  // hora en Chile (0-23)
   recordatorioDias   String     @default("1,2,3,4,5") // días semana JS (0=Dom..6=Sáb)
+  categoria          String     @default("generica") // generica|serviteca|mecanica|pintura|electromecanica
+  colorPrimario      String     @default("#f59e0b") // color de acento hex
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]

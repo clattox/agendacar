@@ -31,6 +31,14 @@ const PASOS = [
   { icon: IconCheckRing,   title: 'Confirma',           detail: 'Recibe el detalle de tu cita' },
 ]
 
+const BG_POR_CATEGORIA = {
+  generica:       '/bg-generica.jpg',
+  mecanica:       '/bg-mecanica.jpg',
+  electromecanica:'/bg-electromecanica.jpg',
+  pintura:        '/bg-pintura.jpg',
+  serviteca:      '/bg-serviteca.jpg',
+}
+
 /** Devuelve el icono SVG/imagen correspondiente al nombre del servicio */
 function ServicioIcon({ nombre }) {
   const lower = (nombre ?? '').toLowerCase()
@@ -164,6 +172,10 @@ export default function Inicio({ slugOverride = null }) {
 
   const horariosOrdenados = [...horarios].sort((a, b) => a.diaSemana - b.diaSemana)
 
+  // Personalización visual del taller
+  const bgUrl   = BG_POR_CATEGORIA[tenant?.categoria] || BG_POR_CATEGORIA.generica
+  const acento  = tenant?.colorPrimario || '#f59e0b'
+
   // Agrupa horarios: lunes–viernes en un bloque si todos comparten exactamente el mismo horario
   const bloqueHorarios = (() => {
     const activos = horariosOrdenados.filter(h => h.activo !== false)
@@ -218,10 +230,10 @@ export default function Inicio({ slugOverride = null }) {
       <main className="flex-1">
         <section className="mx-auto w-full max-w-3xl px-4 pt-6 sm:pt-8">
           <div className="relative overflow-hidden rounded-xl">
-            {/* Fotografía de fondo del hero */}
+            {/* Fotografía de fondo del hero (por categoría de taller) */}
             <div
               className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: 'url(/assets/hero-taller.png)', backgroundPosition: 'center 40%' }}
+              style={{ backgroundImage: `url(${bgUrl})`, backgroundPosition: 'center 40%' }}
               aria-hidden="true"
             />
             {/* Capa de contraste: más oscura a la izquierda donde está el texto */}
@@ -242,16 +254,17 @@ export default function Inicio({ slugOverride = null }) {
             <div className="grid gap-6 md:grid-cols-[1fr_240px] md:gap-6 lg:grid-cols-[1fr_250px] lg:gap-8">
               <div className="min-w-0 max-w-lg">
                 <span className="micro-label inline-flex items-center gap-2 text-graphite-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent-400" aria-hidden="true" />
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: acento }} aria-hidden="true" />
                   Reserva online
                 </span>
 
                 <h1 className="mt-3 break-words text-3xl font-bold leading-snug tracking-tight text-white sm:text-4xl">
                   Agenda tu hora en{' '}
-                  <span className="relative inline-block text-accent-400">
+                  <span className="relative inline-block" style={{ color: acento }}>
                     {tenant.nombre}
                     <span
-                      className="absolute -bottom-0.5 left-0 h-0.5 w-full rounded-full bg-accent-400 opacity-40"
+                      className="absolute -bottom-0.5 left-0 h-0.5 w-full rounded-full opacity-40"
+                      style={{ backgroundColor: acento }}
                       aria-hidden="true"
                     />
                   </span>
@@ -287,7 +300,7 @@ export default function Inicio({ slugOverride = null }) {
                       className="rounded-md border-t border-white/10 py-3.5 first:border-t-0 first:pt-0 sm:border-l sm:border-t-0 sm:px-4 sm:py-0 sm:first:border-l-0 sm:first:pl-0"
                     >
                       <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-accent-400" aria-hidden="true" />
+                        <Icon className="h-4 w-4" style={{ color: acento }} aria-hidden="true" />
                         <span className="font-tabular text-[11px] font-semibold text-graphite-400">
                           0{index + 1}
                         </span>
@@ -383,7 +396,7 @@ export default function Inicio({ slugOverride = null }) {
         <section className="mx-auto max-w-3xl px-4 py-10">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="h-6 w-0.5 rounded-full bg-accent-400" aria-hidden="true" />
+              <span className="h-6 w-0.5 rounded-full" style={{ backgroundColor: acento }} aria-hidden="true" />
               <div>
                 <p className="micro-label">Servicios</p>
                 <h2 className="mt-0.5 text-xl font-semibold tracking-tight text-ink">

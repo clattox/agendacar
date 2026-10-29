@@ -118,7 +118,9 @@ export default function Configuracion() {
     telefono: usuario?.tenant?.telefono || '',
     direccion: usuario?.tenant?.direccion || '',
     logoUrl: usuario?.tenant?.logoUrl || '',
-    inspeccionActiva: usuario?.tenant?.inspeccionActiva ?? false
+    inspeccionActiva: usuario?.tenant?.inspeccionActiva ?? false,
+    categoria: usuario?.tenant?.categoria || 'generica',
+    colorPrimario: usuario?.tenant?.colorPrimario || '#f59e0b'
   })
   const [logoPreviewError, setLogoPreviewError] = useState(false)
   const [subiendoLogo, setSubiendoLogo] = useState(false)
@@ -558,7 +560,9 @@ export default function Configuracion() {
         telefono: perfil.telefono.trim() || null,
         direccion: perfil.direccion.trim() || null,
         logoUrl: perfil.logoUrl.trim() || null,
-        inspeccionActiva: perfil.inspeccionActiva
+        inspeccionActiva: perfil.inspeccionActiva,
+        categoria: perfil.categoria,
+        colorPrimario: perfil.colorPrimario
       })
       // Actualizar sesión local para que sidebar refleje cambios de inmediato
       saveSession({
@@ -760,6 +764,50 @@ export default function Configuracion() {
                   PNG, JPG o WebP · máx. 5 MB. La imagen se comprime automáticamente.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Personalización visual: categoría + color */}
+          <div className="space-y-3 rounded-lg border border-line bg-graphite-50 p-4">
+            <p className="text-sm font-semibold text-ink">Apariencia de la página de reservas</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-ink-muted">
+                  Tipo de taller
+                  <span className="ml-1.5 font-normal text-ink-soft">(imagen de fondo)</span>
+                </label>
+                <Select
+                  value={perfil.categoria}
+                  onChange={e => setPerfil(prev => ({ ...prev, categoria: e.target.value }))}
+                >
+                  <option value="generica">Genérico</option>
+                  <option value="mecanica">Mecánica</option>
+                  <option value="electromecanica">Electromecánica</option>
+                  <option value="pintura">Pintura y Desabolladura</option>
+                  <option value="serviteca">Serviteca</option>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-ink-muted">Color de acento</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={perfil.colorPrimario}
+                    onChange={e => setPerfil(prev => ({ ...prev, colorPrimario: e.target.value }))}
+                    className="h-10 w-12 cursor-pointer rounded-lg border border-line bg-transparent p-0.5"
+                  />
+                  <span className="text-sm font-mono text-ink-muted">{perfil.colorPrimario}</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-2 flex items-center gap-3 rounded-md border border-line bg-surface p-3">
+              <div
+                className="h-8 w-8 shrink-0 rounded-full"
+                style={{ backgroundColor: perfil.colorPrimario }}
+              />
+              <p className="text-xs text-ink-soft">
+                Este color se usará en botones y elementos destacados de tu página pública de reservas.
+              </p>
             </div>
           </div>
 

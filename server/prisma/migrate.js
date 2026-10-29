@@ -256,6 +256,17 @@ async function main () {
     ADD COLUMN IF NOT EXISTS "recordatorioDias" TEXT NOT NULL DEFAULT '1,2,3,4,5'
   `)
 
+  // ── Migración: categoria y color por taller ──────────────────────────────────
+  console.log('[migrate] categoria_color_tenant...')
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+    ADD COLUMN IF NOT EXISTS "categoria" TEXT NOT NULL DEFAULT 'generica'
+  `)
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+    ADD COLUMN IF NOT EXISTS "colorPrimario" TEXT NOT NULL DEFAULT '#f59e0b'
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }
