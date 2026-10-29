@@ -1542,7 +1542,7 @@ export default function Configuracion() {
             <p className="text-xs font-semibold text-ink">Hora de envío (hora Chile)</p>
             <p className="text-xs text-ink-muted">¿A qué hora del día anterior quieres recibir el resumen?</p>
             <div className="flex flex-wrap gap-2">
-              {[17, 18, 19, 20, 21, 22].map(h => (
+              {[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map(h => (
                 <button
                   key={h}
                   type="button"
