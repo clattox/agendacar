@@ -24,6 +24,12 @@ model Tenant {
   recordatorioDias   String     @default("1,2,3,4,5") // días semana JS (0=Dom..6=Sáb)
   categoria          String     @default("generica") // generica|serviteca|mecanica|pintura|electromecanica
   colorPrimario      String     @default("#f59e0b") // color de acento hex
+  // Datos de emisión de cotizaciones
+  rut                String?    // RUT del taller (para PDF)
+  banco              String?
+  tipoCuenta         String?
+  numeroCuenta       String?
+  cotizacionValidez  Int        @default(15) // días de validez de cotización
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]
@@ -194,22 +200,28 @@ model ItemCierre {
 }
 
 model Cotizacion {
-  id        Int              @id @default(autoincrement())
-  reservaId Int              @unique
-  reserva   Reserva          @relation(fields: [reservaId], references: [id], onDelete: Cascade)
-  tenantId  Int
-  notas     String?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  items     ItemCotizacion[]
+  id               Int              @id @default(autoincrement())
+  numero           Int?             // correlativo por tenant
+  reservaId        Int              @unique
+  reserva          Reserva          @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  tenantId         Int
+  notas            String?
+  clienteRut       String?          // RUT del cliente/empresa (opcional)
+  clienteDireccion String?
+  clienteComuna    String?
+  incluyeIva       Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  items            ItemCotizacion[]
 }
 
 model ItemCotizacion {
-  id          Int        @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   cotizacionId Int
-  cotizacion  Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
-  descripcion String
-  valor       Float      @default(0)
+  cotizacion   Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  descripcion  String
+  cantidad     Int        @default(1)
+  valor        Float      @default(0) // precio unitario
 }
 
 model CatalogoVehiculo {

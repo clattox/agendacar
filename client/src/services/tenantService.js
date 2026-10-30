@@ -5,7 +5,7 @@ export async function obtenerTenant(subdominio) {
   return data
 }
 
-export async function actualizarTenant({ nombre, telefono, email, logoUrl, direccion, inspeccionActiva, recordatorioActivo, recordatorioHora, recordatorioDias, categoria, colorPrimario }) {
-  const { data } = await api.put('/tenant', { nombre, telefono, email, logoUrl, direccion, inspeccionActiva, recordatorioActivo, recordatorioHora, recordatorioDias, categoria, colorPrimario })
+export async function actualizarTenant({ nombre, telefono, email, logoUrl, direccion, inspeccionActiva, recordatorioActivo, recordatorioHora, recordatorioDias, categoria, colorPrimario, rut, banco, tipoCuenta, numeroCuenta, cotizacionValidez }) {
+  const { data } = await api.put('/tenant', { nombre, telefono, email, logoUrl, direccion, inspeccionActiva, recordatorioActivo, recordatorioHora, recordatorioDias, categoria, colorPrimario, rut, banco, tipoCuenta, numeroCuenta, cotizacionValidez })
   return data
 }

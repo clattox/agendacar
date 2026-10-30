@@ -256,6 +256,20 @@ async function main () {
     ADD COLUMN IF NOT EXISTS "recordatorioDias" TEXT NOT NULL DEFAULT '1,2,3,4,5'
   `)
 
+  // ── Migración: datos de emisión de cotizaciones ──────────────────────────────
+  console.log('[migrate] cotizacion_campos_profesionales...')
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "rut" TEXT`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "banco" TEXT`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "tipoCuenta" TEXT`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "numeroCuenta" TEXT`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "cotizacionValidez" INTEGER NOT NULL DEFAULT 15`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Cotizacion" ADD COLUMN IF NOT EXISTS "numero" INTEGER`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Cotizacion" ADD COLUMN IF NOT EXISTS "clienteRut" TEXT`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Cotizacion" ADD COLUMN IF NOT EXISTS "clienteDireccion" TEXT`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Cotizacion" ADD COLUMN IF NOT EXISTS "clienteComuna" TEXT`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Cotizacion" ADD COLUMN IF NOT EXISTS "incluyeIva" BOOLEAN NOT NULL DEFAULT false`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "ItemCotizacion" ADD COLUMN IF NOT EXISTS "cantidad" INTEGER NOT NULL DEFAULT 1`)
+
   // ── Migración: categoria y color por taller ──────────────────────────────────
   console.log('[migrate] categoria_color_tenant...')
   await prisma.$executeRawUnsafe(`

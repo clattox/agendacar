@@ -120,7 +120,12 @@ export default function Configuracion() {
     logoUrl: usuario?.tenant?.logoUrl || '',
     inspeccionActiva: usuario?.tenant?.inspeccionActiva ?? false,
     categoria: usuario?.tenant?.categoria || 'generica',
-    colorPrimario: usuario?.tenant?.colorPrimario || '#f59e0b'
+    colorPrimario: usuario?.tenant?.colorPrimario || '#f59e0b',
+    rut: usuario?.tenant?.rut || '',
+    banco: usuario?.tenant?.banco || '',
+    tipoCuenta: usuario?.tenant?.tipoCuenta || '',
+    numeroCuenta: usuario?.tenant?.numeroCuenta || '',
+    cotizacionValidez: usuario?.tenant?.cotizacionValidez ?? 15
   })
   const [logoPreviewError, setLogoPreviewError] = useState(false)
   const [subiendoLogo, setSubiendoLogo] = useState(false)
@@ -562,7 +567,12 @@ export default function Configuracion() {
         logoUrl: perfil.logoUrl.trim() || null,
         inspeccionActiva: perfil.inspeccionActiva,
         categoria: perfil.categoria,
-        colorPrimario: perfil.colorPrimario
+        colorPrimario: perfil.colorPrimario,
+        rut: perfil.rut.trim() || null,
+        banco: perfil.banco.trim() || null,
+        tipoCuenta: perfil.tipoCuenta.trim() || null,
+        numeroCuenta: perfil.numeroCuenta.trim() || null,
+        cotizacionValidez: Number(perfil.cotizacionValidez) || 15
       })
       // Actualizar sesión local para que sidebar refleje cambios de inmediato
       saveSession({
@@ -829,6 +839,61 @@ export default function Configuracion() {
               />
               <div className="h-5 w-9 rounded-full border border-line bg-graphite-200 peer-checked:bg-accent-600 peer-focus:ring-2 peer-focus:ring-accent-400/30 transition-colors after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:border after:border-line after:transition-all peer-checked:after:translate-x-4" />
             </label>
+          </div>
+
+          {/* Datos de emisión de cotizaciones */}
+          <div className="space-y-3 rounded-lg border border-line bg-graphite-50 p-4">
+            <p className="text-sm font-semibold text-ink">Datos para cotizaciones</p>
+            <p className="text-xs text-ink-muted">Aparecen en el PDF de cotización que entregas al cliente.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-ink-muted">RUT del taller</label>
+                <Input
+                  value={perfil.rut}
+                  onChange={e => setPerfil(prev => ({ ...prev, rut: e.target.value }))}
+                  placeholder="77.716.935-1"
+                  maxLength={12}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-ink-muted">Banco</label>
+                <Input
+                  value={perfil.banco}
+                  onChange={e => setPerfil(prev => ({ ...prev, banco: e.target.value }))}
+                  placeholder="Santander"
+                  maxLength={60}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-ink-muted">Tipo de cuenta</label>
+                <Input
+                  value={perfil.tipoCuenta}
+                  onChange={e => setPerfil(prev => ({ ...prev, tipoCuenta: e.target.value }))}
+                  placeholder="Cuenta Corriente"
+                  maxLength={40}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-ink-muted">Número de cuenta</label>
+                <Input
+                  value={perfil.numeroCuenta}
+                  onChange={e => setPerfil(prev => ({ ...prev, numeroCuenta: e.target.value }))}
+                  placeholder="0000-9009447-5"
+                  maxLength={30}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-ink-muted">Validez cotización (días)</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={perfil.cotizacionValidez}
+                  onChange={e => setPerfil(prev => ({ ...prev, cotizacionValidez: e.target.value }))}
+                  placeholder="15"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end border-t border-line pt-4">
