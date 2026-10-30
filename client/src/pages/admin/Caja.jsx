@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BanknoteIcon, CalendarDays, Car, TrendingUp } from 'lucide-react'
+import { BanknoteIcon, Loader2, TrendingUp } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { getResumenCaja } from '../../services/cajaService'
@@ -7,22 +7,18 @@ import { getResumenCaja } from '../../services/cajaService'
 const formatCLP = (v) =>
   new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(v || 0)
 
-const formatFecha = (iso) => {
-  const d = new Date(iso)
-  return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
+const formatFecha = (iso) =>
+  new Date(iso).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
-const formatHora = (iso) => {
-  const d = new Date(iso)
-  return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
-}
+const formatHora = (iso) =>
+  new Date(iso).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
 
 // ── Tarjeta de estadística ────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
+function StatCard({ icon: Icon, label, value, sub, color = 'green' }) {
   const colors = {
-    blue:  'bg-[#6C8EFF]/10 text-[#6C8EFF]',
-    green: 'bg-green-500/10 text-green-400',
+    green: 'bg-green-50 text-green-600',
+    blue:  'bg-blue-50 text-blue-500',
   }
   return (
     <div className="bg-surface border border-line rounded-2xl p-5 flex items-start gap-4">
@@ -30,9 +26,9 @@ function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
         <Icon size={20} />
       </div>
       <div>
-        <p className="text-xs text-muted uppercase tracking-wide mb-1">{label}</p>
-        <p className="text-2xl font-bold text-white">{value}</p>
-        {sub && <p className="text-xs text-muted mt-0.5">{sub}</p>}
+        <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">{label}</p>
+        <p className="text-2xl font-bold text-ink">{value}</p>
+        {sub && <p className="text-xs text-ink-muted mt-0.5">{sub}</p>}
       </div>
     </div>
   )
@@ -42,9 +38,9 @@ function StatCard({ icon: Icon, label, value, sub, color = 'blue' }) {
 
 export default function Caja() {
   useDocumentTitle('Caja — AgendaCar')
-  const [data, setData] = useState(null)
+  const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError]     = useState('')
 
   useEffect(() => {
     getResumenCaja()
@@ -55,16 +51,20 @@ export default function Caja() {
 
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-        <h1 className="text-2xl font-bold text-white">Caja</h1>
+      <div className="mx-auto max-w-3xl px-4 py-6 space-y-6">
+
+        <h1 className="text-xl font-bold text-ink flex items-center gap-2">
+          <BanknoteIcon className="h-5 w-5 text-accent-600" />
+          Caja
+        </h1>
 
         {loading && (
-          <p className="text-muted text-sm">Cargando...</p>
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-ink-muted" />
+          </div>
         )}
 
-        {error && (
-          <p className="text-red-400 text-sm">{error}</p>
-        )}
+        {error && <p className="text-danger-600 text-sm">{error}</p>}
 
         {data && (
           <>
@@ -88,17 +88,21 @@ export default function Caja() {
 
             {/* Listado */}
             <div>
-              <h2 className="text-sm font-semibold text-white mb-3">Atenciones recientes</h2>
-
-              {data.recientes.length === 0 ? (
-                <div className="bg-surface border border-line rounded-2xl p-8 text-center text-muted text-sm">
-                  Aún no hay atenciones registradas.
+              <div className="rounded-xl border border-line bg-surface overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-line bg-surface-raised">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    Atenciones recientes
+                  </h2>
                 </div>
-              ) : (
-                <div className="bg-surface border border-line rounded-2xl overflow-hidden">
+
+                {data.recientes.length === 0 ? (
+                  <p className="px-4 py-8 text-center text-sm text-ink-muted">
+                    Aún no hay atenciones registradas.
+                  </p>
+                ) : (
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-line text-xs text-muted uppercase tracking-wide">
+                      <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide bg-surface-raised">
                         <th className="text-left px-4 py-3">Fecha</th>
                         <th className="text-left px-4 py-3">Cliente</th>
                         <th className="text-left px-4 py-3 hidden sm:table-cell">Vehículo</th>
@@ -106,35 +110,32 @@ export default function Caja() {
                         <th className="text-right px-4 py-3">Total</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {data.recientes.map((c, i) => (
-                        <tr
-                          key={c.id}
-                          className={`border-b border-line last:border-0 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}
-                        >
-                          <td className="px-4 py-3 text-muted whitespace-nowrap">
-                            <span className="text-white">{formatFecha(c.createdAt)}</span>
-                            <span className="block text-xs">{formatHora(c.createdAt)}</span>
+                    <tbody className="divide-y divide-line">
+                      {data.recientes.map((c) => (
+                        <tr key={c.id} className="hover:bg-graphite-50 transition-colors">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-ink font-medium">{formatFecha(c.createdAt)}</span>
+                            <span className="block text-xs text-ink-muted">{formatHora(c.createdAt)}</span>
                           </td>
-                          <td className="px-4 py-3 text-white font-medium">
-                            {c.reserva?.nombre || '—'}
-                            <span className="block text-xs text-muted font-normal">{c.reserva?.patente}</span>
+                          <td className="px-4 py-3">
+                            <span className="font-medium text-ink">{c.reserva?.nombre || '—'}</span>
+                            <span className="block text-xs text-ink-muted font-mono">{c.reserva?.patente}</span>
                           </td>
-                          <td className="px-4 py-3 text-muted hidden sm:table-cell">
+                          <td className="px-4 py-3 text-ink-muted hidden sm:table-cell">
                             {[c.reserva?.vehiculo?.marca, c.reserva?.vehiculo?.modelo].filter(Boolean).join(' ') || '—'}
                           </td>
-                          <td className="px-4 py-3 text-muted hidden sm:table-cell">
+                          <td className="px-4 py-3 text-ink-muted hidden sm:table-cell">
                             {c.reserva?.servicio?.nombre || '—'}
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-white whitespace-nowrap">
+                          <td className="px-4 py-3 text-right font-bold text-ink whitespace-nowrap">
                             {formatCLP(c.total)}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </>
         )}
