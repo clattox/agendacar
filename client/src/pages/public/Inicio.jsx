@@ -278,6 +278,7 @@ export default function Inicio({ slugOverride = null }) {
                     size="lg"
                     rightIcon={ArrowRight}
                     className="whitespace-nowrap"
+                    style={{ backgroundColor: acento, borderColor: acento }}
                     onClick={() => reservar()}
                   >
                     Reservar hora
@@ -405,7 +406,7 @@ export default function Inicio({ slugOverride = null }) {
               </div>
             </div>
             {servicios.length > 0 && (
-              <Button variant="secondary" size="sm" onClick={() => reservar()}>
+              <Button variant="secondary" size="sm" style={{ color: acento, borderColor: acento }} onClick={() => reservar()}>
                 Ver disponibilidad
               </Button>
             )}
@@ -469,6 +470,7 @@ export default function Inicio({ slugOverride = null }) {
                     variant="secondary"
                     size="sm"
                     className="mt-4 w-full"
+                    style={{ color: acento, borderColor: acento }}
                     rightIcon={ArrowRight}
                     onClick={() => reservar(servicio.id)}
                   >
