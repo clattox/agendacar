@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Mail, MessageCircle, Minus, Plus, Printer, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
 import Dialog from './ui/Dialog'
-import { guardarCotizacion, enviarEmailCotizacion } from '../services/cotizacionService'
+import { getCotizacion, guardarCotizacion, enviarEmailCotizacion } from '../services/cotizacionService'
 import { getApiErrorMessage } from '../lib/errors'
 import { getUsuario } from '../lib/auth'
 
@@ -97,17 +97,40 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
   const tenant = getUsuario()?.tenant
 
   useEffect(() => {
-    if (open) {
-      setItems([{ _id: nextId(), descripcion: '', cantidad: 1, valor: 0, _empty: true }])
-      setNotas('')
-      setIncluyeIva(false)
-      setClienteRut('')
-      setClienteDireccion('')
-      setClienteComuna('')
-      setError('')
-      setExito('')
-      setTimeout(() => inputRef.current?.focus(), 80)
-    }
+    if (!open) return
+    setError('')
+    setExito('')
+
+    // Intentar cargar cotización guardada previamente
+    getCotizacion(reserva.id)
+      .then(cot => {
+        if (cot?.items?.length) {
+          setItems(cot.items.map(i => ({
+            _id: nextId(),
+            descripcion: i.descripcion || '',
+            cantidad: i.cantidad ?? 1,
+            valor: i.valor ?? 0,
+            _empty: false
+          })))
+        } else {
+          setItems([{ _id: nextId(), descripcion: '', cantidad: 1, valor: 0, _empty: true }])
+        }
+        setNotas(cot?.notas || '')
+        setIncluyeIva(cot?.incluyeIva ?? false)
+        setClienteRut(cot?.clienteRut || '')
+        setClienteDireccion(cot?.clienteDireccion || '')
+        setClienteComuna(cot?.clienteComuna || '')
+      })
+      .catch(() => {
+        // No existe cotización previa — empezar en blanco
+        setItems([{ _id: nextId(), descripcion: '', cantidad: 1, valor: 0, _empty: true }])
+        setNotas('')
+        setIncluyeIva(false)
+        setClienteRut('')
+        setClienteDireccion('')
+        setClienteComuna('')
+      })
+      .finally(() => setTimeout(() => inputRef.current?.focus(), 80))
   }, [open])
 
   const agregarFila = () =>
