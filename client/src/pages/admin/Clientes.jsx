@@ -231,7 +231,8 @@ export default function Clientes() {
 
   return (
     <AdminLayout>
-      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+      <div className="-m-4 sm:-m-6 md:-m-8 min-h-screen bg-[#1C1F26] p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto">
 
         {/* Header */}
         <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
@@ -291,6 +292,7 @@ export default function Clientes() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </AdminLayout>
   )
