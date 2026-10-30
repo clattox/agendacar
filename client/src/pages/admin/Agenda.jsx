@@ -15,6 +15,8 @@ import {
   History,
   Mail,
   MessageCircle,
+  MessageSquare,
+  Pencil,
   Phone,
   Download,
   FileText,
@@ -51,6 +53,7 @@ import {
 } from '../../services/reservasService'
 import { actualizarVehiculo, obtenerHistorialVehiculo } from '../../services/vehiculosService'
 import { listarTrabajadores } from '../../services/trabajadorService'
+import { actualizarNotasCierre } from '../../services/cierreService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import EstadoBadge, { ESTADOS_RESERVA } from '../../components/admin/EstadoBadge'
 import {
@@ -929,6 +932,12 @@ function DetalleReserva({ reserva, onActualizar }) {
   const [guardando, setGuardando] = useState(false)
   const [errorTrabajadores, setErrorTrabajadores] = useState('')
 
+  // Estado para edición de notas post-servicio
+  const [editandoNotas, setEditandoNotas] = useState(false)
+  const [notasTexto, setNotasTexto] = useState(reserva.cierre?.notas || '')
+  const [guardandoNotas, setGuardandoNotas] = useState(false)
+  const [errorNotas, setErrorNotas] = useState('')
+
   useEffect(() => {
     listarTrabajadores()
       .then(lista => setTrabajadoresTenant(lista.filter(t => t.activo)))
@@ -951,6 +960,21 @@ function DetalleReserva({ reserva, onActualizar }) {
       setErrorTrabajadores('No se pudo guardar la asignación. Intenta de nuevo.')
     } finally {
       setGuardando(false)
+    }
+  }
+
+  const guardarNotas = async () => {
+    setGuardandoNotas(true)
+    setErrorNotas('')
+    try {
+      const actualizado = await actualizarNotasCierre(reserva.id, notasTexto)
+      // Actualizar el objeto reserva en memoria con las nuevas notas
+      if (reserva.cierre) reserva.cierre.notas = actualizado.notas
+      setEditandoNotas(false)
+    } catch {
+      setErrorNotas('No se pudo guardar el comentario. Intenta de nuevo.')
+    } finally {
+      setGuardandoNotas(false)
     }
   }
 
@@ -1141,6 +1165,68 @@ function DetalleReserva({ reserva, onActualizar }) {
             >
               Guardar asignación
             </Button>
+          </div>
+        </section>
+      )}
+
+      {/* ── Comentario post-servicio ────────────────────────────────────── */}
+      {reserva.cierre && (
+        <section className="mt-5 overflow-hidden rounded-lg border border-line">
+          <div className="flex items-center justify-between gap-2 border-b border-line bg-graphite-50 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-ink-soft" aria-hidden="true" />
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Comentario post-servicio</h3>
+                <p className="text-xs text-ink-muted">Observaciones después de la atención</p>
+              </div>
+            </div>
+            {!editandoNotas && (
+              <button
+                onClick={() => { setNotasTexto(reserva.cierre?.notas || ''); setEditandoNotas(true) }}
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-accent-600 hover:bg-accent-50 transition-colors"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Editar
+              </button>
+            )}
+          </div>
+
+          <div className="px-4 py-3">
+            {editandoNotas ? (
+              <div className="space-y-3">
+                <textarea
+                  value={notasTexto}
+                  onChange={e => setNotasTexto(e.target.value)}
+                  rows={3}
+                  placeholder="Escribe un comentario sobre el servicio realizado..."
+                  className="w-full resize-none rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-soft focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-400"
+                />
+                {errorNotas && (
+                  <p className="text-xs text-red-500">{errorNotas}</p>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={guardarNotas}
+                    loading={guardandoNotas}
+                    disabled={guardandoNotas}
+                  >
+                    Guardar
+                  </Button>
+                  <button
+                    onClick={() => { setEditandoNotas(false); setErrorNotas('') }}
+                    className="rounded-md px-3 py-1.5 text-xs font-medium text-ink-muted hover:text-ink hover:bg-graphite-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className={`text-sm ${reserva.cierre?.notas ? 'text-ink' : 'italic text-ink-soft'}`}>
+                {reserva.cierre?.notas || 'Sin comentarios aún. Haz clic en Editar para agregar uno.'}
+              </p>
+            )}
           </div>
         </section>
       )}

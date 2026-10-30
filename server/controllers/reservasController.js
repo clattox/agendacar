@@ -24,7 +24,7 @@ const getReservas = async (req, res) => {
         tenantId,
         fecha: { gte: fechaInicio, lte: fechaFin }
       },
-      include: { servicio: true, vehiculo: true, trabajadores: true },
+      include: { servicio: true, vehiculo: true, trabajadores: true, cierre: true },
       orderBy: { fecha: 'asc' }
     })
 

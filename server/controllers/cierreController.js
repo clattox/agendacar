@@ -95,4 +95,35 @@ const upsertCierre = async (req, res) => {
   }
 }
 
-module.exports = { getCierre, upsertCierre }
+/**
+ * PATCH /api/cierres/:reservaId/notas
+ * Actualiza solo las notas del cierre sin tocar los ítems ni el total.
+ */
+const actualizarNotasCierre = async (req, res) => {
+  const tenantId = req.usuario?.tenantId
+  if (!tenantId) return res.status(401).json({ error: 'Sin tenant' })
+
+  const reservaId = parseInt(req.params.reservaId, 10)
+  if (!reservaId) return res.status(400).json({ error: 'ID inválido' })
+
+  const { notas } = req.body
+
+  try {
+    const cierre = await prisma.cierreAtencion.findUnique({ where: { reservaId } })
+    if (!cierre || cierre.tenantId !== tenantId) {
+      return res.status(404).json({ error: 'Cierre no encontrado' })
+    }
+
+    const actualizado = await prisma.cierreAtencion.update({
+      where: { reservaId },
+      data: { notas: notas?.trim() || null }
+    })
+
+    res.json(actualizado)
+  } catch (error) {
+    console.error('[cierreController] actualizarNotasCierre:', error?.message)
+    res.status(500).json({ error: 'Error al actualizar notas' })
+  }
+}
+
+module.exports = { getCierre, upsertCierre, actualizarNotasCierre }
