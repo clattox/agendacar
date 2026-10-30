@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Car, ChevronDown, ChevronUp, Edit2, Mail, Phone,
-  Search, Users, X, Check, Clock
+  Car, ChevronDown, ChevronUp, Clock, Edit2,
+  Mail, Phone, Search, UserRound, Users, X, Check, Loader2
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { listarClientes, actualizarCliente } from '../../services/clientesService'
@@ -16,10 +16,10 @@ const formatFecha = (iso) => {
 }
 
 const ESTADO_BADGE = {
-  confirmada:   'bg-blue-500/15 text-blue-400',
-  inspeccionada:'bg-yellow-500/15 text-yellow-400',
-  atendida:     'bg-green-500/15 text-green-400',
-  cancelada:    'bg-red-500/15 text-red-400',
+  confirmada:    'bg-blue-50 text-blue-600 border border-blue-200',
+  inspeccionada: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+  atendida:      'bg-green-50 text-green-700 border border-green-200',
+  cancelada:     'bg-red-50 text-red-600 border border-red-200',
 }
 
 // ── Tarjeta de cliente ────────────────────────────────────────────────────────
@@ -59,45 +59,45 @@ function TarjetaCliente({ cliente, onActualizado }) {
   }
 
   return (
-    <div className="rounded-xl border border-[#2A2D35] bg-[#22252E] overflow-hidden">
-      {/* Cabecera */}
-      <div className="flex items-start gap-4 p-4">
-        {/* Avatar inicial */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#6C8EFF]/15 text-[#6C8EFF] font-bold text-sm select-none">
+    <li className="divide-y divide-line">
+      {/* Fila principal */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Avatar */}
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-600 font-bold text-sm select-none">
           {cliente.nombre?.[0]?.toUpperCase() || '?'}
         </div>
 
-        {/* Info cliente */}
+        {/* Info */}
         <div className="flex-1 min-w-0">
           {editando ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <input
                 ref={inputRef}
                 type="text"
                 value={nombre}
                 onChange={e => setNombre(e.target.value)}
                 placeholder="Nombre del cliente"
-                className="w-full rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400"
               />
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Email (opcional)"
-                className="w-full rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400"
               />
-              {error && <p className="text-xs text-red-400">{error}</p>}
+              {error && <p className="text-xs text-danger-600">{error}</p>}
               <div className="flex gap-2">
                 <button
                   onClick={handleGuardar}
                   disabled={guardando || !nombre.trim()}
-                  className="flex items-center gap-1 rounded-lg bg-[#6C8EFF] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#8BA3FF] disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1 rounded-lg bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700 disabled:opacity-50 transition-colors"
                 >
                   <Check size={12} /> {guardando ? 'Guardando…' : 'Guardar'}
                 </button>
                 <button
                   onClick={handleCancelar}
-                  className="flex items-center gap-1 rounded-lg border border-[#2A2D35] px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+                  className="flex items-center gap-1 rounded-lg border border-line px-3 py-1.5 text-xs text-ink-muted hover:text-ink transition-colors"
                 >
                   <X size={12} /> Cancelar
                 </button>
@@ -105,104 +105,97 @@ function TarjetaCliente({ cliente, onActualizado }) {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-white truncate">{cliente.nombre}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-semibold text-ink text-sm">{cliente.nombre}</span>
                 <button
                   onClick={() => setEditando(true)}
-                  className="text-gray-500 hover:text-[#6C8EFF] transition-colors"
+                  className="text-ink-soft hover:text-accent-600 transition-colors"
                   title="Editar datos"
                 >
-                  <Edit2 size={13} />
+                  <Edit2 size={12} />
                 </button>
               </div>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
-                <span className="flex items-center gap-1">
-                  <Phone size={11} /> {cliente.telefono}
-                </span>
-                {cliente.email && (
-                  <span className="flex items-center gap-1">
-                    <Mail size={11} /> {cliente.email}
-                  </span>
-                )}
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-ink-muted">
+                <span className="flex items-center gap-1"><Phone size={10} /> {cliente.telefono}</span>
+                {cliente.email && <span className="flex items-center gap-1"><Mail size={10} /> {cliente.email}</span>}
               </div>
+              {/* Vehículos */}
+              {cliente.vehiculos.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {cliente.vehiculos.map((v, i) => (
+                    <span
+                      key={i}
+                      className="flex items-center gap-1 rounded-full border border-line bg-graphite-50 px-2.5 py-0.5 text-[11px] text-ink-muted"
+                    >
+                      <Car size={10} className="text-ink-soft" />
+                      <span className="font-mono font-semibold text-ink">{v.patente}</span>
+                      {(v.marca || v.modelo) && <span>{[v.marca, v.modelo].filter(Boolean).join(' ')}</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
 
-        {/* Stats + expand */}
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="hidden sm:flex flex-col items-end text-right">
-            <span className="text-xs text-gray-500">Última visita</span>
-            <span className="text-xs text-gray-300">{formatFecha(cliente.ultimaVisita)}</span>
+        {/* Stats */}
+        <div className="hidden sm:flex items-center gap-6 shrink-0 text-right">
+          <div>
+            <p className="text-[11px] text-ink-muted">Última visita</p>
+            <p className="text-xs font-medium text-ink">{formatFecha(cliente.ultimaVisita)}</p>
           </div>
-          <div className="hidden sm:flex flex-col items-end text-right">
-            <span className="text-xs text-gray-500">Visitas</span>
-            <span className="text-xs font-bold text-white">{cliente.totalVisitas}</span>
+          <div>
+            <p className="text-[11px] text-ink-muted">Visitas</p>
+            <p className="text-sm font-bold text-ink">{cliente.totalVisitas}</p>
           </div>
-          <button
-            onClick={() => setExpandido(v => !v)}
-            className="text-gray-500 hover:text-white transition-colors p-1"
-          >
-            {expandido ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
         </div>
-      </div>
 
-      {/* Vehículos */}
-      {cliente.vehiculos.length > 0 && (
-        <div className="flex flex-wrap gap-2 px-4 pb-3">
-          {cliente.vehiculos.map((v, i) => (
-            <span
-              key={i}
-              className="flex items-center gap-1.5 rounded-full bg-[#1C1F26] border border-[#2A2D35] px-3 py-1 text-xs text-gray-300"
-            >
-              <Car size={11} className="text-gray-500" />
-              <span className="font-mono font-bold text-white">{v.patente}</span>
-              {(v.marca || v.modelo) && (
-                <span className="text-gray-500">{[v.marca, v.modelo].filter(Boolean).join(' ')}</span>
-              )}
-            </span>
-          ))}
-        </div>
-      )}
+        {/* Expand */}
+        <button
+          onClick={() => setExpandido(v => !v)}
+          className="p-1.5 text-ink-soft hover:text-ink transition-colors rounded-md hover:bg-graphite-50"
+        >
+          {expandido ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        </button>
+      </div>
 
       {/* Historial expandible */}
       {expandido && (
-        <div className="border-t border-[#2A2D35] p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="bg-surface-raised px-4 py-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
             Historial de reservas
           </p>
-          <div className="space-y-2">
+          <ul className="space-y-1.5">
             {cliente.reservas.map(r => (
-              <div
+              <li
                 key={r.id}
-                className="flex items-center justify-between rounded-lg bg-[#1C1F26] px-3 py-2 text-xs"
+                className="flex items-center justify-between rounded-lg border border-line bg-surface px-3 py-2 text-xs"
               >
-                <div className="flex items-center gap-3">
-                  <Clock size={11} className="text-gray-500 shrink-0" />
-                  <span className="text-gray-400">{formatFecha(r.fecha)}</span>
-                  <span className="font-mono text-gray-500">{r.patente}</span>
-                  <span className="text-gray-300">{r.servicio}</span>
+                <div className="flex items-center gap-3 text-ink-muted">
+                  <Clock size={11} className="shrink-0" />
+                  <span>{formatFecha(r.fecha)}</span>
+                  <span className="font-mono font-semibold text-ink">{r.patente}</span>
+                  <span className="text-ink">{r.servicio}</span>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${ESTADO_BADGE[r.estado] || 'bg-gray-500/15 text-gray-400'}`}>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${ESTADO_BADGE[r.estado] || 'bg-graphite-100 text-ink-muted'}`}>
                   {r.estado}
                 </span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
-    </div>
+    </li>
   )
 }
 
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function Clientes() {
-  const [clientes, setClientes]   = useState([])
-  const [cargando, setCargando]   = useState(true)
-  const [busqueda, setBusqueda]   = useState('')
-  const [query, setQuery]         = useState('')
+  const [clientes, setClientes] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [busqueda, setBusqueda] = useState('')
+  const [query, setQuery]       = useState('')
   const timerRef = useRef(null)
 
   const cargar = async (q = query) => {
@@ -219,45 +212,40 @@ export default function Clientes() {
 
   useEffect(() => { cargar('') }, []) // eslint-disable-line
 
-  // Debounce búsqueda
   const handleBusqueda = (val) => {
     setBusqueda(val)
     clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => {
-      setQuery(val)
-      cargar(val)
-    }, 350)
+    timerRef.current = setTimeout(() => { setQuery(val); cargar(val) }, 350)
   }
 
   return (
     <AdminLayout>
-      <div className="-m-4 sm:-m-6 md:-m-8 min-h-screen bg-[#1C1F26] p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="mx-auto max-w-3xl px-4 py-6 space-y-6">
 
         {/* Header */}
-        <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-white">Clientes</h1>
-            <p className="mt-1 text-sm text-gray-400">
+            <h1 className="text-xl font-bold text-ink flex items-center gap-2">
+              <UserRound className="h-5 w-5 text-accent-600" aria-hidden="true" />
+              Clientes
+            </h1>
+            <p className="text-sm text-ink-muted mt-0.5">
               {cargando ? 'Cargando…' : `${clientes.length} cliente${clientes.length !== 1 ? 's' : ''} registrado${clientes.length !== 1 ? 's' : ''}`}
             </p>
           </div>
 
           {/* Buscador */}
-          <div className="relative w-full sm:w-72">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+          <div className="relative w-full sm:w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none" />
             <input
               type="text"
               placeholder="Nombre, teléfono, patente…"
               value={busqueda}
               onChange={e => handleBusqueda(e.target.value)}
-              className="w-full rounded-xl border border-[#2A2D35] bg-[#22252E] pl-9 pr-9 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
+              className="w-full rounded-xl border border-line bg-surface pl-8 pr-8 py-2 text-sm text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-accent-400"
             />
             {busqueda && (
-              <button
-                onClick={() => handleBusqueda('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
-              >
+              <button onClick={() => handleBusqueda('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink">
                 <X size={13} />
               </button>
             )}
@@ -266,33 +254,37 @@ export default function Clientes() {
 
         {/* Contenido */}
         {cargando ? (
-          <div className="space-y-3">
-            {[1,2,3,4].map(i => (
-              <div key={i} className="h-24 rounded-xl bg-[#22252E] animate-pulse" />
-            ))}
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-ink-muted" />
           </div>
         ) : clientes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-            <Users size={40} className="mb-3 opacity-30" />
-            <p className="font-medium text-gray-400">
+          <div className="rounded-xl border border-dashed border-line bg-surface p-10 text-center space-y-2">
+            <Users className="h-8 w-8 text-ink-soft mx-auto" />
+            <p className="text-sm text-ink-muted">
               {busqueda ? 'Sin resultados para esa búsqueda' : 'Aún no hay clientes registrados'}
             </p>
-            <p className="text-sm mt-1">
+            <p className="text-xs text-ink-soft">
               {busqueda ? 'Intenta con otro nombre o patente' : 'Los clientes aparecen automáticamente al hacer su primera reserva'}
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {clientes.map(c => (
-              <TarjetaCliente
-                key={c.telefono}
-                cliente={c}
-                onActualizado={() => cargar(query)}
-              />
-            ))}
+          <div className="rounded-xl border border-line bg-surface overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-line bg-surface-raised">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                Clientes ({clientes.length})
+              </h2>
+            </div>
+            <ul className="divide-y divide-line">
+              {clientes.map(c => (
+                <TarjetaCliente
+                  key={c.telefono}
+                  cliente={c}
+                  onActualizado={() => cargar(query)}
+                />
+              ))}
+            </ul>
           </div>
         )}
-      </div>
       </div>
     </AdminLayout>
   )
