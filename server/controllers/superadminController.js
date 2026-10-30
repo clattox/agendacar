@@ -99,7 +99,7 @@ const toggleTenant = async (req, res) => {
 // PUT /api/superadmin/tenants/:id — editar datos del tenant (y opcionalmente email de login del admin)
 const updateTenant = async (req, res) => {
   const id = parseInt(req.params.id)
-  const { nombre, email, telefono, direccion, subdominio, adminEmail } = req.body
+  const { nombre, email, telefono, direccion, subdominio, adminEmail, categoria, colorPrimario } = req.body
   try {
     const tenant = await prisma.tenant.findUnique({ where: { id } })
     if (!tenant) return res.status(404).json({ error: 'Tenant no encontrado' })
@@ -126,6 +126,8 @@ const updateTenant = async (req, res) => {
         telefono: telefono ?? tenant.telefono,
         direccion: direccion ?? tenant.direccion,
         subdominio: subdominio ?? tenant.subdominio,
+        ...(categoria     !== undefined && { categoria }),
+        ...(colorPrimario !== undefined && { colorPrimario }),
       },
       include: {
         _count: { select: { reservas: true, usuarios: true } },

@@ -32,7 +32,7 @@ export default function SuperadminDashboard() {
 
   const abrirEditar = (t) => {
     setEditando(t)
-    setEditForm({ nombre: t.nombre || '', email: t.email || '', telefono: t.telefono || '', direccion: t.direccion || '', subdominio: t.subdominio || '', adminEmail: t.adminEmail || '' })
+    setEditForm({ nombre: t.nombre || '', email: t.email || '', telefono: t.telefono || '', direccion: t.direccion || '', subdominio: t.subdominio || '', adminEmail: t.adminEmail || '', categoria: t.categoria || 'generica', colorPrimario: t.colorPrimario || '#f59e0b' })
     setEditError('')
   }
 
@@ -481,6 +481,37 @@ export default function SuperadminDashboard() {
                     <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />Dirección física</span>
                   </label>
                   <Input value={editForm.direccion} onChange={e => setEditForm(p => ({ ...p, direccion: e.target.value }))} placeholder="Av. Principal 123, Ciudad" />
+                </div>
+                <div className="col-span-2 border-t border-line pt-3">
+                  <p className="text-xs font-semibold text-ink-muted mb-2">Apariencia página pública</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-ink-muted mb-1">Tipo de taller</label>
+                      <select
+                        value={editForm.categoria}
+                        onChange={e => setEditForm(p => ({ ...p, categoria: e.target.value }))}
+                        className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent-400/30"
+                      >
+                        <option value="generica">Genérico</option>
+                        <option value="mecanica">Mecánica</option>
+                        <option value="electromecanica">Electromecánica</option>
+                        <option value="pintura">Pintura y Desabolladura</option>
+                        <option value="serviteca">Serviteca</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-ink-muted mb-1">Color de acento</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={editForm.colorPrimario}
+                          onChange={e => setEditForm(p => ({ ...p, colorPrimario: e.target.value }))}
+                          className="h-9 w-10 cursor-pointer rounded border border-line bg-transparent p-0.5"
+                        />
+                        <span className="font-mono text-xs text-ink-muted">{editForm.colorPrimario}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               {editError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{editError}</p>}
