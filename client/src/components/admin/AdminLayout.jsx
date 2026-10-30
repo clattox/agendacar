@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  UserRound,
   Users,
   XCircle
 } from 'lucide-react'
@@ -70,6 +71,7 @@ function BannerSuscripcion({ subdominio }) {
 const nav = [
   { to: '/admin', icon: LayoutDashboard, label: 'Panel', exact: true },
   { to: '/admin/agenda', icon: CalendarDays, label: 'Agenda' },
+  { to: '/admin/clientes', icon: UserRound, label: 'Clientes' },
   { to: '/admin/trabajadores', icon: Users, label: 'Trabajadores' },
   { to: '/admin/vehiculos', icon: Car, label: 'Vehículos' },
   { to: '/admin/caja', icon: BanknoteIcon, label: 'Caja' },

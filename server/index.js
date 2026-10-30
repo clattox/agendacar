@@ -42,6 +42,7 @@ app.use('/api/cierres', require('./routes/cierres'))
 app.use('/api/cotizaciones', require('./routes/cotizaciones'))
 app.use('/api/caja', require('./routes/caja'))
 app.use('/api/recordatorios', require('./routes/recordatorios'))
+app.use('/api/clientes', require('./routes/clientes'))
 
 // Health check
 app.get('/api/health', (req, res) => {

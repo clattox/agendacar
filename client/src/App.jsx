@@ -18,6 +18,7 @@ import Trabajadores from './pages/admin/Trabajadores'
 import Vehiculos from './pages/admin/Vehiculos'
 import Inspeccion from './pages/admin/Inspeccion'
 import Caja from './pages/admin/Caja'
+import Clientes from './pages/admin/Clientes'
 
 // Páginas superadmin
 import SuperadminLogin from './pages/superadmin/Login'
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/admin" element={<ProtectedRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="agenda" element={<Agenda />} />
+          <Route path="clientes" element={<Clientes />} />
           <Route path="trabajadores" element={<Trabajadores />} />
           <Route path="vehiculos" element={<Vehiculos />} />
           <Route path="configuracion" element={<Configuracion />} />
