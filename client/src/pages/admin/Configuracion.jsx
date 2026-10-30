@@ -683,7 +683,7 @@ export default function Configuracion() {
                 id="perfil-nombre"
                 value={perfil.nombre}
                 onChange={e => setPerfil(prev => ({ ...prev, nombre: e.target.value }))}
-                placeholder="Taller Ewert"
+                placeholder="Mi Taller"
                 maxLength={80}
                 required
               />
@@ -851,7 +851,7 @@ export default function Configuracion() {
                 <Input
                   value={perfil.rut}
                   onChange={e => setPerfil(prev => ({ ...prev, rut: e.target.value }))}
-                  placeholder="77.716.935-1"
+                  placeholder="12.345.678-9"
                   maxLength={12}
                 />
               </div>
@@ -878,7 +878,7 @@ export default function Configuracion() {
                 <Input
                   value={perfil.numeroCuenta}
                   onChange={e => setPerfil(prev => ({ ...prev, numeroCuenta: e.target.value }))}
-                  placeholder="0000-9009447-5"
+                  placeholder="000-0000000-0"
                   maxLength={30}
                 />
               </div>
