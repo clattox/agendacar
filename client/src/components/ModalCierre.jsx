@@ -64,6 +64,7 @@ const nextId = () => ++_itemId
 export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   const [items, setItems] = useState([{ _id: nextId(), descripcion: '', valor: 0, _empty: true }])
   const [notas, setNotas] = useState('')
+  const [incluyeIva, setIncluyeIva] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [importando, setImportando] = useState(false)
@@ -76,6 +77,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
     if (open) {
       setItems([{ _id: nextId(), descripcion: '', valor: 0, _empty: true }])
       setNotas('')
+      setIncluyeIva(false)
       setError('')
       setTimeout(() => inputRef.current?.focus(), 80)
     }
@@ -90,7 +92,9 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   const eliminarItem = (id) =>
     setItems(prev => prev.filter(i => i._id !== id))
 
-  const total = items.reduce((s, i) => s + (i.cantidad || 1) * (parseFloat(i.valor) || 0), 0)
+  const subtotal = items.reduce((s, i) => s + (i.cantidad || 1) * (parseFloat(i.valor) || 0), 0)
+  const iva = incluyeIva ? Math.round(subtotal * 0.19) : 0
+  const total = subtotal + iva
 
   const handleImportarCotizacion = async () => {
     setImportando(true)
@@ -214,7 +218,9 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
     <thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">P. Unit.</th><th style="text-align:right">Total</th></tr></thead>
     <tbody>
       ${itemsValidos.map(i => `<tr><td>${i.descripcion}</td><td style="text-align:center">${i.cantidad || 1}</td><td style="text-align:right">${formatCLP(i.valor)}</td><td>${formatCLP((i.cantidad || 1) * (i.valor || 0))}</td></tr>`).join('')}
-      <tr class="total-row"><td colspan="3">Total</td><td>${formatCLP(itemsValidos.reduce((s, i) => s + (i.cantidad || 1) * (i.valor || 0), 0))}</td></tr>
+      <tr class="total-row"><td colspan="3">Subtotal</td><td>${formatCLP(itemsValidos.reduce((s, i) => s + (i.cantidad || 1) * (i.valor || 0), 0))}</td></tr>
+      ${incluyeIva ? `<tr style="font-size:12px"><td colspan="3" style="color:#555">IVA 19%</td><td style="text-align:right;color:#555">${formatCLP(Math.round(itemsValidos.reduce((s,i)=>s+(i.cantidad||1)*(i.valor||0),0)*0.19))}</td></tr>
+      <tr class="total-row"><td colspan="3">Total con IVA</td><td>${formatCLP(Math.round(itemsValidos.reduce((s,i)=>s+(i.cantidad||1)*(i.valor||0),0)*1.19))}</td></tr>` : ''}
     </tbody>
   </table>` : '<p style="color:#888;margin-bottom:16px">Sin ítems registrados.</p>'}
 
@@ -317,9 +323,28 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
           </button>
         </div>
 
-        {/* Total */}
-        <div className="flex justify-end">
-          <div className="bg-[#22252E] border border-[#2A2D35] rounded-xl px-5 py-3 text-right">
+        {/* IVA + Total */}
+        <div className="flex items-end justify-between gap-4">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={incluyeIva}
+              onChange={e => setIncluyeIva(e.target.checked)}
+              className="h-4 w-4 rounded border-[#2A2D35] accent-[#6C8EFF]"
+            />
+            <span className="text-sm text-gray-300">Incluir IVA (19%)</span>
+          </label>
+          <div className="bg-[#22252E] border border-[#2A2D35] rounded-xl px-5 py-3 text-right min-w-[160px]">
+            {incluyeIva && (
+              <div className="mb-1 space-y-0.5">
+                <div className="flex justify-between gap-6 text-xs text-gray-400">
+                  <span>Subtotal</span><span>{formatCLP(subtotal)}</span>
+                </div>
+                <div className="flex justify-between gap-6 text-xs text-gray-400">
+                  <span>IVA 19%</span><span>{formatCLP(iva)}</span>
+                </div>
+              </div>
+            )}
             <span className="text-xs text-gray-400 uppercase tracking-wide">Total</span>
             <p className="text-2xl font-bold text-white">{formatCLP(total)}</p>
           </div>
