@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Printer, Trash2 } from 'lucide-react'
+import { ClipboardCopy, Plus, Printer, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
 import Dialog from './ui/Dialog'
 import { guardarCierre } from '../services/cierreService'
+import { getCotizacion } from '../services/cotizacionService'
 import { getApiErrorMessage } from '../lib/errors'
 import { getUsuario } from '../lib/auth'
 
@@ -52,6 +53,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   const [notas, setNotas] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+  const [importando, setImportando] = useState(false)
   const inputRef = useRef(null)
 
   const tenant = getUsuario()?.tenant
@@ -76,6 +78,36 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
     setItems(prev => prev.filter(i => i._id !== id))
 
   const total = items.reduce((s, i) => s + (parseFloat(i.valor) || 0), 0)
+
+  const handleImportarCotizacion = async () => {
+    setImportando(true)
+    setError('')
+    try {
+      const cot = await getCotizacion(reserva.id)
+      if (!cot?.items?.length) {
+        setError('La cotización no tiene ítems para importar.')
+        return
+      }
+      const itemsImportados = cot.items
+        .filter(i => i.descripcion?.trim())
+        .map(i => ({
+          _id: nextId(),
+          descripcion: i.descripcion,
+          // cantidad × valor unitario → valor total por línea
+          valor: (i.cantidad ?? 1) * (i.valor ?? 0),
+          _empty: false
+        }))
+      setItems(itemsImportados.length
+        ? itemsImportados
+        : [{ _id: nextId(), descripcion: '', valor: 0, _empty: true }]
+      )
+      if (cot.notas) setNotas(cot.notas)
+    } catch {
+      setError('No se encontró cotización para esta reserva.')
+    } finally {
+      setImportando(false)
+    }
+  }
 
   const handleGuardar = async () => {
     const itemsValidos = items.filter(i => i.descripcion.trim())
@@ -244,7 +276,15 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
         <div>
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-semibold text-white">Trabajos y repuestos</h3>
-            <span className="text-xs text-gray-400">Valor en $CLP</span>
+            <button
+              onClick={handleImportarCotizacion}
+              disabled={importando || guardando}
+              className="flex items-center gap-1.5 text-xs text-[#6C8EFF] hover:text-[#8BA3FF] disabled:opacity-40 transition-colors"
+              title="Importar ítems desde la cotización de esta reserva"
+            >
+              <ClipboardCopy size={13} />
+              {importando ? 'Importando…' : 'Importar desde cotización'}
+            </button>
           </div>
           <div className="space-y-2" ref={inputRef}>
             {items.map((item) => (
