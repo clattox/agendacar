@@ -197,8 +197,12 @@ const upsertCotizacion = async (req, res) => {
 
       // Asignar número correlativo si no tiene uno aún
       if (!numeroCorrelativo) {
-        const count = await tx.cotizacion.count({ where: { tenantId } })
-        numeroCorrelativo = count + 1
+        const [count, tenant] = await Promise.all([
+          tx.cotizacion.count({ where: { tenantId } }),
+          tx.tenant.findUnique({ where: { id: tenantId }, select: { cotizacionDesde: true } })
+        ])
+        const desde = tenant?.cotizacionDesde ?? 1
+        numeroCorrelativo = desde + count
       }
 
       // Crear nueva cotización

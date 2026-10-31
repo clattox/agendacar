@@ -270,6 +270,7 @@ async function main () {
   await prisma.$executeRawUnsafe(`ALTER TABLE "Cotizacion" ADD COLUMN IF NOT EXISTS "incluyeIva" BOOLEAN NOT NULL DEFAULT false`)
   await prisma.$executeRawUnsafe(`ALTER TABLE "ItemCotizacion" ADD COLUMN IF NOT EXISTS "cantidad" INTEGER NOT NULL DEFAULT 1`)
   await prisma.$executeRawUnsafe(`ALTER TABLE "ItemCierre" ADD COLUMN IF NOT EXISTS "cantidad" INTEGER NOT NULL DEFAULT 1`)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "cotizacionDesde" INTEGER NOT NULL DEFAULT 1`)
 
   // ── Migración: categoria y color por taller ──────────────────────────────────
   console.log('[migrate] categoria_color_tenant...')

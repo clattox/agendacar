@@ -125,7 +125,8 @@ export default function Configuracion() {
     banco: usuario?.tenant?.banco || '',
     tipoCuenta: usuario?.tenant?.tipoCuenta || '',
     numeroCuenta: usuario?.tenant?.numeroCuenta || '',
-    cotizacionValidez: usuario?.tenant?.cotizacionValidez ?? 15
+    cotizacionValidez: usuario?.tenant?.cotizacionValidez ?? 15,
+    cotizacionDesde: usuario?.tenant?.cotizacionDesde ?? 1
   })
   const [logoPreviewError, setLogoPreviewError] = useState(false)
   const [subiendoLogo, setSubiendoLogo] = useState(false)
@@ -572,7 +573,8 @@ export default function Configuracion() {
         banco: perfil.banco.trim() || null,
         tipoCuenta: perfil.tipoCuenta.trim() || null,
         numeroCuenta: perfil.numeroCuenta.trim() || null,
-        cotizacionValidez: Number(perfil.cotizacionValidez) || 15
+        cotizacionValidez: Number(perfil.cotizacionValidez) || 15,
+        cotizacionDesde: Math.max(1, Number(perfil.cotizacionDesde) || 1)
       })
       // Actualizar sesión local para que sidebar refleje cambios de inmediato
       saveSession({
@@ -892,6 +894,17 @@ export default function Configuracion() {
                   onChange={e => setPerfil(prev => ({ ...prev, cotizacionValidez: e.target.value }))}
                   placeholder="15"
                 />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-ink-muted">Partir correlativo desde</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={perfil.cotizacionDesde}
+                  onChange={e => setPerfil(prev => ({ ...prev, cotizacionDesde: e.target.value }))}
+                  placeholder="1"
+                />
+                <p className="text-[11px] text-ink-soft">La próxima cotización sin número será: Nº{Math.max(1, Number(perfil.cotizacionDesde) || 1)}</p>
               </div>
             </div>
           </div>

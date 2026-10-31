@@ -19,7 +19,7 @@ const updateTenant = async (req, res) => {
     nombre, telefono, direccion, email, logoUrl, inspeccionActiva,
     recordatorioActivo, recordatorioHora, recordatorioDias,
     categoria, colorPrimario,
-    rut, banco, tipoCuenta, numeroCuenta, cotizacionValidez
+    rut, banco, tipoCuenta, numeroCuenta, cotizacionValidez, cotizacionDesde
   } = req.body
   const tenantId = req.user.tenantId
   try {
@@ -41,6 +41,7 @@ const updateTenant = async (req, res) => {
     if (tipoCuenta       !== undefined) data.tipoCuenta       = tipoCuenta || null
     if (numeroCuenta     !== undefined) data.numeroCuenta     = numeroCuenta || null
     if (cotizacionValidez !== undefined) data.cotizacionValidez = Number(cotizacionValidez) || 15
+    if (cotizacionDesde   !== undefined) data.cotizacionDesde   = Math.max(1, Number(cotizacionDesde) || 1)
 
     const tenant = await prisma.tenant.update({
       where: { id: tenantId },

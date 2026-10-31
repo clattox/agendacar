@@ -30,6 +30,7 @@ model Tenant {
   tipoCuenta         String?
   numeroCuenta       String?
   cotizacionValidez  Int        @default(15) // días de validez de cotización
+  cotizacionDesde    Int        @default(1)  // número desde donde parte el correlativo
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]
