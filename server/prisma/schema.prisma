@@ -196,6 +196,7 @@ model ItemCierre {
   cierreId    Int
   cierre      CierreAtencion @relation(fields: [cierreId], references: [id], onDelete: Cascade)
   descripcion String
+  cantidad    Int            @default(1)
   valor       Float          @default(0)
 }
 

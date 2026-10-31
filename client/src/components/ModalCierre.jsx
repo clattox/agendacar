@@ -15,6 +15,7 @@ const formatCLP = (v) =>
 // ── Fila de ítem editable ─────────────────────────────────────────────────────
 
 function FilaItem({ item, onChange, onEliminar }) {
+  const lineaTotal = (item.cantidad || 1) * (parseFloat(item.valor) || 0)
   return (
     <div className="flex gap-2 items-center">
       <input
@@ -26,12 +27,24 @@ function FilaItem({ item, onChange, onEliminar }) {
       />
       <input
         type="number"
-        placeholder="Valor"
+        placeholder="1"
+        min="1"
+        value={item.cantidad ?? 1}
+        onChange={e => onChange({ ...item, cantidad: parseInt(e.target.value) || 1 })}
+        className="w-14 rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-2 py-2 text-sm text-center placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
+        title="Cantidad"
+      />
+      <input
+        type="number"
+        placeholder="Precio unit."
         min="0"
         value={item.valor === 0 && item._empty ? '' : item.valor}
         onChange={e => onChange({ ...item, valor: parseFloat(e.target.value) || 0, _empty: !e.target.value })}
-        className="w-32 rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-2 text-sm text-right placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
+        className="w-28 rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-2 text-sm text-right placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
       />
+      <span className="w-24 text-right text-sm text-gray-300 font-medium shrink-0">
+        {formatCLP(lineaTotal)}
+      </span>
       <button
         onClick={onEliminar}
         className="text-gray-500 hover:text-red-400 transition-colors p-1"
@@ -77,7 +90,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   const eliminarItem = (id) =>
     setItems(prev => prev.filter(i => i._id !== id))
 
-  const total = items.reduce((s, i) => s + (parseFloat(i.valor) || 0), 0)
+  const total = items.reduce((s, i) => s + (i.cantidad || 1) * (parseFloat(i.valor) || 0), 0)
 
   const handleImportarCotizacion = async () => {
     setImportando(true)
@@ -93,8 +106,8 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
         .map(i => ({
           _id: nextId(),
           descripcion: i.descripcion,
-          // cantidad × valor unitario → valor total por línea
-          valor: (i.cantidad ?? 1) * (i.valor ?? 0),
+          cantidad: i.cantidad ?? 1,
+          valor: i.valor ?? 0,
           _empty: false
         }))
       setItems(itemsImportados.length
@@ -116,7 +129,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
     try {
       await guardarCierre(reserva.id, {
         notas: notas.trim() || null,
-        items: itemsValidos.map(({ descripcion, valor }) => ({ descripcion, valor }))
+        items: itemsValidos.map(({ descripcion, cantidad, valor }) => ({ descripcion, cantidad: cantidad || 1, valor }))
       })
       onGuardado()
     } catch (err) {
@@ -198,10 +211,10 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
 
   ${itemsValidos.length > 0 ? `
   <table>
-    <thead><tr><th>Descripción</th><th style="text-align:right">Valor</th></tr></thead>
+    <thead><tr><th>Descripción</th><th style="text-align:center">Cant.</th><th style="text-align:right">P. Unit.</th><th style="text-align:right">Total</th></tr></thead>
     <tbody>
-      ${itemsValidos.map(i => `<tr><td>${i.descripcion}</td><td>${formatCLP(i.valor)}</td></tr>`).join('')}
-      <tr class="total-row"><td>Total</td><td>${formatCLP(itemsValidos.reduce((s, i) => s + (i.valor || 0), 0))}</td></tr>
+      ${itemsValidos.map(i => `<tr><td>${i.descripcion}</td><td style="text-align:center">${i.cantidad || 1}</td><td style="text-align:right">${formatCLP(i.valor)}</td><td>${formatCLP((i.cantidad || 1) * (i.valor || 0))}</td></tr>`).join('')}
+      <tr class="total-row"><td colspan="3">Total</td><td>${formatCLP(itemsValidos.reduce((s, i) => s + (i.cantidad || 1) * (i.valor || 0), 0))}</td></tr>
     </tbody>
   </table>` : '<p style="color:#888;margin-bottom:16px">Sin ítems registrados.</p>'}
 

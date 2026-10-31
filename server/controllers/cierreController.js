@@ -70,6 +70,7 @@ const upsertCierre = async (req, res) => {
               .filter(i => i.descripcion?.trim())
               .map(i => ({
                 descripcion: String(i.descripcion).trim(),
+                cantidad: parseInt(i.cantidad) || 1,
                 valor: parseFloat(i.valor) || 0
               }))
           }
