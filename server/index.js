@@ -43,6 +43,7 @@ app.use('/api/cotizaciones', require('./routes/cotizaciones'))
 app.use('/api/caja', require('./routes/caja'))
 app.use('/api/recordatorios', require('./routes/recordatorios'))
 app.use('/api/clientes', require('./routes/clientes'))
+app.use('/api/egresos', require('./routes/egresos'))
 
 // Health check
 app.get('/api/health', (req, res) => {

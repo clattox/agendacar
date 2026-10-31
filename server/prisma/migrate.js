@@ -272,6 +272,19 @@ async function main () {
   await prisma.$executeRawUnsafe(`ALTER TABLE "ItemCierre" ADD COLUMN IF NOT EXISTS "cantidad" INTEGER NOT NULL DEFAULT 1`)
   await prisma.$executeRawUnsafe(`ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "cotizacionDesde" INTEGER NOT NULL DEFAULT 1`)
 
+  // ── Migración: egresos ───────────────────────────────────────────────────────
+  console.log('[migrate] egresos...')
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Egreso" (
+      "id"          SERIAL PRIMARY KEY,
+      "tenantId"    INTEGER NOT NULL REFERENCES "Tenant"("id") ON DELETE CASCADE,
+      "fecha"       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      "descripcion" TEXT NOT NULL,
+      "monto"       DOUBLE PRECISION NOT NULL,
+      "createdAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
   // ── Migración: categoria y color por taller ──────────────────────────────────
   console.log('[migrate] categoria_color_tenant...')
   await prisma.$executeRawUnsafe(`

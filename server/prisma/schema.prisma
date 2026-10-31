@@ -42,6 +42,7 @@ model Tenant {
   slots        SlotDisponible[]
   trabajadores Trabajador[]
   catalogoVehiculos CatalogoVehiculo[]
+  egresos           Egreso[]
 }
 
 
@@ -234,4 +235,14 @@ model CatalogoVehiculo {
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([marca, modelo, tenantId])
+}
+
+model Egreso {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fecha       DateTime @default(now())
+  descripcion String
+  monto       Float
+  createdAt   DateTime @default(now())
 }
