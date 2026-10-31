@@ -17,7 +17,9 @@ const listarClientes = async (req, res) => {
       where: { tenantId },
       include: {
         vehiculo: { select: { patente: true, marca: true, modelo: true, anio: true } },
-        servicio: { select: { nombre: true } }
+        servicio: { select: { nombre: true } },
+        cotizacion: { select: { id: true, numero: true } },
+        cierre:     { select: { id: true } }
       },
       orderBy: { fecha: 'desc' }
     })
@@ -71,7 +73,10 @@ const listarClientes = async (req, res) => {
         fecha: r.fecha,
         estado: r.estado,
         servicio: r.servicio?.nombre || '—',
-        patente: r.patente
+        patente: r.patente,
+        tieneCotizacion: !!r.cotizacion,
+        numeroCotizacion: r.cotizacion?.numero || null,
+        tieneCierre: !!r.cierre
       })
       cliente.totalVisitas++
     }

@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Car, ChevronDown, ChevronUp, Clock, Edit2,
-  Mail, Phone, Search, UserRound, Users, X, Check, Loader2
+  Car, ChevronDown, ChevronUp, Clock, Edit2, FileText,
+  Mail, Phone, Printer, Search, UserRound, Users, X, Check, Loader2
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { listarClientes, actualizarCliente } from '../../services/clientesService'
+import { getCotizacion, enviarEmailCotizacion } from '../../services/cotizacionService'
+import { getCierre } from '../../services/cierreService'
+import { getUsuario } from '../../lib/auth'
 
 // ── Utilidades ────────────────────────────────────────────────────────────────
 
@@ -13,6 +16,113 @@ const formatFecha = (iso) => {
   return new Date(iso).toLocaleDateString('es-CL', {
     day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC'
   })
+}
+
+const formatCLP = (v) =>
+  new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(v || 0)
+
+const imprimirCotizacion = async (reservaId) => {
+  try {
+    const cot = await getCotizacion(reservaId)
+    const tenant = getUsuario()?.tenant
+    const ventana = window.open('', '_blank', 'width=800,height=600')
+    if (!ventana) return
+    const items = (cot.items || []).filter(i => i.descripcion?.trim())
+    const subtotal = items.reduce((s, i) => s + (i.cantidad || 1) * (i.valor || 0), 0)
+    const iva = cot.incluyeIva ? Math.round(subtotal * 0.19) : 0
+    const total = subtotal + iva
+    ventana.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Cotización Nº${cot.numero || '—'}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;color:#111}
+.header{background:#1C1F26;color:#fff;padding:24px 32px;display:flex;align-items:center;gap:16px}
+.header img{height:56px;width:auto;object-fit:contain}
+.header-text h1{font-size:18px;font-weight:700}.header-text p{font-size:11px;color:#9CA3AF;margin-top:2px}
+.header-num{margin-left:auto;text-align:right}.header-num .num{font-size:22px;font-weight:800;color:#6C8EFF}
+.header-num .fecha{font-size:11px;color:#9CA3AF;margin-top:2px}
+.body{padding:32px}
+table.info{width:100%;border-collapse:collapse;margin-bottom:24px}
+table.info td{padding:5px 8px;font-size:12px;border:1px solid #e5e7eb}
+table.info td:first-child{background:#f9fafb;font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;width:130px}
+table.items{width:100%;border-collapse:collapse;margin-bottom:16px}
+table.items th{background:#f0f0f0;padding:8px 10px;font-size:11px;text-transform:uppercase;color:#555;text-align:left}
+table.items td{padding:8px 10px;border-bottom:1px solid #eee}
+table.items td:nth-child(2),table.items td:nth-child(3),table.items td:nth-child(4){text-align:right}
+.totals{display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-bottom:24px}
+.totals .row{display:flex;gap:48px;font-size:13px}
+.totals .row.final{font-weight:700;font-size:16px;border-top:2px solid #111;padding-top:6px;margin-top:2px}
+.totals .lbl{color:#555}.totals .val{min-width:80px;text-align:right}
+.footer{font-size:11px;color:#999;margin-top:32px;display:flex;justify-content:space-between}
+@media print{body{padding:0}}</style></head><body>
+<div class="header">
+  ${tenant?.logoUrl ? `<img src="${tenant.logoUrl}" alt="${tenant.nombre}">` : ''}
+  <div class="header-text"><h1>${tenant?.nombre || 'Taller'}</h1>${tenant?.rut ? `<p>${tenant.rut}</p>` : ''}${tenant?.direccion ? `<p>${tenant.direccion}</p>` : ''}</div>
+  <div class="header-num"><div class="num">COTIZACIÓN Nº${cot.numero || '—'}</div><div class="fecha">${new Date(cot.createdAt || Date.now()).toLocaleDateString('es-CL')}</div></div>
+</div>
+<div class="body">
+<table class="info">
+  ${cot.clienteRut ? `<tr><td>RUT Cliente</td><td>${cot.clienteRut}</td></tr>` : ''}
+  ${cot.clienteDireccion ? `<tr><td>Dirección</td><td>${cot.clienteDireccion}${cot.clienteComuna ? ', ' + cot.clienteComuna : ''}</td></tr>` : ''}
+  <tr><td>Notas</td><td>${cot.notas || '—'}</td></tr>
+</table>
+${items.length ? `<table class="items"><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Total</th></tr></thead><tbody>
+${items.map(i => `<tr><td>${i.descripcion}</td><td>${i.cantidad||1}</td><td>${formatCLP(i.valor)}</td><td>${formatCLP((i.cantidad||1)*(i.valor||0))}</td></tr>`).join('')}
+</tbody></table>` : ''}
+<div class="totals">
+  ${cot.incluyeIva ? `<div class="row"><span class="lbl">Subtotal</span><span class="val">${formatCLP(subtotal)}</span></div>
+  <div class="row"><span class="lbl">IVA 19%</span><span class="val">${formatCLP(iva)}</span></div>` : ''}
+  <div class="row final"><span class="lbl">Total</span><span class="val">${formatCLP(total)}</span></div>
+</div>
+<div class="footer"><span>${tenant?.nombre || ''}</span><span>Impreso: ${new Date().toLocaleString('es-CL')}</span></div>
+</div>
+<script>window.onload=()=>window.print()</script></body></html>`)
+    ventana.document.close()
+  } catch { alert('No se pudo cargar la cotización.') }
+}
+
+const imprimirCierre = async (reserva) => {
+  try {
+    const cierre = await getCierre(reserva.id)
+    const tenant = getUsuario()?.tenant
+    const ventana = window.open('', '_blank', 'width=800,height=600')
+    if (!ventana) return
+    const items = (cierre.items || []).filter(i => i.descripcion?.trim())
+    const subtotal = items.reduce((s, i) => s + (i.cantidad || 1) * (i.valor || 0), 0)
+    ventana.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Cierre de Atención</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;color:#111;padding:40px}
+.header{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.header img{height:52px;width:auto;object-fit:contain}
+.header-text h1{font-size:20px}.header-text .sub{color:#555;font-size:12px;margin-top:2px}
+hr{border:none;border-top:1px solid #ddd;margin:16px 0 20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-bottom:24px}
+.lbl{color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.val{font-weight:600;font-size:13px}
+table{width:100%;border-collapse:collapse;margin-bottom:16px}
+th{background:#f0f0f0;text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;color:#555}
+td{padding:8px 10px;border-bottom:1px solid #eee}
+td:not(:first-child){text-align:right;font-weight:600}
+.total-row td{font-size:15px;font-weight:700;border-top:2px solid #111;border-bottom:none}
+.notas{background:#f9f9f9;border-left:3px solid #ccc;padding:10px 14px;margin-bottom:24px;font-size:12px;color:#444}
+.footer{margin-top:40px;display:flex;justify-content:space-between;font-size:11px;color:#999}
+@media print{body{padding:20px}}</style></head><body>
+<div class="header">${tenant?.logoUrl ? `<img src="${tenant.logoUrl}" alt="${tenant.nombre}">` : ''}
+<div class="header-text"><h1>${tenant?.nombre || 'Taller'}</h1>
+<div class="sub">Resumen de Atención — ${new Date(reserva.fecha).toLocaleDateString('es-CL')}</div></div></div>
+<hr>
+<div class="grid">
+  <div><div class="lbl">Cliente</div><div class="val">${reserva.nombre || '—'}</div></div>
+  <div><div class="lbl">Patente</div><div class="val">${reserva.patente || '—'}</div></div>
+  <div><div class="lbl">Servicio</div><div class="val">${reserva.servicio || '—'}</div></div>
+</div>
+${items.length ? `<table><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Total</th></tr></thead><tbody>
+${items.map(i=>`<tr><td>${i.descripcion}</td><td>${i.cantidad||1}</td><td>${formatCLP(i.valor)}</td><td>${formatCLP((i.cantidad||1)*(i.valor||0))}</td></tr>`).join('')}
+<tr class="total-row"><td colspan="3">Total</td><td>${formatCLP(subtotal)}</td></tr>
+</tbody></table>` : '<p style="color:#888;margin-bottom:16px">Sin ítems.</p>'}
+${cierre.notas ? `<div class="notas"><strong>Observaciones:</strong> ${cierre.notas}</div>` : ''}
+<div class="footer"><span>${tenant?.nombre||''}</span><span>Impreso: ${new Date().toLocaleString('es-CL')}</span></div>
+<script>window.onload=()=>window.print()</script></body></html>`)
+    ventana.document.close()
+  } catch { alert('No se pudo cargar el cierre de atención.') }
 }
 
 const ESTADO_BADGE = {
@@ -177,9 +287,40 @@ function TarjetaCliente({ cliente, onActualizado }) {
                   <span className="font-mono font-semibold text-ink">{r.patente}</span>
                   <span className="text-ink">{r.servicio}</span>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${ESTADO_BADGE[r.estado] || 'bg-graphite-100 text-ink-muted'}`}>
-                  {r.estado}
-                </span>
+                <div className="flex items-center gap-2">
+                  {r.tieneCotizacion && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => imprimirCotizacion(r.id)}
+                        className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-accent-600 hover:bg-accent-50 transition-colors"
+                        title={`Reimprimir cotización${r.numeroCotizacion ? ' Nº' + r.numeroCotizacion : ''}`}
+                      >
+                        <FileText size={11} />
+                        Cotiz.{r.numeroCotizacion ? ` #${r.numeroCotizacion}` : ''}
+                      </button>
+                      <button
+                        onClick={() => enviarEmailCotizacion(r.id).then(() => alert('Email enviado')).catch(() => alert('No se pudo enviar el email'))}
+                        className="rounded p-1 text-ink-muted hover:text-accent-600 hover:bg-accent-50 transition-colors"
+                        title="Reenviar cotización por email"
+                      >
+                        <Mail size={11} />
+                      </button>
+                    </div>
+                  )}
+                  {r.tieneCierre && (
+                    <button
+                      onClick={() => imprimirCierre(r)}
+                      className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-green-700 hover:bg-green-50 transition-colors"
+                      title="Reimprimir cierre de atención"
+                    >
+                      <Printer size={11} />
+                      Cierre
+                    </button>
+                  )}
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${ESTADO_BADGE[r.estado] || 'bg-graphite-100 text-ink-muted'}`}>
+                    {r.estado}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
