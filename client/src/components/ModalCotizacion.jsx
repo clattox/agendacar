@@ -358,7 +358,8 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
 
   <div class="terminos">
     <strong>Términos y condiciones:</strong><br>
-    COTIZACIÓN VÁLIDA POR ${validez} DÍAS CORRIDOS DESDE LA FECHA DE EMISIÓN
+    COTIZACIÓN VÁLIDA POR ${validez} DÍAS CORRIDOS DESDE LA FECHA DE EMISIÓN<br>
+    <span style="font-style:italic;color:#777">Este documento es una cotización y no reemplaza una boleta o factura.</span>
   </div>
 
   <script>window.onload = () => { window.print() }</script>

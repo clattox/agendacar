@@ -175,7 +175,9 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
     td:last-child { text-align: right; font-weight: 600; }
     .total-row td { font-size: 15px; font-weight: 700; border-top: 2px solid #111; border-bottom: none; }
     .notas { background: #f9f9f9; border-left: 3px solid #ccc; padding: 10px 14px; margin-bottom: 24px; font-size: 12px; color: #444; }
-    .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; color: #999; }
+    .footer { margin-top: 40px; font-size: 11px; color: #999; }
+    .footer-disclaimer { text-align: center; margin-bottom: 10px; font-style: italic; color: #aaa; }
+    .footer-meta { display: flex; justify-content: space-between; }
     @media print { body { padding: 20px; } }
   </style>
 </head>
@@ -227,8 +229,11 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   ${notas.trim() ? `<div class="notas"><strong>Observaciones:</strong> ${notas.trim()}</div>` : ''}
 
   <div class="footer">
-    <span>${nombreTaller}</span>
-    <span>Impreso: ${new Date().toLocaleString('es-CL')}</span>
+    <div class="footer-disclaimer">Este documento es solo un resumen de atención y no reemplaza una boleta o factura.</div>
+    <div class="footer-meta">
+      <span>${nombreTaller}</span>
+      <span>Impreso: ${new Date().toLocaleString('es-CL')}</span>
+    </div>
   </div>
   <script>window.onload = () => { window.print() }</script>
 </body>

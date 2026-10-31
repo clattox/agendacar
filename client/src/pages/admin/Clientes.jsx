@@ -51,7 +51,9 @@ table.items td:nth-child(2),table.items td:nth-child(3),table.items td:nth-child
 .totals .row{display:flex;gap:48px;font-size:13px}
 .totals .row.final{font-weight:700;font-size:16px;border-top:2px solid #111;padding-top:6px;margin-top:2px}
 .totals .lbl{color:#555}.totals .val{min-width:80px;text-align:right}
-.footer{font-size:11px;color:#999;margin-top:32px;display:flex;justify-content:space-between}
+.footer{font-size:11px;color:#999;margin-top:32px}
+.footer-disclaimer{text-align:center;margin-bottom:8px;font-style:italic;color:#aaa}
+.footer-meta{display:flex;justify-content:space-between}
 @media print{body{padding:0}}</style></head><body>
 <div class="header">
   ${tenant?.logoUrl ? `<img src="${tenant.logoUrl}" alt="${tenant.nombre}">` : ''}
@@ -72,7 +74,7 @@ ${items.map(i => `<tr><td>${i.descripcion}</td><td>${i.cantidad||1}</td><td>${fo
   <div class="row"><span class="lbl">IVA 19%</span><span class="val">${formatCLP(iva)}</span></div>` : ''}
   <div class="row final"><span class="lbl">Total</span><span class="val">${formatCLP(total)}</span></div>
 </div>
-<div class="footer"><span>${tenant?.nombre || ''}</span><span>Impreso: ${new Date().toLocaleString('es-CL')}</span></div>
+<div class="footer"><div class="footer-disclaimer">Este documento es una cotización y no reemplaza una boleta o factura.</div><div class="footer-meta"><span>${tenant?.nombre || ''}</span><span>Impreso: ${new Date().toLocaleString('es-CL')}</span></div></div>
 </div>
 <script>window.onload=()=>window.print()</script></body></html>`)
     ventana.document.close()
@@ -103,7 +105,9 @@ td{padding:8px 10px;border-bottom:1px solid #eee}
 td:not(:first-child){text-align:right;font-weight:600}
 .total-row td{font-size:15px;font-weight:700;border-top:2px solid #111;border-bottom:none}
 .notas{background:#f9f9f9;border-left:3px solid #ccc;padding:10px 14px;margin-bottom:24px;font-size:12px;color:#444}
-.footer{margin-top:40px;display:flex;justify-content:space-between;font-size:11px;color:#999}
+.footer{margin-top:40px;font-size:11px;color:#999}
+.footer-disclaimer{text-align:center;margin-bottom:8px;font-style:italic;color:#aaa}
+.footer-meta{display:flex;justify-content:space-between}
 @media print{body{padding:20px}}</style></head><body>
 <div class="header">${tenant?.logoUrl ? `<img src="${tenant.logoUrl}" alt="${tenant.nombre}">` : ''}
 <div class="header-text"><h1>${tenant?.nombre || 'Taller'}</h1>
@@ -119,7 +123,7 @@ ${items.map(i=>`<tr><td>${i.descripcion}</td><td>${i.cantidad||1}</td><td>${form
 <tr class="total-row"><td colspan="3">Total</td><td>${formatCLP(subtotal)}</td></tr>
 </tbody></table>` : '<p style="color:#888;margin-bottom:16px">Sin ítems.</p>'}
 ${cierre.notas ? `<div class="notas"><strong>Observaciones:</strong> ${cierre.notas}</div>` : ''}
-<div class="footer"><span>${tenant?.nombre||''}</span><span>Impreso: ${new Date().toLocaleString('es-CL')}</span></div>
+<div class="footer"><div class="footer-disclaimer">Este documento es solo un resumen de atención y no reemplaza una boleta o factura.</div><div class="footer-meta"><span>${tenant?.nombre||''}</span><span>Impreso: ${new Date().toLocaleString('es-CL')}</span></div></div>
 <script>window.onload=()=>window.print()</script></body></html>`)
     ventana.document.close()
   } catch { alert('No se pudo cargar el cierre de atención.') }
