@@ -14,3 +14,8 @@ export async function actualizarNotasCierre(reservaId, notas) {
   const { data } = await api.patch(`/cierres/${reservaId}/notas`, { notas })
   return data
 }
+
+export async function reabrirCierre(reservaId) {
+  const { data } = await api.patch(`/cierres/${reservaId}/reabrir`)
+  return data
+}

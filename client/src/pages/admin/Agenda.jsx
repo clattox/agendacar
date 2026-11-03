@@ -53,7 +53,7 @@ import {
 } from '../../services/reservasService'
 import { actualizarVehiculo, obtenerHistorialVehiculo } from '../../services/vehiculosService'
 import { listarTrabajadores } from '../../services/trabajadorService'
-import { actualizarNotasCierre } from '../../services/cierreService'
+import { actualizarNotasCierre, reabrirCierre } from '../../services/cierreService'
 import AdminLayout from '../../components/admin/AdminLayout'
 import EstadoBadge, { ESTADOS_RESERVA } from '../../components/admin/EstadoBadge'
 import {
@@ -619,6 +619,27 @@ export default function Agenda() {
                   onClick={() => navigate(`/admin/inspeccion/${detalle.id}`)}
                 >
                   {detalle.estado === 'inspeccionada' ? 'Ver inspección' : 'Inspeccionar'}
+                </Button>
+              )}
+              {detalle.estado === 'atendida' && (
+                <Button
+                  variant="ghost"
+                  leftIcon={RefreshCw}
+                  onClick={async () => {
+                    try {
+                      await reabrirCierre(detalle.id)
+                      await cargar()
+                      const actualizada = { ...detalle, estado: 'confirmada' }
+                      setDetalle(actualizada)
+                      setReservaACerrar(actualizada)
+                      setDetalle(null)
+                    } catch {
+                      // silencioso, el usuario puede reintentar
+                    }
+                  }}
+                  disabled={actualizando !== null || eliminando}
+                >
+                  Reabrir atención
                 </Button>
               )}
               {(detalle.estado === 'confirmada' || detalle.estado === 'inspeccionada') && (

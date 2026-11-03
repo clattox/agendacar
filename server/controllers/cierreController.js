@@ -127,4 +127,37 @@ const actualizarNotasCierre = async (req, res) => {
   }
 }
 
-module.exports = { getCierre, upsertCierre, actualizarNotasCierre }
+/**
+ * PATCH /api/cierres/:reservaId/reabrir
+ * Devuelve la reserva a estado 'confirmada' para poder editar el cierre.
+ * El cierre existente se mantiene y se sobrescribirá al guardar de nuevo.
+ */
+const reabrirCierre = async (req, res) => {
+  const tenantId = req.usuario?.tenantId
+  if (!tenantId) return res.status(401).json({ error: 'Sin tenant' })
+
+  const reservaId = parseInt(req.params.reservaId, 10)
+  if (!reservaId) return res.status(400).json({ error: 'ID inválido' })
+
+  try {
+    const reserva = await prisma.reserva.findFirst({
+      where: { id: reservaId, tenantId }
+    })
+    if (!reserva) return res.status(404).json({ error: 'Reserva no encontrada' })
+    if (reserva.estado !== 'atendida') {
+      return res.status(400).json({ error: 'La reserva no está en estado atendida' })
+    }
+
+    const actualizada = await prisma.reserva.update({
+      where: { id: reservaId },
+      data: { estado: 'confirmada' }
+    })
+
+    res.json(actualizada)
+  } catch (error) {
+    console.error('[cierreController] reabrirCierre:', error?.message)
+    res.status(500).json({ error: 'Error al reabrir cierre' })
+  }
+}
+
+module.exports = { getCierre, upsertCierre, actualizarNotasCierre, reabrirCierre }

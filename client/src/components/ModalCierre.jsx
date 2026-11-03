@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ClipboardCopy, Plus, Printer, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
 import Dialog from './ui/Dialog'
-import { guardarCierre } from '../services/cierreService'
+import { getCierre, guardarCierre } from '../services/cierreService'
 import { getCotizacion } from '../services/cotizacionService'
 import { getApiErrorMessage } from '../lib/errors'
 import { getUsuario } from '../lib/auth'
@@ -72,15 +72,27 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
 
   const tenant = getUsuario()?.tenant
 
-  // Reset al abrir
+  // Al abrir: cargar cierre existente si hay, o empezar en blanco
   useEffect(() => {
-    if (open) {
-      setItems([{ _id: nextId(), descripcion: '', valor: 0, _empty: true }])
-      setNotas('')
-      setIncluyeIva(true)
-      setError('')
-      setTimeout(() => inputRef.current?.focus(), 80)
-    }
+    if (!open) return
+    setError('')
+    getCierre(reserva.id)
+      .then(cierre => {
+        if (cierre?.items?.length) {
+          setItems(cierre.items.map(i => ({ _id: nextId(), descripcion: i.descripcion || '', cantidad: i.cantidad ?? 1, valor: i.valor ?? 0, _empty: false })))
+        } else {
+          setItems([{ _id: nextId(), descripcion: '', cantidad: 1, valor: 0, _empty: true }])
+        }
+        setNotas(cierre?.notas || '')
+        setIncluyeIva(true) // siempre IVA por defecto al abrir
+      })
+      .catch(() => {
+        // Sin cierre previo — empezar en blanco
+        setItems([{ _id: nextId(), descripcion: '', cantidad: 1, valor: 0, _empty: true }])
+        setNotas('')
+        setIncluyeIva(true)
+      })
+      .finally(() => setTimeout(() => inputRef.current?.focus(), 80))
   }, [open])
 
   const agregarFila = () =>
