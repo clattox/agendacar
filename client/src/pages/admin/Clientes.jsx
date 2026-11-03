@@ -21,62 +21,158 @@ const formatFecha = (iso) => {
 const formatCLP = (v) =>
   new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(v || 0)
 
-const imprimirCotizacion = async (reservaId) => {
+const imprimirCotizacion = async (reservaId, reserva = {}) => {
   try {
     const cot = await getCotizacion(reservaId)
     const tenant = getUsuario()?.tenant
-    const ventana = window.open('', '_blank', 'width=800,height=600')
+    const ventana = window.open('', '_blank', 'width=850,height=700')
     if (!ventana) return
+
     const items = (cot.items || []).filter(i => i.descripcion?.trim())
     const subtotal = items.reduce((s, i) => s + (i.cantidad || 1) * (i.valor || 0), 0)
     const iva = cot.incluyeIva ? Math.round(subtotal * 0.19) : 0
     const total = subtotal + iva
-    ventana.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>Cotización Nº${cot.numero || '—'}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;color:#111}
-.header{background:#1C1F26;color:#fff;padding:24px 32px;display:flex;align-items:center;gap:16px}
-.header img{height:56px;width:auto;object-fit:contain}
-.header-text h1{font-size:18px;font-weight:700}.header-text p{font-size:11px;color:#9CA3AF;margin-top:2px}
-.header-num{margin-left:auto;text-align:right}.header-num .num{font-size:22px;font-weight:800;color:#6C8EFF}
-.header-num .fecha{font-size:11px;color:#9CA3AF;margin-top:2px}
-.body{padding:32px}
-table.info{width:100%;border-collapse:collapse;margin-bottom:24px}
-table.info td{padding:5px 8px;font-size:12px;border:1px solid #e5e7eb}
-table.info td:first-child{background:#f9fafb;font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;width:130px}
-table.items{width:100%;border-collapse:collapse;margin-bottom:16px}
-table.items th{background:#f0f0f0;padding:8px 10px;font-size:11px;text-transform:uppercase;color:#555;text-align:left}
-table.items td{padding:8px 10px;border-bottom:1px solid #eee}
-table.items td:nth-child(2),table.items td:nth-child(3),table.items td:nth-child(4){text-align:right}
-.totals{display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-bottom:24px}
-.totals .row{display:flex;gap:48px;font-size:13px}
-.totals .row.final{font-weight:700;font-size:16px;border-top:2px solid #111;padding-top:6px;margin-top:2px}
-.totals .lbl{color:#555}.totals .val{min-width:80px;text-align:right}
-.footer{font-size:11px;color:#999;margin-top:32px}
-.footer-disclaimer{text-align:center;margin-bottom:8px;font-style:italic;color:#aaa}
-.footer-meta{display:flex;justify-content:space-between}
-@media print{body{padding:0}}</style></head><body>
-<div class="header">
-  ${tenant?.logoUrl ? `<img src="${tenant.logoUrl}" alt="${tenant.nombre}">` : ''}
-  <div class="header-text"><h1>${tenant?.nombre || 'Taller'}</h1>${tenant?.rut ? `<p>${tenant.rut}</p>` : ''}${tenant?.direccion ? `<p>${tenant.direccion}</p>` : ''}</div>
-  <div class="header-num"><div class="num">COTIZACIÓN Nº${cot.numero || '—'}</div><div class="fecha">${new Date(cot.createdAt || Date.now()).toLocaleDateString('es-CL')}</div></div>
-</div>
-<div class="body">
-<table class="info">
-  ${cot.clienteRut ? `<tr><td>RUT Cliente</td><td>${cot.clienteRut}</td></tr>` : ''}
-  ${cot.clienteDireccion ? `<tr><td>Dirección</td><td>${cot.clienteDireccion}${cot.clienteComuna ? ', ' + cot.clienteComuna : ''}</td></tr>` : ''}
-  <tr><td>Notas</td><td>${cot.notas || '—'}</td></tr>
-</table>
-${items.length ? `<table class="items"><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Total</th></tr></thead><tbody>
-${items.map(i => `<tr><td>${i.descripcion}</td><td>${i.cantidad||1}</td><td>${formatCLP(i.valor)}</td><td>${formatCLP((i.cantidad||1)*(i.valor||0))}</td></tr>`).join('')}
-</tbody></table>` : ''}
-<div class="totals">
-  ${cot.incluyeIva ? `<div class="row"><span class="lbl">Subtotal</span><span class="val">${formatCLP(subtotal)}</span></div>
-  <div class="row"><span class="lbl">IVA 19%</span><span class="val">${formatCLP(iva)}</span></div>` : ''}
-  <div class="row final"><span class="lbl">Total</span><span class="val">${formatCLP(total)}</span></div>
-</div>
-<div class="footer"><div class="footer-disclaimer">Este documento es una cotización y no reemplaza una boleta o factura.</div><div class="footer-meta"><span>${tenant?.nombre || ''}</span><span>Impreso: ${new Date().toLocaleString('es-CL')}</span></div></div>
-</div>
-<script>window.onload=()=>window.print()</script></body></html>`)
+    const numero = cot.numero || '—'
+    const fechaStr = new Date((cot.fechaEmision || cot.createdAt || Date.now()))
+      .toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const nombreTaller = tenant?.nombre || 'Taller'
+    const logoUrl = tenant?.logoUrl || ''
+    const validez = tenant?.cotizacionValidez || 15
+
+    const filas = items.map(i => {
+      const linTotal = (i.cantidad || 1) * (i.valor || 0)
+      return `<tr>
+        <td class="td-c">${i.cantidad || 1}</td>
+        <td class="td">${i.descripcion}</td>
+        <td class="td-r">${formatCLP(i.valor)}</td>
+        <td class="td-r">${formatCLP(linTotal)}</td>
+      </tr>`
+    }).join('')
+
+    const infoPago = [
+      tenant?.rut         ? `<tr><td class="lbl">RUT</td><td>: ${tenant.rut}</td></tr>` : '',
+      tenant?.banco       ? `<tr><td class="lbl">BANCO</td><td>: ${tenant.banco}</td></tr>` : '',
+      tenant?.tipoCuenta  ? `<tr><td class="lbl">TIPO CUENTA</td><td>: ${tenant.tipoCuenta}</td></tr>` : '',
+      tenant?.numeroCuenta ? `<tr><td class="lbl">Nº CUENTA</td><td>: ${tenant.numeroCuenta}</td></tr>` : '',
+    ].filter(Boolean).join('')
+
+    const vehiculo = [reserva.vehiculoMarca, reserva.vehiculoModelo].filter(Boolean).join(' ')
+
+    const datosCliente = `
+      <tr><td class="lbl">CLIENTE</td><td>: ${reserva.nombre || '—'}</td></tr>
+      ${cot.clienteRut ? `<tr><td class="lbl">RUT</td><td>: ${cot.clienteRut}</td></tr>` : ''}
+      ${cot.clienteDireccion ? `<tr><td class="lbl">DIRECCIÓN</td><td>: ${cot.clienteDireccion}</td></tr>` : ''}
+      ${cot.clienteComuna ? `<tr><td class="lbl">COMUNA</td><td>: ${cot.clienteComuna}</td></tr>` : ''}
+      <tr><td class="lbl">PATENTE</td><td>: ${reserva.patente || '—'}</td></tr>
+      ${vehiculo ? `<tr><td class="lbl">VEHÍCULO</td><td>: ${vehiculo}</td></tr>` : ''}
+    `
+
+    ventana.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cotización Nº${numero} — ${nombreTaller}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #111; padding: 36px 40px }
+    .header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px }
+    .header-left { display:flex; align-items:center; gap:14px }
+    .header-left img { height:56px; width:auto; object-fit:contain }
+    .taller-nombre { font-size:18px; font-weight:700; line-height:1.2 }
+    .taller-sub { font-size:11px; color:#555; margin-top:2px }
+    .titulo { text-align:center; font-size:20px; font-weight:700; letter-spacing:1px; margin:18px 0 4px }
+    .fecha-linea { text-align:right; font-size:11px; color:#555; margin-bottom:14px }
+    .bloque { border:1px solid #222; margin-bottom:14px }
+    .bloque-titulo { background:#222; color:#fff; font-size:11px; font-weight:700; padding:4px 10px; text-transform:uppercase; letter-spacing:.5px }
+    .bloque table { width:100%; border-collapse:collapse }
+    .lbl { color:#555; font-size:11px; padding:3px 10px; width:90px; white-space:nowrap }
+    td { padding:3px 10px; font-size:12px }
+    .items-table { width:100%; border-collapse:collapse; margin-bottom:14px }
+    .items-table th { background:#222; color:#fff; padding:6px 10px; font-size:11px; text-transform:uppercase; text-align:left }
+    .items-table th.r { text-align:right }
+    .td-c { padding:7px 10px; border-bottom:1px solid #eee; text-align:center; width:50px }
+    .td { padding:7px 10px; border-bottom:1px solid #eee }
+    .td-r { padding:7px 10px; border-bottom:1px solid #eee; text-align:right; white-space:nowrap }
+    .totales { float:right; width:220px; margin-bottom:16px }
+    .totales table { width:100%; border-collapse:collapse }
+    .totales td { padding:3px 6px; font-size:12px }
+    .totales td.lbl-t { color:#555; font-size:11px }
+    .totales td.val { text-align:right; font-weight:600 }
+    .total-final td { font-size:14px; font-weight:700; border-top:2px solid #111; padding-top:6px }
+    .clear { clear:both }
+    .pago { margin-bottom:14px }
+    .terminos { font-size:11px; color:#555; margin-top:6px; padding-top:10px; border-top:1px solid #eee }
+    .terminos strong { text-transform:uppercase; font-size:11px }
+    @media print { body { padding:20px 24px } @page { margin:1cm } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      ${logoUrl ? `<img src="${logoUrl}" alt="${nombreTaller}" />` : ''}
+      <div>
+        <div class="taller-nombre">${nombreTaller.toUpperCase()}</div>
+        ${tenant?.rut ? `<div class="taller-sub">${tenant.rut}</div>` : ''}
+        ${tenant?.direccion ? `<div class="taller-sub">${tenant.direccion}</div>` : ''}
+      </div>
+    </div>
+  </div>
+
+  <div class="titulo">COTIZACIÓN Nº${numero}</div>
+  <div class="fecha-linea">FECHA ${fechaStr}</div>
+
+  <div class="bloque">
+    <div class="bloque-titulo">Datos cliente</div>
+    <table>${datosCliente}</table>
+  </div>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width:50px;text-align:center">CANT.</th>
+        <th>MARCA/DESCRIPCIÓN</th>
+        <th class="r">PRECIO UNITARIO</th>
+        <th class="r">PRECIO TOTAL</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filas || '<tr><td colspan="4" style="padding:10px;color:#888;text-align:center">Sin ítems</td></tr>'}
+    </tbody>
+  </table>
+
+  <div class="totales">
+    <table>
+      ${cot.incluyeIva ? `
+      <tr><td class="lbl-t">Valor Venta</td><td class="val">${formatCLP(subtotal)}</td></tr>
+      <tr><td class="lbl-t">19% I.V.A</td><td class="val">${formatCLP(iva)}</td></tr>
+      ` : ''}
+      <tr class="total-final"><td>TOTAL${cot.incluyeIva ? ' C/IVA' : ''}</td><td class="val">${formatCLP(total)}</td></tr>
+    </table>
+  </div>
+  <div class="clear"></div>
+
+  ${cot.notas ? `<p style="border-left:3px solid #ccc;padding:6px 12px;margin-bottom:14px;font-size:11px;color:#444"><strong>Observaciones:</strong> ${cot.notas}</p>` : ''}
+
+  ${cot.linkEvidencia ? `<div style="border-left:3px solid #1D6BE8;background:#EBF1FD;padding:6px 12px;margin-bottom:14px"><p style="font-size:11px;color:#1A3A6B;margin:0 0 3px">📷 <strong>Fotos del vehículo:</strong> <a href="${cot.linkEvidencia}" style="color:#1D6BE8;word-break:break-all">${cot.linkEvidencia}</a></p><p style="font-size:10px;color:#5577AA;margin:0;font-style:italic">Las imágenes estarán disponibles por 3 meses desde la fecha de emisión de esta cotización.</p></div>` : ''}
+
+  ${infoPago ? `
+  <div class="pago bloque">
+    <div class="bloque-titulo">Información de pago</div>
+    <table>
+      <tr><td class="lbl">NOMBRE</td><td>: ${nombreTaller}</td></tr>
+      ${infoPago}
+    </table>
+  </div>` : ''}
+
+  <div class="terminos">
+    <strong>Términos y condiciones:</strong><br>
+    COTIZACIÓN VÁLIDA POR ${validez} DÍAS CORRIDOS DESDE LA FECHA DE EMISIÓN<br>
+    <span style="font-style:italic;color:#777">Este documento es una cotización y no reemplaza una boleta o factura.</span>
+  </div>
+
+  <script>window.onload = () => { window.print() }</script>
+</body>
+</html>`)
     ventana.document.close()
   } catch { alert('No se pudo cargar la cotización.') }
 }
@@ -301,7 +397,7 @@ function TarjetaCliente({ cliente, onActualizado }) {
                   {r.tieneCotizacion && (
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => imprimirCotizacion(r.id)}
+                        onClick={() => imprimirCotizacion(r.id, r)}
                         className="flex items-center gap-1 rounded px-1.5 py-1 text-[10px] text-accent-600 hover:bg-accent-50 transition-colors"
                         title={`Reimprimir cotización${r.numeroCotizacion ? ' Nº' + r.numeroCotizacion : ''}`}
                       >
