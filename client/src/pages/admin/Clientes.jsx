@@ -117,9 +117,11 @@ td:not(:first-child){text-align:right;font-weight:600}
 <hr>
 <div class="grid">
   <div><div class="lbl">Cliente</div><div class="val">${reserva.nombre || '—'}</div></div>
+  <div><div class="lbl">Teléfono</div><div class="val">${reserva.telefono || '—'}</div></div>
+  ${(reserva.vehiculoMarca || reserva.vehiculoModelo) ? `<div><div class="lbl">Vehículo</div><div class="val">${[reserva.vehiculoMarca, reserva.vehiculoModelo].filter(Boolean).join(' ')}</div></div>` : ''}
   <div><div class="lbl">Patente</div><div class="val">${reserva.patente || '—'}</div></div>
-  ${reserva.telefono ? `<div><div class="lbl">Teléfono</div><div class="val">${reserva.telefono}</div></div>` : ''}
   <div><div class="lbl">Servicio</div><div class="val">${reserva.servicio || '—'}</div></div>
+  ${reserva.kilometraje ? `<div><div class="lbl">Kilometraje</div><div class="val">${reserva.kilometraje.toLocaleString('es-CL')} km</div></div>` : ''}
 </div>
 ${items.length ? `<table><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Total</th></tr></thead><tbody>
 ${items.map(i=>`<tr><td>${i.descripcion}</td><td>${i.cantidad||1}</td><td>${formatCLP(i.valor)}</td><td>${formatCLP((i.cantidad||1)*(i.valor||0))}</td></tr>`).join('')}

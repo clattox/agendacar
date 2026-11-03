@@ -76,6 +76,9 @@ const listarClientes = async (req, res) => {
         telefono: r.telefono,
         servicio: r.servicio?.nombre || '—',
         patente: r.patente,
+        kilometraje: r.kilometraje || null,
+        vehiculoMarca: r.vehiculo?.marca || null,
+        vehiculoModelo: r.vehiculo?.modelo || null,
         tieneCotizacion: !!r.cotizacion,
         numeroCotizacion: r.cotizacion?.numero || null,
         tieneCierre: !!r.cierre
