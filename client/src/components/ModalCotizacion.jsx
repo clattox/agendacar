@@ -88,6 +88,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
   const [clienteRut, setClienteRut] = useState('')
   const [clienteDireccion, setClienteDireccion] = useState('')
   const [clienteComuna, setClienteComuna] = useState('')
+  const [fechaEmision, setFechaEmision] = useState(() => new Date().toISOString().slice(0, 10))
   const [guardando, setGuardando] = useState(false)
   const [enviandoEmail, setEnviandoEmail] = useState(false)
   const [error, setError] = useState('')
@@ -120,6 +121,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
         setClienteRut(cot?.clienteRut || '')
         setClienteDireccion(cot?.clienteDireccion || '')
         setClienteComuna(cot?.clienteComuna || '')
+        setFechaEmision(cot?.fechaEmision ? cot.fechaEmision.slice(0, 10) : new Date().toISOString().slice(0, 10))
       })
       .catch(() => {
         // No existe cotización previa — empezar en blanco
@@ -129,6 +131,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
         setClienteRut('')
         setClienteDireccion('')
         setClienteComuna('')
+        setFechaEmision(new Date().toISOString().slice(0, 10))
       })
       .finally(() => setTimeout(() => inputRef.current?.focus(), 80))
   }, [open])
@@ -151,6 +154,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
   const buildPayload = () => ({
     notas: notas.trim() || null,
     incluyeIva,
+    fechaEmision: fechaEmision || new Date().toISOString().slice(0, 10),
     clienteRut: clienteRut.trim() || null,
     clienteDireccion: clienteDireccion.trim() || null,
     clienteComuna: clienteComuna.trim() || null,
@@ -228,8 +232,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
     if (!ventana) return
 
     const numero = cotizacionGuardada?.numero || '—'
-    const fecha = new Date()
-    const fechaStr = fecha.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const fechaStr = new Date(fechaEmision + 'T12:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
     const validez = tenant?.cotizacionValidez || 15
     const nombreTaller = tenant?.nombre || 'Taller'
     const logoUrl = tenant?.logoUrl || ''
@@ -439,6 +442,17 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
         </div>
 
         {/* Datos empresa (opcionales) */}
+        {/* Fecha de emisión */}
+        <div className="flex items-center gap-3">
+          <label className="text-xs text-gray-400 whitespace-nowrap">Fecha de emisión</label>
+          <input
+            type="date"
+            value={fechaEmision}
+            onChange={e => setFechaEmision(e.target.value)}
+            className="rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
+          />
+        </div>
+
         <details className="group">
           <summary className="cursor-pointer text-xs text-[#6C8EFF] hover:text-[#8BA3FF] select-none list-none flex items-center gap-1">
             <Plus size={13} className="group-open:rotate-45 transition-transform" />

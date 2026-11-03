@@ -307,6 +307,13 @@ async function main () {
     ADD COLUMN IF NOT EXISTS "total" DOUBLE PRECISION NOT NULL DEFAULT 0
   `)
 
+  // ── Migración: cotizacion_fecha_emision ─────────────────────────────────────
+  console.log('[migrate] cotizacion_fecha_emision...')
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Cotizacion"
+    ADD COLUMN IF NOT EXISTS "fechaEmision" TIMESTAMPTZ
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

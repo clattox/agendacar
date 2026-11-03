@@ -215,6 +215,7 @@ model Cotizacion {
   clienteDireccion String?
   clienteComuna    String?
   incluyeIva       Boolean          @default(false)
+  fechaEmision     DateTime?        // fecha de emisión editable (null = usa createdAt)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   items            ItemCotizacion[]

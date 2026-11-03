@@ -176,7 +176,7 @@ const upsertCotizacion = async (req, res) => {
   const reservaId = parseInt(req.params.reservaId, 10)
   if (!reservaId) return res.status(400).json({ error: 'ID inválido' })
 
-  const { notas: _notas, items = [], clienteRut, clienteDireccion, clienteComuna, incluyeIva } = req.body
+  const { notas: _notas, items = [], clienteRut, clienteDireccion, clienteComuna, incluyeIva, fechaEmision } = req.body
   const notas = _notas ?? ''
 
   try {
@@ -216,6 +216,7 @@ const upsertCotizacion = async (req, res) => {
           clienteDireccion: clienteDireccion?.trim() || null,
           clienteComuna: clienteComuna?.trim() || null,
           incluyeIva: Boolean(incluyeIva),
+          fechaEmision: fechaEmision ? new Date(fechaEmision) : null,
           items: {
             create: items
               .filter(i => i.descripcion?.trim())
