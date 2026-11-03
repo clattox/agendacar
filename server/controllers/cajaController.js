@@ -60,8 +60,13 @@ const getResumen = async (req, res) => {
       }
     })
 
+    const calcTotal = (cierre) => {
+      const subtotal = cierre.items.reduce((s, i) => s + (i.cantidad || 1) * (i.valor || 0), 0)
+      return cierre.incluyeIva ? Math.round(subtotal * 1.19) : subtotal
+    }
+
     const sumar = (cierres) =>
-      cierres.reduce((s, c) => s + c.items.reduce((si, i) => si + (i.valor || 0), 0), 0)
+      cierres.reduce((s, c) => s + calcTotal(c), 0)
 
     res.json({
       totalHoy: sumar(cierresHoy),
@@ -72,7 +77,8 @@ const getResumen = async (req, res) => {
         id: c.id,
         createdAt: c.createdAt,
         notas: c.notas,
-        total: c.items.reduce((s, i) => s + (i.valor || 0), 0),
+        incluyeIva: c.incluyeIva,
+        total: calcTotal(c),
         reserva: c.reserva
       }))
     })
