@@ -184,13 +184,15 @@ model DanoInspeccion {
 }
 
 model CierreAtencion {
-  id        Int          @id @default(autoincrement())
-  reservaId Int          @unique
-  reserva   Reserva      @relation(fields: [reservaId], references: [id], onDelete: Cascade)
-  tenantId  Int
-  notas     String?
-  createdAt DateTime     @default(now())
-  items     ItemCierre[]
+  id         Int          @id @default(autoincrement())
+  reservaId  Int          @unique
+  reserva    Reserva      @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  tenantId   Int
+  notas      String?
+  incluyeIva Boolean      @default(true)
+  total      Float        @default(0)
+  createdAt  DateTime     @default(now())
+  items      ItemCierre[]
 }
 
 model ItemCierre {

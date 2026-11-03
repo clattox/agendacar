@@ -40,7 +40,7 @@ const upsertCierre = async (req, res) => {
   const reservaId = parseInt(req.params.reservaId, 10)
   if (!reservaId) return res.status(400).json({ error: 'ID inválido' })
 
-  const { notas: _notas, items = [] } = req.body
+  const { notas: _notas, items = [], incluyeIva = true, total = 0 } = req.body
   const notas = _notas ?? ''
 
   try {
@@ -65,6 +65,8 @@ const upsertCierre = async (req, res) => {
           reservaId,
           tenantId,
           notas: notas.trim() || null,
+          incluyeIva: Boolean(incluyeIva),
+          total: parseFloat(total) || 0,
           items: {
             create: items
               .filter(i => i.descripcion?.trim())

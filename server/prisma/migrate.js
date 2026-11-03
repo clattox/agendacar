@@ -296,6 +296,17 @@ async function main () {
     ADD COLUMN IF NOT EXISTS "colorPrimario" TEXT NOT NULL DEFAULT '#f59e0b'
   `)
 
+  // ── Migración: cierre_iva_total ──────────────────────────────────────────────
+  console.log('[migrate] cierre_iva_total...')
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "CierreAtencion"
+    ADD COLUMN IF NOT EXISTS "incluyeIva" BOOLEAN NOT NULL DEFAULT true
+  `)
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "CierreAtencion"
+    ADD COLUMN IF NOT EXISTS "total" DOUBLE PRECISION NOT NULL DEFAULT 0
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

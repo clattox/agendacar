@@ -84,7 +84,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
           setItems([{ _id: nextId(), descripcion: '', cantidad: 1, valor: 0, _empty: true }])
         }
         setNotas(cierre?.notas || '')
-        setIncluyeIva(true) // siempre IVA por defecto al abrir
+        setIncluyeIva(cierre?.incluyeIva ?? true)
       })
       .catch(() => {
         // Sin cierre previo — empezar en blanco
@@ -145,6 +145,8 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
     try {
       await guardarCierre(reserva.id, {
         notas: notas.trim() || null,
+        incluyeIva,
+        total,
         items: itemsValidos.map(({ descripcion, cantidad, valor }) => ({ descripcion, cantidad: cantidad || 1, valor }))
       })
       onGuardado()
