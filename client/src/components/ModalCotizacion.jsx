@@ -354,7 +354,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
 
   ${notas.trim() ? `<p style="border-left:3px solid #ccc;padding:6px 12px;margin-bottom:14px;font-size:11px;color:#444"><strong>Observaciones:</strong> ${notas.trim()}</p>` : ''}
 
-  ${linkEvidencia.trim() ? `<p style="border-left:3px solid #1D6BE8;background:#EBF1FD;padding:6px 12px;margin-bottom:14px;font-size:11px;color:#1A3A6B">📷 <strong>Fotos del vehículo:</strong> <a href="${linkEvidencia.trim()}" style="color:#1D6BE8;word-break:break-all">${linkEvidencia.trim()}</a></p>` : ''}
+  ${linkEvidencia.trim() ? `<div style="border-left:3px solid #1D6BE8;background:#EBF1FD;padding:6px 12px;margin-bottom:14px"><p style="font-size:11px;color:#1A3A6B;margin:0 0 3px">📷 <strong>Fotos del vehículo:</strong> <a href="${linkEvidencia.trim()}" style="color:#1D6BE8;word-break:break-all">${linkEvidencia.trim()}</a></p><p style="font-size:10px;color:#5577AA;margin:0;font-style:italic">Las imágenes estarán disponibles por 3 meses desde la fecha de emisión de esta cotización.</p></div>` : ''}
 
   ${infoPago ? `
   <div class="pago bloque">

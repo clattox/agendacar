@@ -116,7 +116,7 @@ const htmlCotizacion = ({ reserva, cotizacion, tenant }) => {
         ${cotizacion.notas ? `<tr><td style="padding:0 32px 16px"><p style="background:#f9fafb;border-left:3px solid #d1d5db;padding:10px 14px;font-size:13px;color:#555;margin:0"><strong>Observaciones:</strong> ${cotizacion.notas}</p></td></tr>` : ''}
 
         <!-- Enlace de fotos -->
-        ${cotizacion.linkEvidencia ? `<tr><td style="padding:0 32px 16px"><p style="background:#EBF1FD;border-left:3px solid #1D6BE8;padding:10px 14px;font-size:13px;color:#1A3A6B;margin:0">📷 <strong>Fotos del vehículo:</strong> <a href="${cotizacion.linkEvidencia}" style="color:#1D6BE8;word-break:break-all">${cotizacion.linkEvidencia}</a></p></td></tr>` : ''}
+        ${cotizacion.linkEvidencia ? `<tr><td style="padding:0 32px 16px"><div style="background:#EBF1FD;border-left:3px solid #1D6BE8;padding:10px 14px;border-radius:4px"><p style="font-size:13px;color:#1A3A6B;margin:0 0 4px">📷 <strong>Fotos del vehículo:</strong> <a href="${cotizacion.linkEvidencia}" style="color:#1D6BE8;word-break:break-all">${cotizacion.linkEvidencia}</a></p><p style="font-size:11px;color:#5577AA;margin:0;font-style:italic">Las imágenes estarán disponibles por 3 meses desde la fecha de emisión de esta cotización.</p></div></td></tr>` : ''}
 
         <!-- Info de pago -->
         ${infoPago ? `
