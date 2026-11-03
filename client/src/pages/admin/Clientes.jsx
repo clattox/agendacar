@@ -61,7 +61,8 @@ const imprimirCotizacion = async (reservaId, reserva = {}) => {
     ].filter(Boolean).join('')
 
     const vehiculo = [reserva.vehiculoMarca, reserva.vehiculoModelo].filter(Boolean).join(' ')
-    const horaAgendada = reserva.fecha ? new Date(reserva.fecha).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }) : null
+    const _d = reserva.fecha ? new Date(reserva.fecha) : null
+    const horaAgendada = _d ? `${String(_d.getHours()).padStart(2,'0')}:${String(_d.getMinutes()).padStart(2,'0')}` : null
 
     const datosCliente = `
       <tr><td class="lbl">CLIENTE</td><td>: ${reserva.nombre || '—'}</td></tr>
