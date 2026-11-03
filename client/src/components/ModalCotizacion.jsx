@@ -89,6 +89,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
   const [clienteDireccion, setClienteDireccion] = useState('')
   const [clienteComuna, setClienteComuna] = useState('')
   const [fechaEmision, setFechaEmision] = useState(() => new Date().toISOString().slice(0, 10))
+  const [horaIngreso, setHoraIngreso] = useState('')
   const [linkEvidencia, setLinkEvidencia] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [enviandoEmail, setEnviandoEmail] = useState(false)
@@ -123,6 +124,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
         setClienteDireccion(cot?.clienteDireccion || '')
         setClienteComuna(cot?.clienteComuna || '')
         setFechaEmision(cot?.fechaEmision ? cot.fechaEmision.slice(0, 10) : new Date().toISOString().slice(0, 10))
+        setHoraIngreso(cot?.horaIngreso || '')
         setLinkEvidencia(cot?.linkEvidencia || '')
       })
       .catch(() => {
@@ -134,6 +136,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
         setClienteDireccion('')
         setClienteComuna('')
         setFechaEmision(new Date().toISOString().slice(0, 10))
+        setHoraIngreso('')
         setLinkEvidencia('')
       })
       .finally(() => setTimeout(() => inputRef.current?.focus(), 80))
@@ -161,6 +164,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
     clienteRut: clienteRut.trim() || null,
     clienteDireccion: clienteDireccion.trim() || null,
     clienteComuna: clienteComuna.trim() || null,
+    horaIngreso: horaIngreso.trim() || null,
     linkEvidencia: linkEvidencia.trim() || null,
     items: itemsValidos().map(({ descripcion, cantidad, valor }) => ({ descripcion, cantidad: cantidad || 1, valor }))
   })
@@ -259,6 +263,8 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
       tenant?.numeroCuenta ? `<tr><td class="lbl">Nº CUENTA</td><td>: ${tenant.numeroCuenta}</td></tr>` : '',
     ].filter(Boolean).join('')
 
+    const horaAgendada = reserva.fecha ? new Date(reserva.fecha).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }) : null
+
     const datosCliente = `
       <tr><td class="lbl">CLIENTE</td><td>: ${reserva.nombre}</td></tr>
       ${clienteRut ? `<tr><td class="lbl">RUT</td><td>: ${clienteRut}</td></tr>` : ''}
@@ -266,6 +272,8 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
       ${clienteComuna ? `<tr><td class="lbl">COMUNA</td><td>: ${clienteComuna}</td></tr>` : ''}
       <tr><td class="lbl">PATENTE</td><td>: ${reserva.patente}</td></tr>
       ${reserva.vehiculo ? `<tr><td class="lbl">VEHÍCULO</td><td>: ${[reserva.vehiculo?.marca, reserva.vehiculo?.modelo].filter(Boolean).join(' ')}</td></tr>` : ''}
+      ${horaAgendada ? `<tr><td class="lbl">H. AGENDADA</td><td>: ${horaAgendada}</td></tr>` : ''}
+      ${horaIngreso.trim() ? `<tr><td class="lbl" style="color:#b45309;font-weight:700">H. INGRESO</td><td style="font-weight:600">: ${horaIngreso.trim()}</td></tr>` : ''}
     `
 
     ventana.document.write(`<!DOCTYPE html>
@@ -448,15 +456,28 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
         </div>
 
         {/* Datos empresa (opcionales) */}
-        {/* Fecha de emisión */}
-        <div className="flex items-center gap-3">
-          <label className="text-xs text-gray-400 whitespace-nowrap">Fecha de emisión</label>
-          <input
-            type="date"
-            value={fechaEmision}
-            onChange={e => setFechaEmision(e.target.value)}
-            className="rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
-          />
+        {/* Fecha de emisión + Hora de ingreso */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-400 whitespace-nowrap">Fecha de emisión</label>
+            <input
+              type="date"
+              value={fechaEmision}
+              onChange={e => setFechaEmision(e.target.value)}
+              className="rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-400 whitespace-nowrap">Hora ingreso</label>
+            <input
+              type="time"
+              value={horaIngreso}
+              onChange={e => setHoraIngreso(e.target.value)}
+              placeholder="HH:MM"
+              className="rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6C8EFF] w-28"
+            />
+            <span className="text-xs text-gray-500">real del vehículo</span>
+          </div>
         </div>
 
         <details className="group">

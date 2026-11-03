@@ -33,7 +33,11 @@ const imprimirCotizacion = async (reservaId, reserva = {}) => {
     const iva = cot.incluyeIva ? Math.round(subtotal * 0.19) : 0
     const total = subtotal + iva
     const numero = cot.numero || '—'
-    const fechaStr = new Date((cot.fechaEmision || cot.createdAt || Date.now()))
+    // Usar slice+T12:00:00 para evitar desfase UTC-3 en fechaEmision (date-only)
+    const rawFecha = cot.fechaEmision
+      ? cot.fechaEmision.slice(0, 10) + 'T12:00:00'
+      : (cot.createdAt || null)
+    const fechaStr = new Date(rawFecha || Date.now())
       .toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
     const nombreTaller = tenant?.nombre || 'Taller'
     const logoUrl = tenant?.logoUrl || ''
@@ -57,6 +61,7 @@ const imprimirCotizacion = async (reservaId, reserva = {}) => {
     ].filter(Boolean).join('')
 
     const vehiculo = [reserva.vehiculoMarca, reserva.vehiculoModelo].filter(Boolean).join(' ')
+    const horaAgendada = reserva.fecha ? new Date(reserva.fecha).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }) : null
 
     const datosCliente = `
       <tr><td class="lbl">CLIENTE</td><td>: ${reserva.nombre || '—'}</td></tr>
@@ -65,6 +70,8 @@ const imprimirCotizacion = async (reservaId, reserva = {}) => {
       ${cot.clienteComuna ? `<tr><td class="lbl">COMUNA</td><td>: ${cot.clienteComuna}</td></tr>` : ''}
       <tr><td class="lbl">PATENTE</td><td>: ${reserva.patente || '—'}</td></tr>
       ${vehiculo ? `<tr><td class="lbl">VEHÍCULO</td><td>: ${vehiculo}</td></tr>` : ''}
+      ${horaAgendada ? `<tr><td class="lbl">H. AGENDADA</td><td>: ${horaAgendada}</td></tr>` : ''}
+      ${cot.horaIngreso ? `<tr><td class="lbl" style="color:#b45309;font-weight:700">H. INGRESO</td><td style="font-weight:600">: ${cot.horaIngreso}</td></tr>` : ''}
     `
 
     ventana.document.write(`<!DOCTYPE html>
