@@ -60,7 +60,13 @@ import {
   Skeleton
 } from '../../components/ui'
 
-const DURACIONES = [15, 20, 30, 45, 60, 90, 120]
+const DURACIONES = [15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480]
+const labelDuracion = (min) => {
+  if (min < 60) return `${min} min`
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return m === 0 ? `${h} h` : `${h} h ${m} min`
+}
 
 export default function Configuracion() {
   const [servicios, setServicios] = useState([])
@@ -972,7 +978,7 @@ export default function Configuracion() {
                             className="w-24 shrink-0"
                           >
                             {DURACIONES.map(d => (
-                              <option key={d} value={d}>{d} min</option>
+                              <option key={d} value={d}>{labelDuracion(d)}</option>
                             ))}
                           </Select>
                         </div>
@@ -1066,7 +1072,7 @@ export default function Configuracion() {
                     className="sm:w-28"
                   >
                     {DURACIONES.map(duracion => (
-                      <option key={duracion} value={duracion}>{duracion} min</option>
+                      <option key={duracion} value={duracion}>{labelDuracion(duracion)}</option>
                     ))}
                   </Select>
                   <Button
