@@ -89,6 +89,8 @@ const imprimirCierre = async (reserva) => {
     if (!ventana) return
     const items = (cierre.items || []).filter(i => i.descripcion?.trim())
     const subtotal = items.reduce((s, i) => s + (i.cantidad || 1) * (i.valor || 0), 0)
+    const iva = cierre.incluyeIva ? Math.round(subtotal * 0.19) : 0
+    const total = subtotal + iva
     ventana.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
 <title>Cierre de Atención</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;color:#111;padding:40px}
@@ -121,7 +123,8 @@ td:not(:first-child){text-align:right;font-weight:600}
 </div>
 ${items.length ? `<table><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Total</th></tr></thead><tbody>
 ${items.map(i=>`<tr><td>${i.descripcion}</td><td>${i.cantidad||1}</td><td>${formatCLP(i.valor)}</td><td>${formatCLP((i.cantidad||1)*(i.valor||0))}</td></tr>`).join('')}
-<tr class="total-row"><td colspan="3">Total</td><td>${formatCLP(subtotal)}</td></tr>
+${cierre.incluyeIva ? `<tr><td colspan="3" style="text-align:right;color:#555;font-size:12px">Subtotal</td><td>${formatCLP(subtotal)}</td></tr><tr><td colspan="3" style="text-align:right;color:#555;font-size:12px">IVA 19%</td><td>${formatCLP(iva)}</td></tr>` : ''}
+<tr class="total-row"><td colspan="3">Total</td><td>${formatCLP(total)}</td></tr>
 </tbody></table>` : '<p style="color:#888;margin-bottom:16px">Sin ítems.</p>'}
 ${cierre.notas ? `<div class="notas"><strong>Observaciones:</strong> ${cierre.notas}</div>` : ''}
 <div class="footer"><div class="footer-disclaimer">Este documento es solo un resumen de atención y no reemplaza una boleta o factura.</div><div class="footer-meta"><span>${tenant?.nombre||''}</span><span>Impreso: ${new Date().toLocaleString('es-CL')}</span></div></div>
