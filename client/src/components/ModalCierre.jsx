@@ -64,7 +64,7 @@ const nextId = () => ++_itemId
 export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
   const [items, setItems] = useState([{ _id: nextId(), descripcion: '', valor: 0, _empty: true }])
   const [notas, setNotas] = useState('')
-  const [incluyeIva, setIncluyeIva] = useState(false)
+  const [incluyeIva, setIncluyeIva] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [importando, setImportando] = useState(false)
@@ -77,7 +77,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
     if (open) {
       setItems([{ _id: nextId(), descripcion: '', valor: 0, _empty: true }])
       setNotas('')
-      setIncluyeIva(false)
+      setIncluyeIva(true)
       setError('')
       setTimeout(() => inputRef.current?.focus(), 80)
     }
@@ -337,7 +337,7 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
               onChange={e => setIncluyeIva(e.target.checked)}
               className="h-4 w-4 rounded border-[#2A2D35] accent-[#6C8EFF]"
             />
-            <span className="text-sm text-gray-300">Incluir IVA (19%)</span>
+            <span className="text-sm text-gray-300">IVA 19% incluido</span>
           </label>
           <div className="bg-[#22252E] border border-[#2A2D35] rounded-xl px-5 py-3 text-right min-w-[160px]">
             {incluyeIva && (
