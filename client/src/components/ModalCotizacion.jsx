@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Mail, MessageCircle, Minus, Plus, Printer, Trash2 } from 'lucide-react'
+import { Link2, Mail, MessageCircle, Minus, Plus, Printer, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
 import Dialog from './ui/Dialog'
 import { getCotizacion, guardarCotizacion, enviarEmailCotizacion } from '../services/cotizacionService'
@@ -89,6 +89,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
   const [clienteDireccion, setClienteDireccion] = useState('')
   const [clienteComuna, setClienteComuna] = useState('')
   const [fechaEmision, setFechaEmision] = useState(() => new Date().toISOString().slice(0, 10))
+  const [linkEvidencia, setLinkEvidencia] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [enviandoEmail, setEnviandoEmail] = useState(false)
   const [error, setError] = useState('')
@@ -122,6 +123,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
         setClienteDireccion(cot?.clienteDireccion || '')
         setClienteComuna(cot?.clienteComuna || '')
         setFechaEmision(cot?.fechaEmision ? cot.fechaEmision.slice(0, 10) : new Date().toISOString().slice(0, 10))
+        setLinkEvidencia(cot?.linkEvidencia || '')
       })
       .catch(() => {
         // No existe cotización previa — empezar en blanco
@@ -132,6 +134,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
         setClienteDireccion('')
         setClienteComuna('')
         setFechaEmision(new Date().toISOString().slice(0, 10))
+        setLinkEvidencia('')
       })
       .finally(() => setTimeout(() => inputRef.current?.focus(), 80))
   }, [open])
@@ -158,6 +161,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
     clienteRut: clienteRut.trim() || null,
     clienteDireccion: clienteDireccion.trim() || null,
     clienteComuna: clienteComuna.trim() || null,
+    linkEvidencia: linkEvidencia.trim() || null,
     items: itemsValidos().map(({ descripcion, cantidad, valor }) => ({ descripcion, cantidad: cantidad || 1, valor }))
   })
 
@@ -349,6 +353,8 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
   <div class="clear"></div>
 
   ${notas.trim() ? `<p style="border-left:3px solid #ccc;padding:6px 12px;margin-bottom:14px;font-size:11px;color:#444"><strong>Observaciones:</strong> ${notas.trim()}</p>` : ''}
+
+  ${linkEvidencia.trim() ? `<p style="border-left:3px solid #1D6BE8;background:#EBF1FD;padding:6px 12px;margin-bottom:14px;font-size:11px;color:#1A3A6B">📷 <strong>Fotos del vehículo:</strong> <a href="${linkEvidencia.trim()}" style="color:#1D6BE8;word-break:break-all">${linkEvidencia.trim()}</a></p>` : ''}
 
   ${infoPago ? `
   <div class="pago bloque">
@@ -549,6 +555,22 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
             placeholder="Ej: Precio sujeto a disponibilidad de repuestos..."
             className="w-full rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6C8EFF] resize-none"
           />
+        </div>
+
+        {/* Enlace fotos Google Drive */}
+        <div>
+          <label className="block text-sm text-gray-400 mb-1.5 flex items-center gap-1.5">
+            <Link2 size={13} className="text-[#6C8EFF]" />
+            Enlace de fotos (Google Drive) — opcional
+          </label>
+          <input
+            type="url"
+            value={linkEvidencia}
+            onChange={e => setLinkEvidencia(e.target.value)}
+            placeholder="https://drive.google.com/drive/folders/…"
+            className="w-full rounded-lg border border-[#2A2D35] bg-[#1C1F26] text-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6C8EFF]"
+          />
+          <p className="text-xs text-gray-500 mt-1">Pega el enlace de la carpeta de Drive con las fotos del vehículo. Aparecerá en el documento.</p>
         </div>
 
         {error && <p className="text-red-400 text-sm">{error}</p>}

@@ -216,6 +216,7 @@ model Cotizacion {
   clienteComuna    String?
   incluyeIva       Boolean          @default(false)
   fechaEmision     DateTime?        // fecha de emisión editable (null = usa createdAt)
+  linkEvidencia    String?          // enlace Google Drive con fotos del vehículo
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   items            ItemCotizacion[]

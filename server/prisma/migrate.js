@@ -314,6 +314,13 @@ async function main () {
     ADD COLUMN IF NOT EXISTS "fechaEmision" TIMESTAMPTZ
   `)
 
+  // ── Migración: cotizacion_link_evidencia ─────────────────────────────────────
+  console.log('[migrate] cotizacion_link_evidencia...')
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Cotizacion"
+    ADD COLUMN IF NOT EXISTS "linkEvidencia" TEXT
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

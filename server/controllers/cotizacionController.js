@@ -115,6 +115,9 @@ const htmlCotizacion = ({ reserva, cotizacion, tenant }) => {
         <!-- Notas -->
         ${cotizacion.notas ? `<tr><td style="padding:0 32px 16px"><p style="background:#f9fafb;border-left:3px solid #d1d5db;padding:10px 14px;font-size:13px;color:#555;margin:0"><strong>Observaciones:</strong> ${cotizacion.notas}</p></td></tr>` : ''}
 
+        <!-- Enlace de fotos -->
+        ${cotizacion.linkEvidencia ? `<tr><td style="padding:0 32px 16px"><p style="background:#EBF1FD;border-left:3px solid #1D6BE8;padding:10px 14px;font-size:13px;color:#1A3A6B;margin:0">📷 <strong>Fotos del vehículo:</strong> <a href="${cotizacion.linkEvidencia}" style="color:#1D6BE8;word-break:break-all">${cotizacion.linkEvidencia}</a></p></td></tr>` : ''}
+
         <!-- Info de pago -->
         ${infoPago ? `
         <tr><td style="padding:0 32px 16px">
@@ -176,7 +179,7 @@ const upsertCotizacion = async (req, res) => {
   const reservaId = parseInt(req.params.reservaId, 10)
   if (!reservaId) return res.status(400).json({ error: 'ID inválido' })
 
-  const { notas: _notas, items = [], clienteRut, clienteDireccion, clienteComuna, incluyeIva, fechaEmision } = req.body
+  const { notas: _notas, items = [], clienteRut, clienteDireccion, clienteComuna, incluyeIva, fechaEmision, linkEvidencia } = req.body
   const notas = _notas ?? ''
 
   try {
@@ -217,6 +220,7 @@ const upsertCotizacion = async (req, res) => {
           clienteComuna: clienteComuna?.trim() || null,
           incluyeIva: Boolean(incluyeIva),
           fechaEmision: fechaEmision ? new Date(fechaEmision) : null,
+          linkEvidencia: linkEvidencia?.trim() || null,
           items: {
             create: items
               .filter(i => i.descripcion?.trim())
