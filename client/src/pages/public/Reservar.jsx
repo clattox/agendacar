@@ -88,6 +88,7 @@ const MARCAS_MODELOS = {
   'Peugeot': ['208', '308', '408', '2008', '3008', '5008', 'Partner', 'Expert', 'Boxer'],
   'RAM': ['700', '1500', '2500', 'ProMaster'],
   'Renault': ['Clio', 'Megane', 'Fluence', 'Sandero', 'Duster', 'Captur', 'Koleos', 'Oroch', 'Kangoo', 'Master'],
+  'SsangYong': ['Rexton', 'Tivoli', 'Korando', 'Musso', 'Actyon', 'Rodius', 'XLV', 'Kyron', 'Torres'],
   'Subaru': ['Impreza', 'Forester', 'Outback', 'XV', 'Legacy', 'BRZ', 'WRX'],
   'Suzuki': ['Swift', 'Baleno', 'Vitara', 'S-Cross', 'Jimny', 'Grand Vitara', 'APV'],
   'Toyota': ['Yaris', 'Corolla', 'Camry', 'Hilux', 'Land Cruiser', 'RAV4', 'C-HR', 'Fortuner', 'Prado', 'Prius', 'SW4'],
