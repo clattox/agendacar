@@ -116,6 +116,7 @@ td:not(:first-child){text-align:right;font-weight:600}
 <div class="grid">
   <div><div class="lbl">Cliente</div><div class="val">${reserva.nombre || '—'}</div></div>
   <div><div class="lbl">Patente</div><div class="val">${reserva.patente || '—'}</div></div>
+  ${reserva.telefono ? `<div><div class="lbl">Teléfono</div><div class="val">${reserva.telefono}</div></div>` : ''}
   <div><div class="lbl">Servicio</div><div class="val">${reserva.servicio || '—'}</div></div>
 </div>
 ${items.length ? `<table><thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit.</th><th>Total</th></tr></thead><tbody>

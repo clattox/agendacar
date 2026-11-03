@@ -72,6 +72,8 @@ const listarClientes = async (req, res) => {
         id: r.id,
         fecha: r.fecha,
         estado: r.estado,
+        nombre: r.nombre,
+        telefono: r.telefono,
         servicio: r.servicio?.nombre || '—',
         patente: r.patente,
         tieneCotizacion: !!r.cotizacion,
