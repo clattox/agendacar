@@ -61,8 +61,8 @@ const imprimirCotizacion = async (reservaId, reserva = {}) => {
     ].filter(Boolean).join('')
 
     const vehiculo = [reserva.vehiculoMarca, reserva.vehiculoModelo].filter(Boolean).join(' ')
-    const _d = reserva.fecha ? new Date(reserva.fecha) : null
-    const horaAgendada = _d ? `${String(_d.getHours()).padStart(2,'0')}:${String(_d.getMinutes()).padStart(2,'0')}` : null
+    // Tomar HH:MM directo del string ISO — la fecha se almacena en hora local (sin offset)
+    const horaAgendada = reserva.fecha ? reserva.fecha.slice(11, 16) : null
 
     const datosCliente = `
       <tr><td class="lbl">CLIENTE</td><td>: ${reserva.nombre || '—'}</td></tr>
