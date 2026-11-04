@@ -198,14 +198,20 @@ const upsertCotizacion = async (req, res) => {
         await tx.cotizacion.delete({ where: { id: anterior.id } })
       }
 
-      // Asignar número correlativo si no tiene uno aún
+      // Asignar número correlativo si no tiene uno aún.
+      // Se usa MAX(numero)+1 en vez de COUNT+desde para que las eliminaciones
+      // previas no provoquen colisiones de número.
       if (!numeroCorrelativo) {
-        const [count, tenant] = await Promise.all([
-          tx.cotizacion.count({ where: { tenantId } }),
+        const [maxResult, tenant] = await Promise.all([
+          tx.cotizacion.aggregate({
+            where: { tenantId },
+            _max: { numero: true }
+          }),
           tx.tenant.findUnique({ where: { id: tenantId }, select: { cotizacionDesde: true } })
         ])
         const desde = tenant?.cotizacionDesde ?? 1
-        numeroCorrelativo = desde + count
+        const maxNumero = maxResult._max.numero ?? (desde - 1)
+        numeroCorrelativo = Math.max(maxNumero + 1, desde)
       }
 
       // Crear nueva cotización
