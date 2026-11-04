@@ -114,12 +114,23 @@ const getHorasDisponibles = async (req, res) => {
       return res.json({ horasDisponibles: [] })
     }
 
-    // Contar reservas por slot (para respetar capacidad simultánea)
+    // Contar cuántas reservas están ACTIVAS durante cada slot.
+    // Una reserva iniciada antes del slot pero que aún no terminó también ocupa el bay.
     const conteoSlots = {}
     reservasDelDia.forEach(r => {
-      const h = new Date(r.fecha)
-      const key = `${String(h.getUTCHours()).padStart(2, '0')}:${String(h.getUTCMinutes()).padStart(2, '0')}`
-      conteoSlots[key] = (conteoSlots[key] || 0) + 1
+      const rStart = new Date(r.fecha)
+      const rStartMin = rStart.getUTCHours() * 60 + rStart.getUTCMinutes()
+      const duracion = r.servicio?.duracion || 0
+      const rEndMin = rStartMin + duracion
+
+      slots.forEach(slotHora => {
+        const [sh, sm] = slotHora.split(':').map(Number)
+        const slotMin = sh * 60 + sm
+        // El vehículo está en el taller durante este slot: inició en o antes del slot y aún no terminó
+        if (slotMin >= rStartMin && slotMin < rEndMin) {
+          conteoSlots[slotHora] = (conteoSlots[slotHora] || 0) + 1
+        }
+      })
     })
 
     // Filtrar slots que caen dentro de algún bloqueo parcial
@@ -207,15 +218,21 @@ const createReserva = async (req, res) => {
       })
       if (!tenant) throw Object.assign(new Error('Taller no encontrado'), { status: 404 })
 
-      // Contar reservas que se solapan con el intervalo de esta reserva
+      // Contar reservas que se solapan con el intervalo de esta reserva.
+      // Solapamiento real: la reserva existente inicia antes de que termine la nueva
+      // Y la reserva existente termina después de que inicia la nueva.
+      // Se usa SQL directo porque Prisma no soporta aritmética de fechas en where.
       const finReserva = new Date(fechaReserva.getTime() + servicio.duracion * 60 * 1000)
-      const solapadas = await tx.reserva.count({
-        where: {
-          tenantId: tenantIdNumerico,
-          estado: { not: 'cancelada' },
-          fecha: { gte: fechaReserva, lt: finReserva }
-        }
-      })
+      const result = await tx.$queryRaw`
+        SELECT COUNT(*) AS cnt
+        FROM "Reserva" r
+        JOIN "Servicio" s ON r."servicioId" = s.id
+        WHERE r."tenantId" = ${tenantIdNumerico}
+          AND r.estado != 'cancelada'
+          AND r.fecha < ${finReserva}
+          AND r.fecha + (s.duracion * INTERVAL '1 minute') > ${fechaReserva}
+      `
+      const solapadas = Number(result[0]?.cnt ?? 0)
 
       if (solapadas >= tenant.capacidad) {
         throw Object.assign(new Error('SIN_CAPACIDAD'), { status: 409 })
