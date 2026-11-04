@@ -78,6 +78,13 @@ const getHorasDisponibles = async (req, res) => {
       slots = generarSlots(horario.horaInicio, horario.horaFin, servicio.duracion)
     }
 
+    // Obtener capacidad del tenant
+    const tenantData = await prisma.tenant.findUnique({
+      where: { id: parseInt(tenantId) },
+      select: { capacidad: true }
+    })
+    const capacidad = tenantData?.capacidad ?? 1
+
     // Obtener reservas del día para filtrar ocupadas
     const fechaInicio = new Date(fecha)
     fechaInicio.setHours(0, 0, 0, 0)
@@ -107,10 +114,12 @@ const getHorasDisponibles = async (req, res) => {
       return res.json({ horasDisponibles: [] })
     }
 
-    // Filtrar slots ocupados por reservas
-    const slotsOcupados = reservasDelDia.map(r => {
+    // Contar reservas por slot (para respetar capacidad simultánea)
+    const conteoSlots = {}
+    reservasDelDia.forEach(r => {
       const h = new Date(r.fecha)
-      return `${String(h.getUTCHours()).padStart(2, '0')}:${String(h.getUTCMinutes()).padStart(2, '0')}`
+      const key = `${String(h.getUTCHours()).padStart(2, '0')}:${String(h.getUTCMinutes()).padStart(2, '0')}`
+      conteoSlots[key] = (conteoSlots[key] || 0) + 1
     })
 
     // Filtrar slots que caen dentro de algún bloqueo parcial
@@ -132,8 +141,9 @@ const getHorasDisponibles = async (req, res) => {
       return s >= ini && s < fin
     }
 
+    // Un slot está disponible si: las reservas existentes < capacidad Y no bloqueado Y no en colación
     const horasDisponibles = slots.filter(s =>
-      !slotsOcupados.includes(s) && !slotBloqueado(s) && !slotEnColacion(s)
+      (conteoSlots[s] || 0) < capacidad && !slotBloqueado(s) && !slotEnColacion(s)
     )
 
     res.json({ horasDisponibles, todosLosSlots: slots })
