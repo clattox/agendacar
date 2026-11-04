@@ -686,10 +686,100 @@ const asignarTrabajadores = async (req, res) => {
   }
 }
 
+// Crear reserva desde panel admin (sin Turnstile, sin verificación de capacidad)
+const createReservaAdmin = async (req, res) => {
+  const {
+    nombre,
+    telefono,
+    email,
+    patente,
+    fecha,
+    hora,
+    servicioId,
+    kilometraje,
+    marca,
+    modelo,
+    anio,
+    notas
+  } = req.body
+  const tenantIdNumerico = req.usuario.tenantId
+  const patenteNormalizada = normalizarPatente(patente)
+  const kilometrajeNumerico = parseEnteroOpcional(kilometraje)
+  const anioNumerico = parseEnteroOpcional(anio)
+  const marcaNormalizada = normalizarTextoOpcional(marca)
+  const modeloNormalizado = normalizarTextoOpcional(modelo)
+  const notasNormalizadas = notas ? String(notas).trim().slice(0, 500) || null : null
+
+  if (!patenteNormalizada || !fecha || !hora || !servicioId) {
+    return res.status(400).json({ error: 'Patente, fecha, hora y servicio son obligatorios.' })
+  }
+
+  try {
+    const fechaReserva = construirFechaReserva(fecha, hora)
+
+    const reserva = await prisma.$transaction(async tx => {
+      const servicio = await tx.servicio.findFirst({
+        where: { id: parseInt(servicioId), tenantId: tenantIdNumerico }
+      })
+      if (!servicio) throw Object.assign(new Error('Servicio no encontrado'), { status: 404 })
+
+      const vehiculo = await tx.vehiculo.upsert({
+        where: {
+          patente_tenantId: {
+            patente: patenteNormalizada,
+            tenantId: tenantIdNumerico
+          }
+        },
+        update: {
+          ...(kilometrajeNumerico !== null ? { kilometraje: kilometrajeNumerico } : {}),
+          ...(marcaNormalizada !== null ? { marca: marcaNormalizada } : {}),
+          ...(modeloNormalizado !== null ? { modelo: modeloNormalizado } : {}),
+          ...(anioNumerico !== null ? { anio: anioNumerico } : {}),
+          updatedAt: new Date()
+        },
+        create: {
+          patente: patenteNormalizada,
+          marca: marcaNormalizada,
+          modelo: modeloNormalizado,
+          anio: anioNumerico,
+          kilometraje: kilometrajeNumerico,
+          tenantId: tenantIdNumerico
+        }
+      })
+
+      return tx.reserva.create({
+        data: {
+          nombre: nombre || patenteNormalizada,
+          telefono: telefono || null,
+          email: email || null,
+          patente: patenteNormalizada,
+          fecha: fechaReserva,
+          tenantId: tenantIdNumerico,
+          servicioId: parseInt(servicioId),
+          vehiculoId: vehiculo.id,
+          kilometraje: kilometrajeNumerico,
+          notas: notasNormalizadas,
+          estado: 'confirmada'
+        },
+        include: { servicio: true, tenant: true, vehiculo: true }
+      })
+    })
+
+    res.status(201).json(reserva)
+  } catch (error) {
+    if (error.status === 404) {
+      return res.status(404).json({ error: error.message })
+    }
+    console.error(error)
+    res.status(500).json({ error: 'Error al crear reserva' })
+  }
+}
+
 module.exports = {
   getReservas,
   getHorasDisponibles,
   createReserva,
+  createReservaAdmin,
   reagendarReserva,
   updateEstado,
   deleteReserva,

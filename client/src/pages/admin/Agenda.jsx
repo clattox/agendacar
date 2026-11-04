@@ -20,6 +20,7 @@ import {
   Phone,
   Download,
   FileText,
+  Plus,
   Printer,
   RefreshCw,
   Search,
@@ -46,11 +47,13 @@ import { getApiErrorMessage } from '../../lib/errors'
 import {
   actualizarEstadoReserva,
   asignarTrabajadoresReserva,
+  crearReservaAdmin,
   eliminarReserva,
   exportarReservasCSV,
   listarReservasPorFecha,
   reagendarReserva
 } from '../../services/reservasService'
+import { listarServicios } from '../../services/serviciosService'
 import { actualizarVehiculo, obtenerHistorialVehiculo } from '../../services/vehiculosService'
 import { listarTrabajadores } from '../../services/trabajadorService'
 import { actualizarNotasCierre, reabrirCierre } from '../../services/cierreService'
@@ -100,6 +103,14 @@ export default function Agenda() {
   const [exportando, setExportando] = useState(false)
   const [reservaACerrar, setReservaACerrar] = useState(null)
   const [reservaACotizar, setReservaACotizar] = useState(null)
+  const [modalNuevaReserva, setModalNuevaReserva] = useState(false)
+  const [serviciosDisponibles, setServiciosDisponibles] = useState([])
+  const [nuevaReservaForm, setNuevaReservaForm] = useState({
+    nombre: '', telefono: '', patente: '', fecha: '', hora: '',
+    servicioId: '', marca: '', modelo: '', notas: ''
+  })
+  const [creandoReserva, setCreandoReserva] = useState(false)
+  const [errorNuevaReserva, setErrorNuevaReserva] = useState('')
 
   useDocumentTitle('Agenda — AgendaCar')
 
@@ -243,6 +254,40 @@ export default function Agenda() {
     ? isSameDay(fecha, new Date())
     : isSameDay(inicioSemana, startOfWeek(new Date()))
 
+  const abrirModalNuevaReserva = async () => {
+    setErrorNuevaReserva('')
+    setNuevaReservaForm({
+      nombre: '', telefono: '', patente: '', fecha: '', hora: '',
+      servicioId: '', marca: '', modelo: '', notas: ''
+    })
+    setModalNuevaReserva(true)
+    try {
+      const svcs = await listarServicios(usuario?.tenant?.id)
+      setServiciosDisponibles(svcs || [])
+    } catch {
+      setServiciosDisponibles([])
+    }
+  }
+
+  const guardarNuevaReserva = async (e) => {
+    e.preventDefault()
+    setErrorNuevaReserva('')
+    if (!nuevaReservaForm.patente || !nuevaReservaForm.fecha || !nuevaReservaForm.hora || !nuevaReservaForm.servicioId) {
+      setErrorNuevaReserva('Patente, fecha, hora y servicio son obligatorios.')
+      return
+    }
+    setCreandoReserva(true)
+    try {
+      await crearReservaAdmin(nuevaReservaForm)
+      setModalNuevaReserva(false)
+      await cargar()
+    } catch (err) {
+      setErrorNuevaReserva(getApiErrorMessage(err, 'No se pudo crear la reserva.'))
+    } finally {
+      setCreandoReserva(false)
+    }
+  }
+
   return (
     <AdminLayout>
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -254,6 +299,14 @@ export default function Agenda() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={Plus}
+            onClick={abrirModalNuevaReserva}
+          >
+            Nueva reserva
+          </Button>
           <Button
             variant="secondary"
             size="sm"
@@ -711,6 +764,123 @@ export default function Agenda() {
           }}
         />
       )}
+
+      <Dialog
+        open={modalNuevaReserva}
+        onClose={() => setModalNuevaReserva(false)}
+        title="Nueva reserva"
+      >
+        <form onSubmit={guardarNuevaReserva} className="flex flex-col gap-4">
+          {errorNuevaReserva && (
+            <Alert variant="error" onDismiss={() => setErrorNuevaReserva('')}>
+              {errorNuevaReserva}
+            </Alert>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Fecha" required>
+              <Input
+                type="date"
+                value={nuevaReservaForm.fecha}
+                onChange={e => setNuevaReservaForm(f => ({ ...f, fecha: e.target.value }))}
+                required
+              />
+            </FormField>
+            <FormField label="Hora" required>
+              <Input
+                type="time"
+                value={nuevaReservaForm.hora}
+                onChange={e => setNuevaReservaForm(f => ({ ...f, hora: e.target.value }))}
+                required
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Patente" required>
+            <Input
+              value={nuevaReservaForm.patente}
+              onChange={e => setNuevaReservaForm(f => ({ ...f, patente: e.target.value.toUpperCase() }))}
+              placeholder="ABCD12"
+              required
+            />
+          </FormField>
+
+          <FormField label="Servicio" required>
+            <Select
+              value={nuevaReservaForm.servicioId}
+              onChange={e => setNuevaReservaForm(f => ({ ...f, servicioId: e.target.value }))}
+              required
+            >
+              <option value="">Seleccionar servicio…</option>
+              {serviciosDisponibles.map(s => (
+                <option key={s.id} value={s.id}>{s.nombre}</option>
+              ))}
+            </Select>
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Nombre cliente">
+              <Input
+                value={nuevaReservaForm.nombre}
+                onChange={e => setNuevaReservaForm(f => ({ ...f, nombre: e.target.value }))}
+                placeholder="Nombre"
+              />
+            </FormField>
+            <FormField label="Teléfono">
+              <Input
+                value={nuevaReservaForm.telefono}
+                onChange={e => setNuevaReservaForm(f => ({ ...f, telefono: e.target.value }))}
+                placeholder="+56 9 …"
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Marca">
+              <Input
+                value={nuevaReservaForm.marca}
+                onChange={e => setNuevaReservaForm(f => ({ ...f, marca: e.target.value }))}
+                placeholder="Toyota"
+              />
+            </FormField>
+            <FormField label="Modelo">
+              <Input
+                value={nuevaReservaForm.modelo}
+                onChange={e => setNuevaReservaForm(f => ({ ...f, modelo: e.target.value }))}
+                placeholder="Corolla"
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Notas">
+            <Input
+              value={nuevaReservaForm.notas}
+              onChange={e => setNuevaReservaForm(f => ({ ...f, notas: e.target.value }))}
+              placeholder="Observaciones adicionales"
+            />
+          </FormField>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setModalNuevaReserva(false)}
+              disabled={creandoReserva}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={creandoReserva}
+            >
+              {creandoReserva ? 'Guardando…' : 'Crear reserva'}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
 
       {reservaACotizar && (
         <ModalCotizacion

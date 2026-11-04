@@ -18,6 +18,11 @@ export async function crearReserva(payload) {
   return data
 }
 
+export async function crearReservaAdmin(payload) {
+  const { data } = await api.post('/reservas/admin', payload)
+  return data
+}
+
 export async function actualizarEstadoReserva(id, estado) {
   const { data } = await api.patch(`/reservas/${id}/estado`, { estado })
   return data
