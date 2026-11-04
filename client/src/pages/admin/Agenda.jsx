@@ -29,6 +29,7 @@ import {
   XCircle
 } from 'lucide-react'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
+import { MARCAS, MARCAS_MODELOS } from '../../lib/marcasModelos'
 import { getUsuario } from '../../lib/auth'
 import {
   addDays,
@@ -855,7 +856,12 @@ export default function Agenda() {
                 autoComplete="off"
               />
               <datalist id="catalogo-marcas">
-                {[...new Set(catalogoVehiculos.map(c => c.marca))].map(m => (
+                {[
+                  ...new Set([
+                    ...MARCAS,
+                    ...catalogoVehiculos.map(c => c.marca).filter(Boolean)
+                  ])
+                ].sort((a, b) => a.localeCompare(b, 'es')).map(m => (
                   <option key={m} value={m} />
                 ))}
               </datalist>
@@ -869,14 +875,17 @@ export default function Agenda() {
                 autoComplete="off"
               />
               <datalist id="catalogo-modelos">
-                {catalogoVehiculos
-                  .filter(c => !nuevaReservaForm.marca || c.marca === nuevaReservaForm.marca)
-                  .map(c => c.modelo)
-                  .filter(Boolean)
-                  .filter((m, i, arr) => arr.indexOf(m) === i)
-                  .map(m => (
-                    <option key={m} value={m} />
-                  ))}
+                {[
+                  ...new Set([
+                    ...(MARCAS_MODELOS[nuevaReservaForm.marca] || []),
+                    ...catalogoVehiculos
+                      .filter(c => !nuevaReservaForm.marca || c.marca === nuevaReservaForm.marca)
+                      .map(c => c.modelo)
+                      .filter(Boolean)
+                  ])
+                ].map(m => (
+                  <option key={m} value={m} />
+                ))}
               </datalist>
             </FormField>
           </div>

@@ -374,7 +374,9 @@ const normalizarPatente = patente => String(patente || '').trim().toUpperCase()
 const normalizarTextoOpcional = valor => {
   if (valor === undefined || valor === null) return null
   const texto = String(valor).trim()
-  return texto || null
+  if (!texto) return null
+  // Capitaliza primera letra de cada palabra para consistencia en el catálogo
+  return texto.replace(/\b\w/g, c => c.toUpperCase())
 }
 
 const parseEnteroOpcional = valor => {
