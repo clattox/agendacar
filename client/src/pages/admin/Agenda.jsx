@@ -54,7 +54,7 @@ import {
   reagendarReserva
 } from '../../services/reservasService'
 import { listarServicios } from '../../services/serviciosService'
-import { actualizarVehiculo, listarCatalogo, obtenerHistorialVehiculo } from '../../services/vehiculosService'
+import { actualizarVehiculo, listarVehiculos, obtenerHistorialVehiculo } from '../../services/vehiculosService'
 import { listarTrabajadores } from '../../services/trabajadorService'
 import { actualizarNotasCierre, reabrirCierre } from '../../services/cierreService'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -263,12 +263,16 @@ export default function Agenda() {
     })
     setModalNuevaReserva(true)
     try {
-      const [svcs, catalogo] = await Promise.all([
+      const [svcs, vehiculos] = await Promise.all([
         listarServicios(usuario?.tenant?.id),
-        listarCatalogo(usuario?.tenant?.id)
+        listarVehiculos()
       ])
       setServiciosDisponibles(svcs || [])
-      setCatalogoVehiculos(catalogo || [])
+      // Construir catálogo desde vehículos ya registrados en el taller
+      const entradas = (vehiculos || [])
+        .filter(v => v.marca)
+        .map(v => ({ marca: v.marca, modelo: v.modelo || '' }))
+      setCatalogoVehiculos(entradas)
     } catch {
       setServiciosDisponibles([])
       setCatalogoVehiculos([])
