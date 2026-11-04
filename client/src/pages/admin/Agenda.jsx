@@ -54,7 +54,7 @@ import {
   reagendarReserva
 } from '../../services/reservasService'
 import { listarServicios } from '../../services/serviciosService'
-import { actualizarVehiculo, obtenerHistorialVehiculo } from '../../services/vehiculosService'
+import { actualizarVehiculo, listarCatalogo, obtenerHistorialVehiculo } from '../../services/vehiculosService'
 import { listarTrabajadores } from '../../services/trabajadorService'
 import { actualizarNotasCierre, reabrirCierre } from '../../services/cierreService'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -105,6 +105,7 @@ export default function Agenda() {
   const [reservaACotizar, setReservaACotizar] = useState(null)
   const [modalNuevaReserva, setModalNuevaReserva] = useState(false)
   const [serviciosDisponibles, setServiciosDisponibles] = useState([])
+  const [catalogoVehiculos, setCatalogoVehiculos] = useState([])
   const [nuevaReservaForm, setNuevaReservaForm] = useState({
     nombre: '', telefono: '', patente: '', fecha: '', hora: '',
     servicioId: '', marca: '', modelo: '', notas: ''
@@ -262,10 +263,15 @@ export default function Agenda() {
     })
     setModalNuevaReserva(true)
     try {
-      const svcs = await listarServicios(usuario?.tenant?.id)
+      const [svcs, catalogo] = await Promise.all([
+        listarServicios(usuario?.tenant?.id),
+        listarCatalogo(usuario?.tenant?.id)
+      ])
       setServiciosDisponibles(svcs || [])
+      setCatalogoVehiculos(catalogo || [])
     } catch {
       setServiciosDisponibles([])
+      setCatalogoVehiculos([])
     }
   }
 
@@ -838,17 +844,36 @@ export default function Agenda() {
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Marca">
               <Input
+                list="catalogo-marcas"
                 value={nuevaReservaForm.marca}
-                onChange={e => setNuevaReservaForm(f => ({ ...f, marca: e.target.value }))}
+                onChange={e => setNuevaReservaForm(f => ({ ...f, marca: e.target.value, modelo: '' }))}
                 placeholder="Toyota"
+                autoComplete="off"
               />
+              <datalist id="catalogo-marcas">
+                {[...new Set(catalogoVehiculos.map(c => c.marca))].map(m => (
+                  <option key={m} value={m} />
+                ))}
+              </datalist>
             </FormField>
             <FormField label="Modelo">
               <Input
+                list="catalogo-modelos"
                 value={nuevaReservaForm.modelo}
                 onChange={e => setNuevaReservaForm(f => ({ ...f, modelo: e.target.value }))}
                 placeholder="Corolla"
+                autoComplete="off"
               />
+              <datalist id="catalogo-modelos">
+                {catalogoVehiculos
+                  .filter(c => !nuevaReservaForm.marca || c.marca === nuevaReservaForm.marca)
+                  .map(c => c.modelo)
+                  .filter(Boolean)
+                  .filter((m, i, arr) => arr.indexOf(m) === i)
+                  .map(m => (
+                    <option key={m} value={m} />
+                  ))}
+              </datalist>
             </FormField>
           </div>
 
