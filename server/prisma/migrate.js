@@ -328,6 +328,22 @@ async function main () {
     ADD COLUMN IF NOT EXISTS "horaIngreso" TEXT
   `)
 
+  // ── Corrección puntual: folio duplicado #116 → reserva PFWP45 del 04-nov-2026
+  // La cotización de PFWP45 (lavado+tapiz, 4-nov) quedó con número 116 igual que
+  // otra cotización. Se corrige a 118. La condición es exacta para ser idempotente:
+  // solo actúa si TODAVÍA tiene numero=116 y es la reserva correcta.
+  console.log('[migrate] correccion_folio_pfwp45...')
+  await prisma.$executeRawUnsafe(`
+    UPDATE "Cotizacion" c
+    SET    "numero" = 118
+    FROM   "Reserva" r
+    WHERE  c."reservaId" = r.id
+      AND  r.patente     = 'PFWP45'
+      AND  r.fecha >= '2026-11-04T00:00:00Z'
+      AND  r.fecha <  '2026-11-05T00:00:00Z'
+      AND  c."numero"    = 116
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }
