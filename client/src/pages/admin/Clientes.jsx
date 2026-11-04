@@ -8,6 +8,7 @@ import { listarClientes, actualizarCliente } from '../../services/clientesServic
 import { getCotizacion, enviarEmailCotizacion } from '../../services/cotizacionService'
 import { getCierre } from '../../services/cierreService'
 import { getUsuario } from '../../lib/auth'
+import { fmtFecha, fmtHora } from '../../lib/dates'
 
 // ── Utilidades ────────────────────────────────────────────────────────────────
 
@@ -33,12 +34,7 @@ const imprimirCotizacion = async (reservaId, reserva = {}) => {
     const iva = cot.incluyeIva ? Math.round(subtotal * 0.19) : 0
     const total = subtotal + iva
     const numero = cot.numero || '—'
-    // Usar slice+T12:00:00 para evitar desfase UTC-3 en fechaEmision (date-only)
-    const rawFecha = cot.fechaEmision
-      ? cot.fechaEmision.slice(0, 10) + 'T12:00:00'
-      : (cot.createdAt || null)
-    const fechaStr = new Date(rawFecha || Date.now())
-      .toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const fechaStr = fmtFecha(cot.fechaEmision || cot.createdAt)
     const nombreTaller = tenant?.nombre || 'Taller'
     const logoUrl = tenant?.logoUrl || ''
     const validez = tenant?.cotizacionValidez || 15
@@ -61,8 +57,7 @@ const imprimirCotizacion = async (reservaId, reserva = {}) => {
     ].filter(Boolean).join('')
 
     const vehiculo = [reserva.vehiculoMarca, reserva.vehiculoModelo].filter(Boolean).join(' ')
-    // Tomar HH:MM directo del string ISO — la fecha se almacena en hora local (sin offset)
-    const horaAgendada = reserva.fecha ? reserva.fecha.slice(11, 16) : null
+    const horaAgendada = reserva.fecha ? fmtHora(reserva.fecha) : null
 
     const datosCliente = `
       <tr><td class="lbl">CLIENTE</td><td>: ${reserva.nombre || '—'}</td></tr>
@@ -217,7 +212,7 @@ td:not(:first-child){text-align:right;font-weight:600}
 @media print{body{padding:20px}}</style></head><body>
 <div class="header">${tenant?.logoUrl ? `<img src="${tenant.logoUrl}" alt="${tenant.nombre}">` : ''}
 <div class="header-text"><h1>${tenant?.nombre || 'Taller'}</h1>
-<div class="sub">Resumen de Atención — ${new Date(reserva.fecha).toLocaleDateString('es-CL')}</div></div></div>
+<div class="sub">Resumen de Atención — ${fmtFecha(reserva.fecha)}</div></div></div>
 <hr>
 <div class="grid">
   <div><div class="lbl">Cliente</div><div class="val">${reserva.nombre || '—'}</div></div>

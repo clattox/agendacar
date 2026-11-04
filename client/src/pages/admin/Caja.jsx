@@ -5,15 +5,13 @@ import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { getResumenCaja } from '../../services/cajaService'
 import { listarEgresos, crearEgreso, eliminarEgreso } from '../../services/egresosService'
 import Button from '../../components/ui/Button'
+import { fmtFecha, fmtHora } from '../../lib/dates'
 
 const formatCLP = (v) =>
   new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(v || 0)
 
-const formatFecha = (iso) =>
-  new Date(iso).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
-
-const formatHora = (iso) =>
-  new Date(iso).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+const formatFecha = fmtFecha
+const formatHora = fmtHora
 
 // ── Tarjeta de estadística ────────────────────────────────────────────────────
 

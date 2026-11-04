@@ -3,6 +3,7 @@ import { ClipboardCopy, Plus, Printer, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
 import Dialog from './ui/Dialog'
 import { getCierre, guardarCierre } from '../services/cierreService'
+import { fmtFecha, fmtHora } from '../lib/dates'
 import { getCotizacion } from '../services/cotizacionService'
 import { getApiErrorMessage } from '../lib/errors'
 import { getUsuario } from '../lib/auth'
@@ -160,9 +161,8 @@ export default function ModalCierre({ reserva, open, onClose, onGuardado }) {
     const ventana = window.open('', '_blank', 'width=800,height=600')
     if (!ventana) return
 
-    const fecha = new Date(reserva.fecha)
-    const fechaStr = fecha.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    const horaStr = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    const fechaStr = fmtFecha(reserva.fecha)
+    const horaStr = fmtHora(reserva.fecha)
     const itemsValidos = items.filter(i => i.descripcion.trim())
     const nombreTaller = tenant?.nombre || 'Taller'
     const logoUrl = tenant?.logoUrl || ''

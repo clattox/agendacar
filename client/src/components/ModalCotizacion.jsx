@@ -3,6 +3,7 @@ import { Link2, Mail, MessageCircle, Minus, Plus, Printer, Trash2 } from 'lucide
 import Button from './ui/Button'
 import Dialog from './ui/Dialog'
 import { getCotizacion, guardarCotizacion, enviarEmailCotizacion } from '../services/cotizacionService'
+import { fmtFecha, fmtHora } from '../lib/dates'
 import { getApiErrorMessage } from '../lib/errors'
 import { getUsuario } from '../lib/auth'
 
@@ -240,7 +241,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
     if (!ventana) return
 
     const numero = cotizacionGuardada?.numero || '—'
-    const fechaStr = new Date(fechaEmision + 'T12:00:00').toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const fechaStr = fmtFecha(fechaEmision + 'T00:00:00Z')
     const validez = tenant?.cotizacionValidez || 15
     const nombreTaller = tenant?.nombre || 'Taller'
     const logoUrl = tenant?.logoUrl || ''
@@ -263,9 +264,7 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
       tenant?.numeroCuenta ? `<tr><td class="lbl">Nº CUENTA</td><td>: ${tenant.numeroCuenta}</td></tr>` : '',
     ].filter(Boolean).join('')
 
-    // Tomar HH:MM directo del string ISO — la fecha se almacena en hora local (sin offset)
-    // new Date().getHours() restaría UTC-3 y mostraría 3h menos
-    const horaAgendada = reserva.fecha ? reserva.fecha.slice(11, 16) : null
+    const horaAgendada = reserva.fecha ? fmtHora(reserva.fecha) : null
 
     const datosCliente = `
       <tr><td class="lbl">CLIENTE</td><td>: ${reserva.nombre}</td></tr>

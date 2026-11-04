@@ -181,3 +181,28 @@ export function formatDateTimeFromISO(iso) {
 export function formatMonthYear(date) {
   return `${MESES[date.getMonth()]} ${date.getFullYear()}`
 }
+
+// ── Helpers de formato para timestamps de API ────────────────────────────────
+// Los timestamps del backend representan "hora de taller" guardada sin offset.
+// Se leen siempre en UTC (RESERVATION_TIME_ZONE) para no aplicar el desfase
+// del navegador. Usar SIEMPRE estas funciones al mostrar fechas/horas de reservas.
+
+// DD-MM-YYYY a partir de un ISO string de la API
+export function fmtFecha(iso) {
+  if (!iso) return ''
+  const key = toReservationDateKey(iso)   // YYYY-MM-DD en UTC
+  const [y, m, d] = key.split('-')
+  return `${d}-${m}-${y}`
+}
+
+// HH:MM a partir de un ISO string de la API (alias legible de formatTimeFromISO)
+export function fmtHora(iso) {
+  if (!iso) return ''
+  return formatTimeFromISO(iso)           // ya usa timeZone: 'UTC'
+}
+
+// DD-MM-YYYY HH:MM
+export function fmtFechaHora(iso) {
+  if (!iso) return ''
+  return `${fmtFecha(iso)} ${fmtHora(iso)}`
+}
