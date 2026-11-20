@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 // Páginas públicas
@@ -24,9 +25,24 @@ import Clientes from './pages/admin/Clientes'
 import SuperadminLogin from './pages/superadmin/Login'
 import SuperadminDashboard from './pages/superadmin/Dashboard'
 
+// Control de Flota — carga diferida
+const FlotaLayout      = lazy(() => import('./components/flota/FlotaLayout'))
+const FlotaDashboard   = lazy(() => import('./pages/flota/Dashboard'))
+const FlotaVehiculos   = lazy(() => import('./pages/flota/Vehiculos'))
+const FlotaConductores = lazy(() => import('./pages/flota/Conductores'))
+const FlotaDocumentos  = lazy(() => import('./pages/flota/Documentos'))
+
 // Componentes
 import ProtectedRoute from './components/admin/ProtectedRoute'
 import SuperadminRoute from './components/superadmin/SuperadminRoute'
+
+function FlotaSpinner() {
+  return (
+    <div className="flex items-center justify-center h-screen bg-[#1C1F26]">
+      <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+}
 
 export default function App() {
   return (
@@ -57,6 +73,27 @@ export default function App() {
         <Route path="/superadmin" element={<SuperadminRoute />}>
           <Route index element={<SuperadminDashboard />} />
         </Route>
+
+        {/* ——— Control de Flota ————————————————————————————
+            Montado en /flota — mismo JWT, mismo tenant.
+            En producción: flota.agendacar.cl sirve este mismo
+            build, y el usuario entra directamente a /flota.
+        ————————————————————————————————————————————————————— */}
+        <Route
+          path="/flota/*"
+          element={
+            <Suspense fallback={<FlotaSpinner />}>
+              <FlotaLayout>
+                <Routes>
+                  <Route index element={<FlotaDashboard />} />
+                  <Route path="vehiculos"   element={<FlotaVehiculos />} />
+                  <Route path="conductores" element={<FlotaConductores />} />
+                  <Route path="documentos"  element={<FlotaDocumentos />} />
+                </Routes>
+              </FlotaLayout>
+            </Suspense>
+          }
+        />
 
         {/* Ruta por slug: agendacar.cl/ewert */}
         <Route path="/:slug" element={<TenantPage />} />

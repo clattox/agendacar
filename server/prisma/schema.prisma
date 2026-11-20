@@ -251,3 +251,235 @@ model Egreso {
   monto       Float
   createdAt   DateTime @default(now())
 }
+
+// ================================================================
+// CONTROL DE FLOTA
+// ================================================================
+
+enum EstadoVehiculo {
+  OPERATIVO
+  EN_TALLER
+  FUERA_DE_SERVICIO
+}
+
+enum TipoActividad {
+  KILOMETRAJE
+  COMBUSTIBLE
+  PEAJE
+  MANTENCION
+  CAMBIO_ESTADO
+}
+
+enum TipoCombustible {
+  DIESEL
+  BENCINA_93
+  BENCINA_95
+  BENCINA_97
+}
+
+enum SentidoPeaje {
+  IDA
+  VUELTA
+  IDA_Y_VUELTA
+}
+
+enum TipoMantencion {
+  CAMBIO_ACEITE
+  CAMBIO_FILTROS
+  NEUMATICOS
+  FRENOS
+  BATERIA
+  CORREA_DISTRIBUCION
+  MANTENCION_GENERAL
+  OTRO
+  REVISION_TECNICA
+  PERMISO_CIRCULACION
+  SOAP
+  SEGURO_VOLUNTARIO
+}
+
+enum TipoDocumento {
+  REVISION_TECNICA
+  SOAP
+  PERMISO_CIRCULACION
+  SEGURO_VOLUNTARIO
+}
+
+model Conductor {
+  id                String    @id @default(cuid())
+  tenantId          Int
+
+  nombre            String
+  rut               String?
+  licenciaNumero    String?
+  licenciaCategoria String?
+  licenciaVence     DateTime?
+  telefono          String?
+  email             String?
+  activo            Boolean   @default(true)
+
+  flotaVehiculos    FlotaVehiculo[]
+  estadosCambios    EstadoCambioFlota[]
+  actividades       FlotaActividad[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, activo])
+}
+
+model FlotaVehiculo {
+  id                  String              @id @default(cuid())
+  tenantId            Int
+
+  marca               String
+  modelo              String
+  anio                Int
+  patente             String
+  color               String?
+  categoria           String?
+  numeroInterno       String?
+
+  estado              EstadoVehiculo      @default(OPERATIVO)
+  odometroActual      Int                 @default(0)
+
+  conductorId         String?
+  conductor           Conductor?          @relation(fields: [conductorId], references: [id])
+
+  proxMantencionKm    Int?
+  proxMantencionFecha DateTime?
+
+  documentos          VehiculoDocumento[]
+  actividades         FlotaActividad[]
+  estadosCambios      EstadoCambioFlota[]
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@unique([tenantId, patente])
+  @@index([tenantId])
+  @@index([tenantId, estado])
+}
+
+model VehiculoDocumento {
+  id               String        @id @default(cuid())
+  tenantId         Int
+  vehiculoId       String
+  vehiculo         FlotaVehiculo @relation(fields: [vehiculoId], references: [id], onDelete: Cascade)
+
+  tipo             TipoDocumento
+
+  fechaEmision     DateTime?
+  fechaVencimiento DateTime
+
+  numeroDocumento  String?
+  monto            Int?
+  proveedor        String?
+
+  activo           Boolean       @default(true)
+
+  createdAt        DateTime      @default(now())
+
+  @@index([tenantId])
+  @@index([vehiculoId, tipo])
+  @@index([fechaVencimiento])
+}
+
+model FlotaActividad {
+  id              String        @id @default(cuid())
+  tenantId        Int
+  vehiculoId      String
+  vehiculo        FlotaVehiculo @relation(fields: [vehiculoId], references: [id], onDelete: Cascade)
+
+  tipo            TipoActividad
+  fecha           DateTime
+
+  registradoPorId String?
+  registradoPor   Conductor?    @relation(fields: [registradoPorId], references: [id])
+  notas           String?
+
+  kmRegistro             KmRegistro?
+  combustibleRegistro    CombustibleRegistro?
+  peajeRegistro          PeajeRegistro?
+  mantencionRegistro     MantencionRegistro?
+  estadoCambio           EstadoCambioFlota?
+
+  createdAt       DateTime      @default(now())
+
+  @@index([tenantId])
+  @@index([vehiculoId])
+  @@index([vehiculoId, tipo])
+  @@index([tenantId, fecha])
+}
+
+model KmRegistro {
+  id             String         @id @default(cuid())
+  actividadId    String         @unique
+  actividad      FlotaActividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  odometroActual Int
+  kmRecorridos   Int?
+}
+
+model CombustibleRegistro {
+  id               String          @id @default(cuid())
+  actividadId      String          @unique
+  actividad        FlotaActividad  @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  tipoCombustible  TipoCombustible
+  litros           Decimal         @db.Decimal(8, 2)
+  monto            Int
+  precioLitro      Int?
+  odometroAlCargar Int?
+  estacion         String?
+  ciudadEstacion   String?
+}
+
+model PeajeRegistro {
+  id          String         @id @default(cuid())
+  actividadId String         @unique
+  actividad   FlotaActividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  monto       Int
+  autopista   String?
+  sentido     SentidoPeaje   @default(IDA)
+  proposito   String?
+}
+
+model MantencionRegistro {
+  id           String         @id @default(cuid())
+  actividadId  String         @unique
+  actividad    FlotaActividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  tipo         TipoMantencion
+  descripcion  String?
+  taller       String?
+  costo        Int?
+  odometro     Int?
+  numeroFolio  String?
+
+  proxFecha    DateTime?
+  proxKm       Int?
+}
+
+model EstadoCambioFlota {
+  id                   String         @id @default(cuid())
+  actividadId          String         @unique
+  actividad            FlotaActividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  vehiculoId           String
+  vehiculo             FlotaVehiculo  @relation(fields: [vehiculoId], references: [id])
+
+  estadoAnterior       EstadoVehiculo
+  estadoNuevo          EstadoVehiculo
+  motivo               String?
+
+  tallerNombre         String?
+  fechaRetornoEstimada DateTime?
+
+  conductorAsignadoId  String?
+  conductorAsignado    Conductor?     @relation(fields: [conductorAsignadoId], references: [id])
+
+  @@index([vehiculoId])
+}

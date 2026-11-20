@@ -11,6 +11,7 @@ const allowedOrigins = [
   'https://mediumspringgreen-capybara-442877.hostingersite.com',
   'https://agendacar.cl',
   'https://www.agendacar.cl',
+  'https://flota.agendacar.cl',
   ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : [])
 ]
 
@@ -44,6 +45,7 @@ app.use('/api/caja', require('./routes/caja'))
 app.use('/api/recordatorios', require('./routes/recordatorios'))
 app.use('/api/clientes', require('./routes/clientes'))
 app.use('/api/egresos', require('./routes/egresos'))
+app.use('/api/flota', require('./middleware/auth'), require('./routes/flota'))
 
 // Health check
 app.get('/api/health', (req, res) => {
