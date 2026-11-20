@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  Truck,
   UserRound,
   Users,
   XCircle
@@ -83,6 +84,15 @@ export default function AdminLayout({ children, hideBanner = false }) {
   const navigate = useNavigate()
   const usuario = getUsuario() || {}
   const tenant = usuario.tenant
+  const [flotaActiva, setFlotaActiva] = useState(false)
+
+  useEffect(() => {
+    if (!tenant?.subdominio) return
+    obtenerTenant(tenant.subdominio)
+      .then(t => setFlotaActiva(!!t.flotaActiva))
+      .catch(() => {})
+  }, [tenant?.subdominio])
+
   const sitioPublico = tenant?.subdominio
     ? `/${encodeURIComponent(tenant.subdominio)}`
     : '/'
@@ -156,6 +166,18 @@ export default function AdminLayout({ children, hideBanner = false }) {
             )
           })}
         </nav>
+
+        {flotaActiva && (
+          <div className="border-t border-line px-3 py-3">
+            <a
+              href="/flota"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink"
+            >
+              <Truck className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Control de Flota
+            </a>
+          </div>
+        )}
 
         <div className="space-y-2 border-t border-line p-3">
           <a
