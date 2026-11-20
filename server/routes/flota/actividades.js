@@ -3,7 +3,8 @@
 // en una transacción atómica y actualiza el estado del vehículo.
 
 const router = require('express').Router()
-const prisma = require('../../lib/prisma')
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
 
 // ——— POST /api/flota/actividades ——————————————————————————————
 //

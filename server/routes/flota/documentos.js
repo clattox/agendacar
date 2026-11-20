@@ -1,7 +1,8 @@
 // routes/flota/documentos.js
 // Gestión de documentos legales: RT, SOAP, Permiso, Seguro
 const router = require('express').Router()
-const prisma = require('../../lib/prisma')
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
 
 // ——— GET /api/flota/documentos/vencimientos ——————————————————
 // Documentos que vencen en los próximos N días (default: 60)
