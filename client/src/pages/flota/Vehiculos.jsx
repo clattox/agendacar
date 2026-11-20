@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useVehiculos, useDashboard } from '../../hooks/useFlota'
 import NuevaActividad from '../../components/flota/NuevaActividad'
+import NuevoVehiculo  from '../../components/flota/NuevoVehiculo'
 
 const ESTADOS = {
   OPERATIVO:         { label: 'Operativo',          color: 'text-green-400  bg-green-400/10  border-green-400/30'  },
@@ -13,7 +14,8 @@ const ESTADOS = {
 export default function FlotaVehiculos() {
   const navigate = useNavigate()
   const [filters, setFilters]           = useState({ estado: '', search: '' })
-  const [modalVehiculo, setModalVehiculo] = useState(null)
+  const [modalVehiculo, setModalVehiculo]   = useState(null)
+  const [modalNuevo,    setModalNuevo]      = useState(false)
 
   const { data: dash }                    = useDashboard()
   const { data, loading, error, refetch } = useVehiculos(filters)
@@ -63,7 +65,7 @@ export default function FlotaVehiculos() {
 
         <div className="ml-auto">
           <button
-            onClick={() => navigate('/flota/vehiculos/nuevo')}
+            onClick={() => setModalNuevo(true)}
             className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
           >
             + Agregar vehículo
@@ -116,6 +118,13 @@ export default function FlotaVehiculos() {
           vehiculo={modalVehiculo}
           onClose={() => setModalVehiculo(null)}
           onSuccess={() => { setModalVehiculo(null); refetch() }}
+        />
+      )}
+
+      {modalNuevo && (
+        <NuevoVehiculo
+          onClose={() => setModalNuevo(false)}
+          onSuccess={() => { setModalNuevo(false); refetch() }}
         />
       )}
     </div>
