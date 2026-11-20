@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Building2, CalendarClock, CheckCircle2, Eye, EyeOff, MapPin, Pencil, Plus, PowerOff, RotateCcw, Users, X } from 'lucide-react'
+import { Building2, CalendarClock, CheckCircle2, Eye, EyeOff, MapPin, Pencil, Plus, PowerOff, RotateCcw, Truck, Users, X } from 'lucide-react'
 import SuperadminLayout from '../../components/superadmin/SuperadminLayout'
-import { getTenants, createTenant, toggleTenant, editarTenant, getStats, actualizarVencimiento, resetPasswordTenant } from '../../services/superadminService'
+import { getTenants, createTenant, toggleTenant, toggleFlota, editarTenant, getStats, actualizarVencimiento, resetPasswordTenant } from '../../services/superadminService'
 import { getApiErrorMessage } from '../../lib/errors'
 import { Button, Input } from '../../components/ui'
 
@@ -20,6 +20,7 @@ export default function SuperadminDashboard() {
   const [formError, setFormError] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [toggling, setToggling] = useState(null)
+  const [togglingFlota, setTogglingFlota] = useState(null)
   const [editandoVenc, setEditandoVenc] = useState(null) // id del tenant editando
   const [vencInput, setVencInput] = useState('')
   const [guardandoVenc, setGuardandoVenc] = useState(false)
@@ -101,6 +102,19 @@ export default function SuperadminDashboard() {
       setError('No pudimos actualizar el estado.')
     } finally {
       setToggling(null)
+    }
+  }
+
+  const handleToggleFlota = async (id, actual) => {
+    if (togglingFlota) return
+    setTogglingFlota(id)
+    try {
+      const actualizado = await toggleFlota(id, !actual)
+      setTenants(prev => prev.map(t => t.id === id ? actualizado : t))
+    } catch {
+      setError('No pudimos actualizar el módulo de flota.')
+    } finally {
+      setTogglingFlota(null)
     }
   }
 
@@ -286,6 +300,7 @@ export default function SuperadminDashboard() {
                 <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden sm:table-cell">Subdominio</th>
                 <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden md:table-cell">Reservas</th>
                 <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden lg:table-cell">Vencimiento</th>
+                <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden xl:table-cell">Módulos</th>
                 <th className="px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide">Estado</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -338,6 +353,23 @@ export default function SuperadminDashboard() {
                         </button>
                       </div>
                     )}
+                  </td>
+                  <td className="px-4 py-3 hidden xl:table-cell">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleToggleFlota(t.id, t.flotaActiva)}
+                        disabled={togglingFlota === t.id}
+                        title={t.flotaActiva ? 'Desactivar módulo Flota' : 'Activar módulo Flota'}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                          t.flotaActiva
+                            ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                            : 'bg-graphite-100 text-ink-soft hover:bg-graphite-200'
+                        }`}
+                      >
+                        <Truck className="h-3 w-3" />
+                        Flota
+                      </button>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${

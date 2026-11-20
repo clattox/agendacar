@@ -1,7 +1,9 @@
 // routes/flota/index.js
-// Agrega en app.js:  app.use('/api/flota', authMiddleware, require('./routes/flota'))
-
 const router = require('express').Router()
+const requireFlota = require('../../middleware/requireFlota')
+
+// Verifica módulo activo en todas las rutas de flota
+router.use(requireFlota)
 
 router.use('/dashboard',   require('./dashboard'))
 router.use('/vehiculos',   require('./vehiculos'))
