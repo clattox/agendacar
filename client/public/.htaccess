@@ -1,7 +1,14 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  # Nunca redirigir rutas de la SPA
   RewriteRule ^index\.html$ - [L]
+
+  # Rutas internas de la SPA — servir index.html directamente, sin trailing slash
+  RewriteRule ^(admin|flota)(/.*)? /index.html [L]
+
+  # Resto de archivos estáticos
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
