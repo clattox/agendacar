@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     const conductores = await prisma.conductor.findMany({
       where,
       include: {
-        _count: { select: { vehiculos: true } },
+        _count: { select: { flotaVehiculos: true } },
       },
       orderBy: { nombre: 'asc' },
     })
