@@ -3,6 +3,12 @@
 const router = require('express').Router()
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
+const { getConfiguracion, updateConfiguracion } = require('../../controllers/alertaDocumentoController')
+
+// ——— GET/PUT /api/flota/documentos/configuracion ——————————————
+// Configuración de alertas por correo para documentos
+router.get('/configuracion',  getConfiguracion)
+router.put('/configuracion',  updateConfiguracion)
 
 // ——— GET /api/flota/documentos ———————————————————————————————
 // Todos los documentos activos de la flota

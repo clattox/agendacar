@@ -21,6 +21,9 @@ model Tenant {
   inspeccionActiva   Boolean    @default(true)
   flotaActiva        Boolean    @default(false)
   soloFlota          Boolean    @default(false)  // si true: solo accede al módulo de flota (sin taller)
+  // Alertas de documentos de flota
+  alertaDocActiva    Boolean    @default(false)
+  alertaDocDias      String     @default("20,10,5") // días antes del vencimiento separados por coma
   recordatorioActivo Boolean    @default(false)
   recordatorioHora   Int        @default(20)  // hora en Chile (0-23)
   recordatorioDias   String     @default("1,2,3,4,5") // días semana JS (0=Dom..6=Sáb)
@@ -476,6 +479,18 @@ model MantencionRegistro {
 
   proxFecha    DateTime?
   proxKm       Int?
+}
+
+// Log de alertas de documentos enviadas — evita reenvíos duplicados
+model AlertaDocumentoLog {
+  id           String   @id @default(cuid())
+  tenantId     Int
+  documentoId  String
+  diasRestantes Int     // 20, 10 o 5 — el umbral que disparó la alerta
+  enviadoEn    DateTime @default(now())
+
+  @@unique([documentoId, diasRestantes])
+  @@index([tenantId])
 }
 
 model TrasladoRegistro {

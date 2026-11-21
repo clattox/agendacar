@@ -1,7 +1,11 @@
 // pages/flota/Documentos.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDocumentosFlota } from '../../hooks/useFlota'
+import { getToken } from '../../lib/auth'
+
+const API = import.meta.env.VITE_API_URL
+const authHeaders = () => ({ Authorization: `Bearer ${getToken()}` })
 
 const TIPO_LABELS = {
   REVISION_TECNICA:    'Revisión Técnica',
@@ -61,10 +65,41 @@ function badgeLabel(alerta, diasRestantes) {
   return `${diasRestantes} días`
 }
 
+// ── Hook configuración alertas ────────────────────────────────────────────────
+function useAlertaConfig() {
+  const [cfg, setCfg]       = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved]   = useState(false)
+
+  useEffect(() => {
+    fetch(`${API}/api/flota/documentos/configuracion`, { headers: authHeaders() })
+      .then(r => r.json())
+      .then(data => setCfg({ alertaDocActiva: data.alertaDocActiva ?? false, alertaDocDias: data.alertaDocDias ?? '20,10,5' }))
+      .catch(() => {})
+  }, [])
+
+  const guardar = async () => {
+    if (!cfg) return
+    setSaving(true)
+    try {
+      const r = await fetch(`${API}/api/flota/documentos/configuracion`, {
+        method: 'PUT',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(cfg)
+      })
+      if (r.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+    } finally { setSaving(false) }
+  }
+
+  return { cfg, setCfg, saving, saved, guardar }
+}
+
 export default function FlotaDocumentos() {
   const navigate = useNavigate()
   const [filters, setFilters] = useState({ estado: '', tipo: '' })
   const { data, loading, error } = useDocumentosFlota(filters)
+  const { cfg, setCfg, saving, saved, guardar } = useAlertaConfig()
+  const [showConfig, setShowConfig] = useState(false)
 
   // Ordenar: vencidos → críticos → próximos → vigentes, luego por fecha asc
   const docs = (data ?? []).slice().sort((a, b) => {
@@ -100,7 +135,77 @@ export default function FlotaDocumentos() {
           <h1 className="text-xl font-bold text-[#252A31]">Documentos legales</h1>
           <p className="text-sm text-[#737B86] mt-0.5">Vista global de toda la flota</p>
         </div>
+        <button
+          onClick={() => setShowConfig(v => !v)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap ${
+            showConfig
+              ? 'bg-[#252A31] text-white border-[#252A31]'
+              : 'bg-white text-[#737B86] border-[#E1E4E8] hover:border-[#C6CAD0]'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          Alertas
+        </button>
       </div>
+
+      {/* Panel configuración alertas */}
+      {showConfig && cfg && (
+        <div className="bg-white border border-[#E1E4E8] rounded-xl p-5 mb-5">
+          <h3 className="text-sm font-semibold text-[#252A31] mb-4">Alertas por correo — documentos de flota</h3>
+
+          {/* Toggle activo */}
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setCfg(c => ({ ...c, alertaDocActiva: !c.alertaDocActiva }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                cfg.alertaDocActiva ? 'bg-amber-500' : 'bg-[#D1D5DB]'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                cfg.alertaDocActiva ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            </button>
+            <span className="text-sm text-[#374151]">
+              {cfg.alertaDocActiva ? 'Alertas activas' : 'Alertas desactivadas'}
+            </span>
+          </div>
+
+          {/* Días */}
+          {cfg.alertaDocActiva && (
+            <div className="mb-4">
+              <label className="block text-xs text-[#737B86] mb-1.5">
+                Enviar alerta cuando falten (días antes del vencimiento)
+              </label>
+              <input
+                type="text"
+                value={cfg.alertaDocDias}
+                onChange={e => setCfg(c => ({ ...c, alertaDocDias: e.target.value }))}
+                placeholder="20,10,5"
+                className="border border-[#E1E4E8] rounded-lg px-3 py-2 text-sm text-[#252A31] outline-none focus:border-amber-500 w-48"
+              />
+              <p className="text-xs text-[#737B86] mt-1">Separados por coma — ej: <span className="font-mono">20,10,5</span></p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={guardar}
+              disabled={saving}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60"
+            >
+              {saving ? 'Guardando…' : 'Guardar'}
+            </button>
+            {saved && <span className="text-sm text-green-600 font-medium">✓ Guardado</span>}
+          </div>
+
+          <p className="text-xs text-[#9CA3AF] mt-3">
+            Los correos se envían al email del administrador cuando un documento está a N días de vencer.
+            Se evitan duplicados: cada alerta se envía una sola vez por documento y umbral.
+          </p>
+        </div>
+      )}
 
       {/* Chips resumen */}
       {!loading && (

@@ -344,6 +344,35 @@ async function main () {
       AND  c."numero"    = 116
   `)
 
+  // ── Migración: alertas de documentos de flota ────────────────────────────────
+  console.log('[migrate] alerta_documentos_flota...')
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+    ADD COLUMN IF NOT EXISTS "alertaDocActiva" BOOLEAN NOT NULL DEFAULT false
+  `)
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenant"
+    ADD COLUMN IF NOT EXISTS "alertaDocDias" TEXT NOT NULL DEFAULT '20,10,5'
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "AlertaDocumentoLog" (
+      "id"           TEXT        NOT NULL,
+      "tenantId"     INTEGER     NOT NULL,
+      "documentoId"  TEXT        NOT NULL,
+      "diasRestantes" INTEGER    NOT NULL,
+      "enviadoEn"    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT "AlertaDocumentoLog_pkey" PRIMARY KEY ("id")
+    )
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "AlertaDocumentoLog_documentoId_diasRestantes_key"
+      ON "AlertaDocumentoLog"("documentoId", "diasRestantes")
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "AlertaDocumentoLog_tenantId_idx"
+      ON "AlertaDocumentoLog"("tenantId")
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }
