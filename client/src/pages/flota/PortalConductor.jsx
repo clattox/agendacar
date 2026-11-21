@@ -815,7 +815,7 @@ export default function PortalConductor() {
                       onChange={e => cambiarAnio(Number(e.target.value))}
                       className="bg-[#1C1F26] border border-[#2d3039] text-xs text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
                     >
-                      {[new Date().getFullYear(), new Date().getFullYear() - 1].map(a => (
+                      {Array.from({ length: 2030 - 2024 + 1 }, (_, i) => 2030 - i).map(a => (
                         <option key={a} value={a}>{a}</option>
                       ))}
                     </select>
@@ -824,7 +824,7 @@ export default function PortalConductor() {
                   {reporteData && (
                     <button
                       onClick={() => setVerAnioPortal(v => !v)}
-                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all border
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all border self-end mb-0.5
                         ${verAnioPortal
                           ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
                           : 'border-[#2d3039] text-zinc-400 hover:text-white'}`}
