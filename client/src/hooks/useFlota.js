@@ -75,6 +75,15 @@ export function useVencimientos(dias = 60) {
   return useQuery(`/flota/documentos/vencimientos?dias=${dias}`, [dias])
 }
 
+export function useDocumentosFlota(filters = {}) {
+  const params = new URLSearchParams()
+  if (filters.estado)     params.set('estado',     filters.estado)
+  if (filters.tipo)       params.set('tipo',        filters.tipo)
+  if (filters.vehiculoId) params.set('vehiculoId',  filters.vehiculoId)
+  const qs = params.toString()
+  return useQuery(`/flota/documentos${qs ? '?' + qs : ''}`, [filters.estado, filters.tipo, filters.vehiculoId])
+}
+
 // ——— Mutaciones ——————————————————————————————————————————
 
 export function useRegistrarActividad() {

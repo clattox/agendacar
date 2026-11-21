@@ -4,6 +4,41 @@ const router = require('express').Router()
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+// ——— GET /api/flota/documentos ———————————————————————————————
+// Todos los documentos activos de la flota
+// ?estado=VENCIDO|CRITICO|PROXIMO|VIGENTE  &tipo=RT  &vehiculoId=xxx
+router.get('/', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { estado, tipo, vehiculoId } = req.query
+
+    const hoy = new Date()
+    const where = { tenantId, activo: true }
+    if (tipo)       where.tipo       = tipo
+    if (vehiculoId) where.vehiculoId = vehiculoId
+
+    const documentos = await prisma.vehiculoDocumento.findMany({
+      where,
+      include: {
+        vehiculo: { select: { id: true, marca: true, modelo: true, patente: true, estado: true } },
+      },
+      orderBy: { fechaVencimiento: 'asc' },
+    })
+
+    const data = documentos.map(doc => {
+      const diasRestantes = Math.ceil((new Date(doc.fechaVencimiento) - hoy) / (1000 * 60 * 60 * 24))
+      const alerta = diasRestantes < 0 ? 'VENCIDO' : diasRestantes <= 15 ? 'CRITICO' : diasRestantes <= 60 ? 'PROXIMO' : 'VIGENTE'
+      return { ...doc, diasRestantes, alerta }
+    })
+
+    const filtrado = estado ? data.filter(d => d.alerta === estado) : data
+    res.json(filtrado)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener documentos' })
+  }
+})
+
 // ——— GET /api/flota/documentos/vencimientos ——————————————————
 // Documentos que vencen en los próximos N días (default: 60)
 // ?dias=60  &tipo=RT
