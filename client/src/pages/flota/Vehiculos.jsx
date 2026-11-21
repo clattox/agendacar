@@ -522,7 +522,11 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
       <td className="px-5 py-3">
         <div className="font-semibold text-[#252A31]">{v.marca} {v.modelo}</div>
         <div className="text-xs text-[#737B86] mt-0.5 font-mono tracking-wider">{v.patente} · {v.anio}</div>
-        {v.categoria && <div className="text-xs text-[#A0A6AE]">{v.categoria}</div>}
+        <div className="flex flex-wrap gap-x-2 mt-0.5">
+          {v.categoria && <span className="text-xs text-[#A0A6AE]">{v.categoria}</span>}
+          {v.region && <span className="text-xs text-[#A0A6AE]">{v.region}</span>}
+          {v.unidadOperativa && <span className="text-xs text-[#A0A6AE]">{v.unidadOperativa}</span>}
+        </div>
       </td>
       <td className="px-4 py-3">
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${estado.color}`}>

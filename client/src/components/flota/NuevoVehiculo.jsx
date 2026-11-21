@@ -5,6 +5,13 @@ import api from '../../lib/api'
 
 const CATEGORIAS = ['Camioneta', 'Furgón', 'Sedán', 'SUV', 'Camión', 'Van', 'Moto', 'Otro']
 
+const REGIONES_CHILE = [
+  'Arica y Parinacota', 'Tarapacá', 'Antofagasta', 'Atacama', 'Coquimbo',
+  'Valparaíso', 'Metropolitana de Santiago', "O'Higgins", 'Maule',
+  'Ñuble', 'Biobío', 'La Araucanía', 'Los Ríos', 'Los Lagos',
+  'Aysén', 'Magallanes',
+]
+
 export default function NuevoVehiculo({ onClose, onSuccess }) {
   const { loading, execute } = useCrearVehiculo()
   const [form, setForm] = useState({
@@ -168,11 +175,15 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Región">
               <input
+                list="regiones-chile"
                 value={form.region}
                 onChange={e => set('region', e.target.value)}
                 placeholder="Biobío"
                 className={INPUT}
               />
+              <datalist id="regiones-chile">
+                {REGIONES_CHILE.map(r => <option key={r} value={r} />)}
+              </datalist>
             </Field>
             <Field label="Unidad operativa">
               <input

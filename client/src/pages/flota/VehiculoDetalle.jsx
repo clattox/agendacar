@@ -10,6 +10,13 @@ import DocumentosVehiculo from '../../components/flota/DocumentosVehiculo'
 
 // ——— Helpers ——————————————————————————————————————————————————
 const FMT  = n => n != null ? `$${Number(n).toLocaleString('es-CL')}` : '—'
+const REGIONES_CHILE = [
+  'Arica y Parinacota', 'Tarapacá', 'Antofagasta', 'Atacama', 'Coquimbo',
+  'Valparaíso', 'Metropolitana de Santiago', "O'Higgins", 'Maule',
+  'Ñuble', 'Biobío', 'La Araucanía', 'Los Ríos', 'Los Lagos',
+  'Aysén', 'Magallanes',
+]
+
 const KM   = n => n != null ? `${Number(n).toLocaleString('es-CL')} km` : '—'
 const FECHA = iso => {
   if (!iso) return '—'
@@ -1224,7 +1231,10 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="field-label">Región</label>
-              <input className="input mt-1" value={form.region} onChange={e => set('region', e.target.value)} placeholder="Biobío" />
+              <input list="regiones-chile-editar" className="input mt-1" value={form.region} onChange={e => set('region', e.target.value)} placeholder="Biobío" />
+              <datalist id="regiones-chile-editar">
+                {REGIONES_CHILE.map(r => <option key={r} value={r} />)}
+              </datalist>
             </div>
             <div>
               <label className="field-label">Unidad operativa</label>
