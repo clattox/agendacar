@@ -356,6 +356,8 @@ model FlotaVehiculo {
   proxMantencionKm    Int?
   proxMantencionFecha DateTime?
 
+  tieneTag            Boolean             @default(false)
+
   documentos          VehiculoDocumento[]
   actividades         FlotaActividad[]
   estadosCambios      EstadoCambioFlota[]

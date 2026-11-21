@@ -125,7 +125,8 @@ router.put('/:id', async (req, res) => {
     const { tenantId } = req.user
     const { marca, modelo, anio, patente, color, categoria,
             numeroInterno, conductorId,
-            proxMantencionKm, proxMantencionFecha } = req.body
+            proxMantencionKm, proxMantencionFecha,
+            tieneTag } = req.body
 
     // Verificar que pertenece al tenant
     const existing = await prisma.flotaVehiculo.findFirst({ where: { id: req.params.id, tenantId } })
@@ -143,7 +144,8 @@ router.put('/:id', async (req, res) => {
         ...(numeroInterno !== undefined && { numeroInterno }),
         ...(conductorId !== undefined && { conductorId }),
         ...(proxMantencionKm !== undefined && { proxMantencionKm }),
-        ...(proxMantencionFecha !== undefined && { proxMantencionFecha: new Date(proxMantencionFecha) }),
+        ...(proxMantencionFecha !== undefined && { proxMantencionFecha: proxMantencionFecha ? new Date(proxMantencionFecha) : null }),
+        ...(tieneTag !== undefined && { tieneTag: !!tieneTag }),
       },
     })
     res.json(vehiculo)
@@ -273,6 +275,41 @@ router.get('/:id/estadisticas', async (req, res) => {
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al calcular estadísticas' })
+  }
+})
+
+// ——— PUT /api/flota/vehiculos/:id/actividades/:actId/combustible ———
+// Admin edita una carga de combustible ya registrada
+router.put('/:id/actividades/:actId/combustible', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { actId }    = req.params
+    const { litros, monto, tipoCombustible, estacion, odometroAlCargar } = req.body
+
+    if (!monto || isNaN(Number(monto)) || Number(monto) <= 0) {
+      return res.status(400).json({ error: 'monto es obligatorio' })
+    }
+
+    // Verificar tenant
+    const actividad = await prisma.flotaActividad.findFirst({
+      where: { id: actId, tenantId, tipo: 'COMBUSTIBLE' },
+    })
+    if (!actividad) return res.status(404).json({ error: 'Actividad no encontrada' })
+
+    const updated = await prisma.combustibleRegistro.update({
+      where: { actividadId: actId },
+      data: {
+        monto:             Number(monto),
+        ...(litros !== undefined && { litros: litros ? Number(litros) : null }),
+        ...(tipoCombustible && { tipoCombustible }),
+        ...(estacion !== undefined && { estacion: estacion || null }),
+        ...(odometroAlCargar !== undefined && { odometroAlCargar: odometroAlCargar ? Number(odometroAlCargar) : null }),
+      },
+    })
+    res.json(updated)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al editar combustible' })
   }
 })
 

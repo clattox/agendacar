@@ -44,7 +44,7 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
     setValidationErr('')
 
     if (tipo === 'KILOMETRAJE'   && !form.odometroActual)                       return setValidationErr('Ingresa el odómetro actual')
-    if (tipo === 'COMBUSTIBLE'   && (!form.tipoCombustible || !form.litros || !form.monto)) return setValidationErr('Completa tipo, litros y monto')
+    if (tipo === 'COMBUSTIBLE'   && (!form.tipoCombustible || !form.monto))                 return setValidationErr('Completa tipo y monto')
     if (tipo === 'PEAJE'         && !form.esTag && !form.monto)                 return setValidationErr('Ingresa el monto del peaje o marca que es con tag')
     if (tipo === 'MANTENCION'    && !form.tipoMantencion)                       return setValidationErr('Selecciona el tipo de mantención')
     if (tipo === 'CAMBIO_ESTADO' && !form.estadoNuevo)                          return setValidationErr('Selecciona el nuevo estado')
@@ -135,7 +135,7 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
         <div className="px-5 py-4 flex flex-col gap-4">
           {tipo === 'KILOMETRAJE'   && <FormKm    form={form} set={set} odometroActual={vehiculo.odometroActual ?? 0} />}
           {tipo === 'COMBUSTIBLE'   && <FormComb  form={form} set={set} />}
-          {tipo === 'PEAJE'         && <FormPeaje form={form} set={set} />}
+          {tipo === 'PEAJE'         && <FormPeaje form={form} set={set} tieneTag={!!vehiculo.tieneTag} />}
           {tipo === 'MANTENCION'    && <FormMant  form={form} set={set} />}
           {tipo === 'CAMBIO_ESTADO' && <FormEstado form={form} set={set} />}
 
@@ -203,10 +203,11 @@ function FormComb({ form, set }) {
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">
-        <Field label="Litros *">
+        <Field label="Litros" hint="opcional">
           <div className="relative">
             <input type="number" className="input pr-7" placeholder="42"
-              onChange={e => set('litros', Number(e.target.value))} />
+              value={form.litros ?? ''}
+              onChange={e => set('litros', e.target.value ? Number(e.target.value) : '')} />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">L</span>
           </div>
         </Field>
@@ -222,9 +223,15 @@ function FormComb({ form, set }) {
             className="input bg-amber-500/10 text-amber-400 border-transparent cursor-default" />
         </Field>
       </div>
+      {!form.litros && (
+        <p className="text-xs text-zinc-600 -mt-2">
+          💡 Agrega los litros para ver el consumo del vehículo
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Estación de servicio">
-          <input type="text" className="input" placeholder="Copec, Petrobras…"
+          <input type="text" className="input" placeholder="Copec"
+            value={form.estacion ?? 'Copec'}
             onChange={e => set('estacion', e.target.value)} />
         </Field>
         <Field label="Odómetro al cargar">
@@ -239,8 +246,13 @@ function FormComb({ form, set }) {
   )
 }
 
-function FormPeaje({ form, set }) {
-  const esTag = !!form.esTag
+function FormPeaje({ form, set, tieneTag }) {
+  // Auto-inicializar esTag si el vehículo tiene tag y aún no se ha tocado el toggle
+  if (tieneTag && form.esTag === undefined) {
+    // Usar setTimeout para evitar mutación durante render
+    setTimeout(() => set('esTag', true), 0)
+  }
+  const esTag = form.esTag !== undefined ? !!form.esTag : !!tieneTag
   return (
     <>
       {/* Toggle Tag */}

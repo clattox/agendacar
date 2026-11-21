@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
+import { getUsuario } from '../../lib/auth'
 import NuevaActividad     from '../../components/flota/NuevaActividad'
 import DocumentosVehiculo from '../../components/flota/DocumentosVehiculo'
 
@@ -92,8 +93,13 @@ export default function VehiculoDetalle() {
   const [loadingActs, setLoadingActs] = useState(false)
   const [error,     setError]     = useState('')
 
-  const [modalActividad, setModalActividad] = useState(false)
-  const [modalDocs,      setModalDocs]      = useState(false)
+  const [modalActividad,  setModalActividad]  = useState(false)
+  const [modalDocs,       setModalDocs]       = useState(false)
+  const [modalEditar,     setModalEditar]     = useState(false)
+  const [modalEditComb,   setModalEditComb]   = useState(null) // actividad a editar
+
+  const usuario = getUsuario()
+  const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin'
 
   const hoyMes = new Date().toISOString().slice(0, 7)  // "2026-11"
 
@@ -192,6 +198,15 @@ export default function VehiculoDetalle() {
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${estado.color}`}>
                 {estado.label}
               </span>
+              {vehiculo.tieneTag && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-blue-500/40 bg-blue-500/10 text-blue-300">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+                    <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
+                  </svg>
+                  Tag activo
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-4 mt-1 flex-wrap">
               <span className="font-mono text-sm text-zinc-300 tracking-widest">{vehiculo.patente}</span>
@@ -203,7 +218,19 @@ export default function VehiculoDetalle() {
           </div>
 
           {/* Acciones */}
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 flex-shrink-0 flex-wrap">
+            {esAdmin && (
+              <button
+                onClick={() => setModalEditar(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Editar
+              </button>
+            )}
             <button
               onClick={() => setModalDocs(true)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
@@ -331,7 +358,12 @@ export default function VehiculoDetalle() {
           <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
             <div className="divide-y divide-[#2a2a2a]">
               {actividades.map(act => (
-                <ActividadRow key={act.id} actividad={act} />
+                <ActividadRow
+                  key={act.id}
+                  actividad={act}
+                  esAdmin={esAdmin}
+                  onEditComb={esAdmin && act.tipo === 'COMBUSTIBLE' ? () => setModalEditComb(act) : null}
+                />
               ))}
             </div>
 
@@ -368,12 +400,27 @@ export default function VehiculoDetalle() {
           onClose={() => setModalDocs(false)}
         />
       )}
+      {modalEditar && (
+        <EditarVehiculo
+          vehiculo={vehiculo}
+          onClose={() => setModalEditar(false)}
+          onSuccess={v => { setVehiculo(v); setModalEditar(false) }}
+        />
+      )}
+      {modalEditComb && (
+        <EditarCombustible
+          actividad={modalEditComb}
+          vehiculoId={id}
+          onClose={() => setModalEditComb(null)}
+          onSuccess={() => { setModalEditComb(null); cargarActividades(1, filtroTipo) }}
+        />
+      )}
     </div>
   )
 }
 
 // ——— Fila de actividad ———————————————————————————————————————
-function ActividadRow({ actividad: act }) {
+function ActividadRow({ actividad: act, onEditComb }) {
   const [expandido, setExpandido] = useState(false)
 
   const colorCls = TIPO_COLOR[act.tipo] || 'text-zinc-400 bg-zinc-800'
@@ -426,18 +473,32 @@ function ActividadRow({ actividad: act }) {
 
       {/* Detalle expandido */}
       {expandido && (
-        <div className="mt-3 pl-11 grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">
-          {buildDetalleExpandido(act).map(({ label, value }) => value ? (
-            <div key={label}>
-              <div className="text-xs text-zinc-600">{label}</div>
-              <div className="text-xs text-zinc-300 font-medium mt-0.5">{value}</div>
-            </div>
-          ) : null)}
-          {act.notas && (
-            <div className="col-span-full mt-1">
-              <div className="text-xs text-zinc-600">Notas</div>
-              <div className="text-xs text-zinc-400 mt-0.5 italic">{act.notas}</div>
-            </div>
+        <div className="mt-3 pl-11">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">
+            {buildDetalleExpandido(act).map(({ label, value }) => value ? (
+              <div key={label}>
+                <div className="text-xs text-zinc-600">{label}</div>
+                <div className="text-xs text-zinc-300 font-medium mt-0.5">{value}</div>
+              </div>
+            ) : null)}
+            {act.notas && (
+              <div className="col-span-full mt-1">
+                <div className="text-xs text-zinc-600">Notas</div>
+                <div className="text-xs text-zinc-400 mt-0.5 italic">{act.notas}</div>
+              </div>
+            )}
+          </div>
+          {onEditComb && (
+            <button
+              onClick={e => { e.stopPropagation(); onEditComb() }}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              Editar carga
+            </button>
           )}
         </div>
       )}
@@ -592,4 +653,298 @@ const DOC_LABEL = {
   PERMISO_CIRCULACION: 'Permiso',
   SOAP:                'SOAP',
   SEGURO_VOLUNTARIO:   'Seguro',
+}
+
+// ——— Modal: Editar vehículo ————————————————————————————————————
+function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
+  const [form,    setForm]    = useState({
+    marca:              vehiculo.marca,
+    modelo:             vehiculo.modelo,
+    anio:               vehiculo.anio,
+    patente:            vehiculo.patente,
+    color:              vehiculo.color || '',
+    categoria:          vehiculo.categoria || '',
+    numeroInterno:      vehiculo.numeroInterno || '',
+    conductorId:        vehiculo.conductorId || '',
+    proxMantencionKm:   vehiculo.proxMantencionKm || '',
+    proxMantencionFecha: vehiculo.proxMantencionFecha
+      ? new Date(vehiculo.proxMantencionFecha).toISOString().slice(0, 10)
+      : '',
+    tieneTag:           vehiculo.tieneTag || false,
+  })
+  const [conductores, setConductores] = useState([])
+  const [loading,     setLoading]     = useState(false)
+  const [error,       setError]       = useState('')
+
+  useEffect(() => {
+    api.get('/flota/conductores?limit=200').then(r => setConductores(r.data.data || [])).catch(() => {})
+  }, [])
+
+  function set(key, value) {
+    setForm(prev => ({ ...prev, [key]: value }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    if (!form.marca || !form.modelo || !form.anio || !form.patente) {
+      return setError('Marca, modelo, año y patente son obligatorios')
+    }
+    setLoading(true)
+    try {
+      const payload = {
+        marca:            form.marca,
+        modelo:           form.modelo,
+        anio:             Number(form.anio),
+        patente:          form.patente,
+        color:            form.color || null,
+        categoria:        form.categoria || null,
+        numeroInterno:    form.numeroInterno || null,
+        conductorId:      form.conductorId || null,
+        proxMantencionKm: form.proxMantencionKm ? Number(form.proxMantencionKm) : null,
+        proxMantencionFecha: form.proxMantencionFecha || null,
+        tieneTag:         form.tieneTag,
+      }
+      const res = await api.put(`/flota/vehiculos/${vehiculo.id}`, payload)
+      onSuccess(res.data)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al guardar')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-lg bg-[#1a1a1a] border border-[#363636] rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-[#1a1a1a] border-b border-[#2d2d2d] px-5 py-4 flex items-center justify-between z-10">
+          <h2 className="text-base font-bold text-white">Editar vehículo</h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+          {/* Fila marca / modelo */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Marca *</label>
+              <input className="input mt-1" value={form.marca} onChange={e => set('marca', e.target.value)} />
+            </div>
+            <div>
+              <label className="field-label">Modelo *</label>
+              <input className="input mt-1" value={form.modelo} onChange={e => set('modelo', e.target.value)} />
+            </div>
+          </div>
+          {/* Año / Patente */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Año *</label>
+              <input type="number" className="input mt-1" value={form.anio} onChange={e => set('anio', e.target.value)} min={1990} max={2030} />
+            </div>
+            <div>
+              <label className="field-label">Patente *</label>
+              <input className="input mt-1 uppercase" value={form.patente} onChange={e => set('patente', e.target.value.toUpperCase())} />
+            </div>
+          </div>
+          {/* Color / Categoría */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Color</label>
+              <input className="input mt-1" value={form.color} onChange={e => set('color', e.target.value)} placeholder="Blanco" />
+            </div>
+            <div>
+              <label className="field-label">Categoría</label>
+              <input className="input mt-1" value={form.categoria} onChange={e => set('categoria', e.target.value)} placeholder="Camioneta, Furgón…" />
+            </div>
+          </div>
+          {/* N° interno */}
+          <div>
+            <label className="field-label">N° interno</label>
+            <input className="input mt-1" value={form.numeroInterno} onChange={e => set('numeroInterno', e.target.value)} placeholder="01" />
+          </div>
+          {/* Conductor */}
+          <div>
+            <label className="field-label">Conductor asignado</label>
+            <select className="input mt-1" value={form.conductorId} onChange={e => set('conductorId', e.target.value)}>
+              <option value="">Sin asignar</option>
+              {conductores.map(c => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+          {/* Próximas mantenciones */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Próx. mantención km</label>
+              <div className="relative mt-1">
+                <input type="number" className="input pr-8" value={form.proxMantencionKm}
+                  onChange={e => set('proxMantencionKm', e.target.value)} placeholder="90000" />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">km</span>
+              </div>
+            </div>
+            <div>
+              <label className="field-label">Próx. mantención fecha</label>
+              <input type="date" className="input mt-1" value={form.proxMantencionFecha}
+                onChange={e => set('proxMantencionFecha', e.target.value)} />
+            </div>
+          </div>
+          {/* Tag */}
+          <button
+            type="button"
+            onClick={() => set('tieneTag', !form.tieneTag)}
+            className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
+              ${form.tieneTag
+                ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
+                : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}
+          >
+            <svg className={`w-5 h-5 flex-shrink-0 ${form.tieneTag ? 'text-blue-400' : 'text-zinc-500'}`}
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+              <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold">Tag electrónico</div>
+              <div className={`text-xs mt-0.5 ${form.tieneTag ? 'text-blue-400/70' : 'text-zinc-600'}`}>
+                {form.tieneTag ? 'Vehículo tiene tag activo' : 'Activar si el vehículo tiene tag de peaje'}
+              </div>
+            </div>
+            <div className={`w-9 h-5 rounded-full flex-shrink-0 relative transition-colors ${form.tieneTag ? 'bg-blue-500' : 'bg-zinc-700'}`}>
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${form.tieneTag ? 'left-4' : 'left-0.5'}`} />
+            </div>
+          </button>
+
+          {error && <p className="text-xs text-red-400">{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 btn-ghost">Cancelar</button>
+            <button type="submit" disabled={loading}
+              className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors disabled:opacity-50">
+              {loading ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ——— Modal: Editar carga de combustible ————————————————————————
+function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
+  const c = actividad.combustibleRegistro
+  const [form,    setForm]    = useState({
+    tipoCombustible: c?.tipoCombustible || '',
+    litros:          c?.litros ? String(Number(c.litros)) : '',
+    monto:           c?.monto || '',
+    estacion:        c?.estacion || '',
+    odometroAlCargar: c?.odometroAlCargar || '',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState('')
+
+  function set(key, value) {
+    setForm(prev => ({ ...prev, [key]: value }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.monto || Number(form.monto) <= 0) return setError('El monto es obligatorio')
+    setLoading(true)
+    try {
+      await api.put(`/flota/vehiculos/${vehiculoId}/actividades/${actividad.id}/combustible`, {
+        tipoCombustible:  form.tipoCombustible,
+        litros:           form.litros ? Number(form.litros) : null,
+        monto:            Number(form.monto),
+        estacion:         form.estacion || null,
+        odometroAlCargar: form.odometroAlCargar ? Number(form.odometroAlCargar) : null,
+      })
+      onSuccess()
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al guardar')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md bg-[#1a1a1a] border border-[#363636] rounded-2xl shadow-2xl">
+        <div className="border-b border-[#2d2d2d] px-5 py-4 flex items-center justify-between">
+          <h2 className="text-base font-bold text-white">Editar carga de combustible</h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+          {/* Tipo */}
+          <div>
+            <label className="field-label">Tipo de combustible</label>
+            <div className="flex gap-2 mt-1.5">
+              {[['DIESEL','Diesel'],['BENCINA_93','93'],['BENCINA_95','95'],['BENCINA_97','97']].map(([v, l]) => (
+                <button key={v} type="button" onClick={() => set('tipoCombustible', v)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all
+                    ${form.tipoCombustible === v
+                      ? 'border-green-400/40 bg-green-400/10 text-green-400'
+                      : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Litros / Monto */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Litros <span className="text-zinc-600 font-normal">(opcional)</span></label>
+              <div className="relative mt-1">
+                <input type="number" className="input pr-7" placeholder="42"
+                  value={form.litros}
+                  onChange={e => set('litros', e.target.value)} />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">L</span>
+              </div>
+            </div>
+            <div>
+              <label className="field-label">Monto total *</label>
+              <div className="relative mt-1">
+                <input type="number" className="input pr-5" placeholder="74000"
+                  value={form.monto}
+                  onChange={e => set('monto', e.target.value)} />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">$</span>
+              </div>
+            </div>
+          </div>
+          {/* Estación / Odómetro */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Estación</label>
+              <input className="input mt-1" placeholder="Copec"
+                value={form.estacion}
+                onChange={e => set('estacion', e.target.value)} />
+            </div>
+            <div>
+              <label className="field-label">Odómetro al cargar</label>
+              <div className="relative mt-1">
+                <input type="number" className="input pr-8" placeholder="87420"
+                  value={form.odometroAlCargar}
+                  onChange={e => set('odometroAlCargar', e.target.value)} />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">km</span>
+              </div>
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-red-400">{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 btn-ghost">Cancelar</button>
+            <button type="submit" disabled={loading}
+              className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors disabled:opacity-50">
+              {loading ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
 }
