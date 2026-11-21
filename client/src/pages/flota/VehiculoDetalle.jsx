@@ -78,6 +78,16 @@ const TIPO_LABEL = {
 
 const SENTIDO_LABEL = { IDA: 'Ida', VUELTA: 'Vuelta', IDA_Y_VUELTA: 'Ida y vuelta' }
 
+// ——— Tabs ————————————————————————————————————————————————————
+const TABS = [
+  { key: 'resumen',      label: 'Resumen'      },
+  { key: 'actividad',    label: 'Actividad'    },
+  { key: 'mantenciones', label: 'Mantenciones' },
+  { key: 'combustible',  label: 'Combustible'  },
+  { key: 'documentos',   label: 'Documentos'   },
+  { key: 'costos',       label: 'Costos'       },
+]
+
 // ——— Componente principal ——————————————————————————————————————
 export default function VehiculoDetalle() {
   const { id }     = useParams()
@@ -92,16 +102,17 @@ export default function VehiculoDetalle() {
   const [loading,   setLoading]   = useState(true)
   const [loadingActs, setLoadingActs] = useState(false)
   const [error,     setError]     = useState('')
+  const [tab,       setTab]       = useState('resumen')
 
   const [modalActividad,  setModalActividad]  = useState(false)
   const [modalDocs,       setModalDocs]       = useState(false)
   const [modalEditar,     setModalEditar]     = useState(false)
-  const [modalEditComb,   setModalEditComb]   = useState(null) // actividad a editar
+  const [modalEditComb,   setModalEditComb]   = useState(null)
 
   const usuario = getUsuario()
   const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin'
 
-  const hoyMes = new Date().toISOString().slice(0, 7)  // "2026-11"
+  const hoyMes = new Date().toISOString().slice(0, 7)
 
   // Cargar datos del vehículo y stats
   const cargarVehiculo = useCallback(async () => {
@@ -142,6 +153,13 @@ export default function VehiculoDetalle() {
   useEffect(() => { cargarVehiculo() }, [cargarVehiculo])
   useEffect(() => { cargarActividades(1, filtroTipo) }, [cargarActividades, filtroTipo])
 
+  // Sincronizar filtro al cambiar de tab
+  useEffect(() => {
+    if (tab === 'mantenciones') setFiltroTipo('MANTENCION')
+    else if (tab === 'combustible') setFiltroTipo('COMBUSTIBLE')
+    else if (['resumen', 'actividad', 'costos'].includes(tab)) setFiltroTipo('')
+  }, [tab])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-zinc-500 text-sm">
@@ -163,13 +181,33 @@ export default function VehiculoDetalle() {
 
   const estado = ESTADOS[vehiculo.estado] ?? ESTADOS.OPERATIVO
 
+  // Estado mantención (para el tab de Mantenciones)
+  let estadoMant = 'OK'
+  if (vehiculo.proxMantencionFecha) {
+    const diff = Math.ceil((new Date(vehiculo.proxMantencionFecha) - new Date()) / 86400000)
+    if (diff < 0) estadoMant = 'VENCIDA'
+    else if (diff <= 30) estadoMant = 'PROXIMA'
+  }
+  if (vehiculo.proxMantencionKm) {
+    const diff = vehiculo.proxMantencionKm - (vehiculo.odometroActual ?? 0)
+    if (diff <= 0) estadoMant = 'VENCIDA'
+    else if (diff <= 1000 && estadoMant !== 'VENCIDA') estadoMant = 'PROXIMA'
+  }
+
+  const mantBadgeStyle = {
+    OK:      'bg-green-500/10 text-green-400 border-green-500/20',
+    PROXIMA: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    VENCIDA: 'bg-red-500/10 text-red-400 border-red-500/20',
+  }[estadoMant]
+
+  // ── Render ──────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-5 pb-10">
+    <div className="flex flex-col gap-0 pb-10">
 
       {/* ── Breadcrumb ── */}
       <button
         onClick={() => navigate('/flota/vehiculos')}
-        className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors w-fit"
+        className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors w-fit mb-5"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path d="M15 18l-6-6 6-6" />
@@ -178,7 +216,7 @@ export default function VehiculoDetalle() {
       </button>
 
       {/* ── Header del vehículo ── */}
-      <div className="bg-[#222] border border-[#363636] rounded-2xl p-5">
+      <div className="bg-[#222] border border-[#363636] rounded-2xl p-5 mb-4">
         <div className="flex items-start gap-4 flex-wrap">
 
           {/* Icono */}
@@ -231,15 +269,6 @@ export default function VehiculoDetalle() {
                 Editar
               </button>
             )}
-            <button
-              onClick={() => setModalDocs(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Documentos
-            </button>
             <button
               onClick={() => setModalActividad(true)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black transition-colors"
@@ -300,88 +329,505 @@ export default function VehiculoDetalle() {
         )}
       </div>
 
-      {/* ── Stats del mes ── */}
-      {stats && (
-        <div>
-          <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-            Resumen del mes
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard label="Gasto total" value={FMT(stats.gastoTotal)} icon="💰" />
-            <StatCard label="Combustible" value={FMT(stats.gastoCombustible)} sub={stats.litrosTotales ? `${Number(stats.litrosTotales).toFixed(1)} L` : ''} icon="⛽" />
-            <StatCard label="Peajes" value={FMT(stats.gastoPeajes)} icon="🏷️" />
-            <StatCard label="Km recorridos" value={KM(stats.kmRecorridos)} icon="📍" />
+      {/* ── Tabs ── */}
+      <div className="flex gap-0 border-b border-[#2a2a2a] mb-5 overflow-x-auto">
+        {TABS.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors
+              ${tab === t.key
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ══ Tab: Resumen ══ */}
+      {tab === 'resumen' && (
+        <div className="flex flex-col gap-5">
+          {/* Stats del mes */}
+          {stats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <StatCard label="Gasto total"   value={FMT(stats.gastoTotal)}        icon="💰" />
+              <StatCard label="Combustible"   value={FMT(stats.gastoCombustible)}  sub={stats.litrosTotales ? `${Number(stats.litrosTotales).toFixed(1)} L` : ''} icon="⛽" />
+              <StatCard label="Peajes"        value={FMT(stats.gastoPeajes)}       icon="🏷️" />
+              <StatCard label="Km recorridos" value={KM(stats.kmRecorridos)}       icon="📍" />
+            </div>
+          )}
+
+          {/* Próxima mantención destacada */}
+          {(vehiculo.proxMantencionFecha || vehiculo.proxMantencionKm) && (
+            <div className={`flex items-center gap-4 p-4 rounded-xl border ${mantBadgeStyle} flex-wrap`}>
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold uppercase tracking-wider">Próxima mantención</div>
+                <div className="flex items-center gap-4 mt-1 flex-wrap text-xs">
+                  {vehiculo.proxMantencionFecha && (
+                    <span>Fecha: <strong>{FECHA(vehiculo.proxMantencionFecha)}</strong></span>
+                  )}
+                  {vehiculo.proxMantencionKm && (
+                    <span>Km: <strong>{KM(vehiculo.proxMantencionKm)}</strong></span>
+                  )}
+                  {vehiculo.proxMantencionKm && vehiculo.odometroActual != null && (
+                    <span className="opacity-70">
+                      ({vehiculo.proxMantencionKm - vehiculo.odometroActual > 0
+                        ? `faltan ${(vehiculo.proxMantencionKm - vehiculo.odometroActual).toLocaleString('es-CL')} km`
+                        : `excedido por ${(vehiculo.odometroActual - vehiculo.proxMantencionKm).toLocaleString('es-CL')} km`})
+                    </span>
+                  )}
+                </div>
+              </div>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${mantBadgeStyle}`}>
+                {estadoMant === 'OK' ? 'Al día' : estadoMant === 'PROXIMA' ? 'Próxima' : 'Vencida'}
+              </span>
+            </div>
+          )}
+
+          {/* Actividad reciente */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                Actividad reciente
+              </span>
+              {total > 10 && (
+                <button
+                  onClick={() => setTab('actividad')}
+                  className="text-xs text-amber-400 hover:text-amber-300 font-semibold transition-colors"
+                >
+                  Ver todo ({total}) →
+                </button>
+              )}
+            </div>
+            {loadingActs && actividades.length === 0 && (
+              <div className="flex items-center justify-center py-10 text-zinc-600 text-sm">Cargando…</div>
+            )}
+            {!loadingActs && actividades.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-10 text-center bg-[#222] border border-[#363636] rounded-xl">
+                <p className="text-zinc-500 text-sm">Sin actividades registradas</p>
+                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold">
+                  + Registrar primera actividad
+                </button>
+              </div>
+            )}
+            {actividades.length > 0 && (
+              <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
+                <div className="divide-y divide-[#2a2a2a]">
+                  {actividades.slice(0, 10).map(act => (
+                    <ActividadRow
+                      key={act.id}
+                      actividad={act}
+                      esAdmin={esAdmin}
+                      onEditComb={esAdmin && act.tipo === 'COMBUSTIBLE' ? () => setModalEditComb(act) : null}
+                    />
+                  ))}
+                </div>
+                {total > 10 && (
+                  <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
+                    <button onClick={() => setTab('actividad')} className="text-xs text-zinc-400 hover:text-white font-semibold transition-colors">
+                      Ver todo el historial ({total} registros) →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* ── Historial de actividades ── */}
-      <div>
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-            Historial de actividades
-            {total > 0 && <span className="ml-2 text-zinc-600 normal-case font-normal">{total} registros</span>}
-          </span>
-          <div className="flex gap-1.5 flex-wrap">
-            {['', 'KILOMETRAJE', 'COMBUSTIBLE', 'PEAJE', 'MANTENCION', 'CAMBIO_ESTADO'].map(t => (
-              <button
-                key={t}
-                onClick={() => setFiltroTipo(t)}
-                className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all
-                  ${filtroTipo === t
-                    ? 'border-zinc-500 bg-zinc-700 text-white'
-                    : 'border-[#363636] text-zinc-500 hover:text-zinc-300'}`}
-              >
-                {t ? TIPO_LABEL[t] : 'Todos'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {loadingActs && actividades.length === 0 && (
-          <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">Cargando…</div>
-        )}
-
-        {!loadingActs && actividades.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-[#222] border border-[#363636] rounded-xl">
-            <p className="text-zinc-500 text-sm">Sin actividades registradas</p>
-            <button
-              onClick={() => setModalActividad(true)}
-              className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold"
-            >
-              + Registrar primera actividad
-            </button>
-          </div>
-        )}
-
-        {actividades.length > 0 && (
-          <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
-            <div className="divide-y divide-[#2a2a2a]">
-              {actividades.map(act => (
-                <ActividadRow
-                  key={act.id}
-                  actividad={act}
-                  esAdmin={esAdmin}
-                  onEditComb={esAdmin && act.tipo === 'COMBUSTIBLE' ? () => setModalEditComb(act) : null}
-                />
+      {/* ══ Tab: Actividad ══ */}
+      {tab === 'actividad' && (
+        <div>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              Historial de actividades
+              {total > 0 && <span className="ml-2 text-zinc-600 normal-case font-normal">{total} registros</span>}
+            </span>
+            <div className="flex gap-1.5 flex-wrap">
+              {['', 'KILOMETRAJE', 'COMBUSTIBLE', 'PEAJE', 'MANTENCION', 'CAMBIO_ESTADO'].map(t => (
+                <button
+                  key={t}
+                  onClick={() => setFiltroTipo(t)}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all
+                    ${filtroTipo === t
+                      ? 'border-zinc-500 bg-zinc-700 text-white'
+                      : 'border-[#363636] text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {t ? TIPO_LABEL[t] : 'Todos'}
+                </button>
               ))}
             </div>
+          </div>
+          {loadingActs && actividades.length === 0 && (
+            <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">Cargando…</div>
+          )}
+          {!loadingActs && actividades.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-[#222] border border-[#363636] rounded-xl">
+              <p className="text-zinc-500 text-sm">Sin actividades registradas</p>
+              <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold">
+                + Registrar primera actividad
+              </button>
+            </div>
+          )}
+          {actividades.length > 0 && (
+            <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
+              <div className="divide-y divide-[#2a2a2a]">
+                {actividades.map(act => (
+                  <ActividadRow
+                    key={act.id}
+                    actividad={act}
+                    esAdmin={esAdmin}
+                    onEditComb={esAdmin && act.tipo === 'COMBUSTIBLE' ? () => setModalEditComb(act) : null}
+                  />
+                ))}
+              </div>
+              {actividades.length < total && (
+                <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
+                  <button
+                    onClick={() => cargarActividades(page + 1, filtroTipo)}
+                    disabled={loadingActs}
+                    className="text-xs text-zinc-400 hover:text-white font-semibold disabled:opacity-50 transition-colors"
+                  >
+                    {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
-            {/* Paginación "Cargar más" */}
-            {actividades.length < total && (
-              <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
-                <button
-                  onClick={() => cargarActividades(page + 1, filtroTipo)}
-                  disabled={loadingActs}
-                  className="text-xs text-zinc-400 hover:text-white font-semibold disabled:opacity-50 transition-colors"
-                >
-                  {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
+      {/* ══ Tab: Mantenciones ══ */}
+      {tab === 'mantenciones' && (
+        <div className="flex flex-col gap-5">
+          {/* Próxima mantención */}
+          <div className={`flex items-start gap-4 p-4 rounded-xl border ${mantBadgeStyle}`}>
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-bold uppercase tracking-wider">Próxima mantención</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded border ${mantBadgeStyle}`}>
+                  {estadoMant === 'OK' ? 'Al día' : estadoMant === 'PROXIMA' ? 'Próxima' : 'Vencida'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs mt-2">
+                {vehiculo.proxMantencionFecha && (
+                  <div>
+                    <span className="text-current opacity-60">Fecha</span>
+                    <div className="font-semibold">{FECHA(vehiculo.proxMantencionFecha)}</div>
+                  </div>
+                )}
+                {vehiculo.proxMantencionKm && (
+                  <div>
+                    <span className="text-current opacity-60">Km programado</span>
+                    <div className="font-semibold">{KM(vehiculo.proxMantencionKm)}</div>
+                  </div>
+                )}
+                {vehiculo.proxMantencionKm && vehiculo.odometroActual != null && (
+                  <div>
+                    <span className="text-current opacity-60">Km restantes</span>
+                    <div className="font-semibold">
+                      {vehiculo.proxMantencionKm - vehiculo.odometroActual > 0
+                        ? `${(vehiculo.proxMantencionKm - vehiculo.odometroActual).toLocaleString('es-CL')} km`
+                        : `Excedido ${(vehiculo.odometroActual - vehiculo.proxMantencionKm).toLocaleString('es-CL')} km`}
+                    </div>
+                  </div>
+                )}
+                {!vehiculo.proxMantencionFecha && !vehiculo.proxMantencionKm && (
+                  <div className="col-span-2 opacity-60">Sin mantención programada</div>
+                )}
+              </div>
+            </div>
+            {esAdmin && (
+              <button
+                onClick={() => setModalEditar(true)}
+                className="text-xs opacity-60 hover:opacity-100 transition-opacity flex-shrink-0"
+              >
+                Editar →
+              </button>
+            )}
+          </div>
+
+          {/* Historial de mantenciones */}
+          <div>
+            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+              Historial de mantenciones
+              {total > 0 && <span className="ml-2 text-zinc-600 normal-case font-normal">{total} registros</span>}
+            </div>
+            {loadingActs && actividades.length === 0 && (
+              <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">Cargando…</div>
+            )}
+            {!loadingActs && actividades.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-10 text-center bg-[#222] border border-[#363636] rounded-xl">
+                <p className="text-zinc-500 text-sm">Sin mantenciones registradas</p>
+                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold">
+                  + Registrar mantención
                 </button>
               </div>
             )}
+            {actividades.length > 0 && (
+              <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
+                <div className="divide-y divide-[#2a2a2a]">
+                  {actividades.map(act => (
+                    <ActividadRow key={act.id} actividad={act} esAdmin={esAdmin} />
+                  ))}
+                </div>
+                {actividades.length < total && (
+                  <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
+                    <button onClick={() => cargarActividades(page + 1, 'MANTENCION')} disabled={loadingActs}
+                      className="text-xs text-zinc-400 hover:text-white font-semibold disabled:opacity-50 transition-colors">
+                      {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* ══ Tab: Combustible ══ */}
+      {tab === 'combustible' && (
+        <div className="flex flex-col gap-5">
+          {/* Resumen del mes */}
+          {stats && (
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard label="Gasto combustible" value={FMT(stats.gastoCombustible)} icon="⛽" />
+              <StatCard label="Litros totales"    value={stats.litrosTotales ? `${Number(stats.litrosTotales).toFixed(1)} L` : '—'} icon="📊" />
+              <StatCard
+                label="Precio promedio / L"
+                value={stats.gastoCombustible && stats.litrosTotales && Number(stats.litrosTotales) > 0
+                  ? `$${Math.round(stats.gastoCombustible / Number(stats.litrosTotales)).toLocaleString('es-CL')}`
+                  : '—'}
+                icon="💲"
+              />
+            </div>
+          )}
+
+          {/* Historial cargas */}
+          <div>
+            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+              Historial de cargas
+              {total > 0 && <span className="ml-2 text-zinc-600 normal-case font-normal">{total} registros</span>}
+            </div>
+            {loadingActs && actividades.length === 0 && (
+              <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">Cargando…</div>
+            )}
+            {!loadingActs && actividades.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-10 text-center bg-[#222] border border-[#363636] rounded-xl">
+                <p className="text-zinc-500 text-sm">Sin cargas de combustible registradas</p>
+                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold">
+                  + Registrar carga
+                </button>
+              </div>
+            )}
+            {actividades.length > 0 && (
+              <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
+                <div className="divide-y divide-[#2a2a2a]">
+                  {actividades.map(act => (
+                    <ActividadRow
+                      key={act.id}
+                      actividad={act}
+                      esAdmin={esAdmin}
+                      onEditComb={esAdmin ? () => setModalEditComb(act) : null}
+                    />
+                  ))}
+                </div>
+                {actividades.length < total && (
+                  <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
+                    <button onClick={() => cargarActividades(page + 1, 'COMBUSTIBLE')} disabled={loadingActs}
+                      className="text-xs text-zinc-400 hover:text-white font-semibold disabled:opacity-50 transition-colors">
+                      {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ Tab: Documentos ══ */}
+      {tab === 'documentos' && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              Documentos del vehículo
+            </span>
+            <button
+              onClick={() => setModalDocs(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Administrar documentos
+            </button>
+          </div>
+
+          {(!vehiculo.documentos || vehiculo.documentos.length === 0) ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-[#222] border border-[#363636] rounded-xl gap-3">
+              <svg className="w-10 h-10 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-zinc-500 text-sm">Sin documentos registrados</p>
+              <button onClick={() => setModalDocs(true)} className="text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors">
+                + Agregar documentos
+              </button>
+            </div>
+          ) : (
+            <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
+              <div className="divide-y divide-[#2a2a2a]">
+                {vehiculo.documentos.map(doc => {
+                  const venc       = doc.fechaVencimiento ? new Date(doc.fechaVencimiento) : null
+                  const hoy        = new Date()
+                  const diff       = venc ? Math.round((venc - hoy) / 86400000) : null
+                  const vencido    = diff !== null && diff < 0
+                  const porVencer  = diff !== null && !vencido && diff <= 30
+                  const estadoDoc  = vencido ? 'VENCIDO' : porVencer ? 'PRÓXIMO' : 'VIGENTE'
+                  const docStyles  = {
+                    VENCIDO: 'text-red-400',
+                    PRÓXIMO: 'text-amber-400',
+                    VIGENTE: 'text-green-400',
+                  }[estadoDoc]
+
+                  return (
+                    <div key={doc.id} className="flex items-center gap-4 px-5 py-3.5">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-400/10 text-blue-400">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-zinc-200">
+                          {DOC_LABEL[doc.tipo] || doc.tipo?.replace(/_/g, ' ')}
+                        </div>
+                        <div className="text-xs text-zinc-500 mt-0.5">
+                          {venc ? `Vence: ${FECHA(doc.fechaVencimiento)}` : 'Sin fecha de vencimiento'}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {estadoDoc !== 'VIGENTE' && (
+                          <span className={`text-xs font-bold ${docStyles}`}>{estadoDoc}</span>
+                        )}
+                        {diff !== null && diff >= 0 && (
+                          <span className={`text-xs ${docStyles}`}>
+                            {diff === 0 ? 'Vence hoy' : `${diff}d`}
+                          </span>
+                        )}
+                        {doc.archivoBase64 && (
+                          <a
+                            href={`data:application/pdf;base64,${doc.archivoBase64}`}
+                            download={doc.archivoNombre || `${doc.tipo}.pdf`}
+                            onClick={e => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-200 transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a2 2 0 002 2h14a2 2 0 002-2v-3" />
+                            </svg>
+                            PDF
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══ Tab: Costos ══ */}
+      {tab === 'costos' && (
+        <div className="flex flex-col gap-5">
+          <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            Resumen de costos — {new Date().toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}
+          </div>
+
+          {stats ? (
+            <>
+              {/* Tarjetas principales */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <StatCard label="Total del mes" value={FMT(stats.gastoTotal)}        icon="💰" />
+                <StatCard label="Combustible"   value={FMT(stats.gastoCombustible)}  icon="⛽" />
+                <StatCard label="Peajes"        value={FMT(stats.gastoPeajes)}       icon="🏷️" />
+                <StatCard label="Mantenciones"  value={FMT(stats.gastoMantencion)}   icon="🔧" />
+              </div>
+
+              {/* Desglose visual */}
+              <div className="bg-[#222] border border-[#363636] rounded-xl p-5">
+                <div className="text-xs font-semibold text-zinc-400 mb-4">Distribución de costos</div>
+                {stats.gastoTotal > 0 ? (
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Combustible',   value: stats.gastoCombustible || 0,  color: 'bg-green-400'  },
+                      { label: 'Mantenciones',  value: stats.gastoMantencion  || 0,  color: 'bg-amber-400'  },
+                      { label: 'Peajes',        value: stats.gastoPeajes      || 0,  color: 'bg-blue-400'   },
+                    ].map(item => {
+                      const pct = stats.gastoTotal > 0 ? Math.round((item.value / stats.gastoTotal) * 100) : 0
+                      return (
+                        <div key={item.label}>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
+                              <span className="text-zinc-300">{item.label}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-zinc-500">{pct}%</span>
+                              <span className="text-zinc-200 font-semibold font-mono w-24 text-right">{FMT(item.value)}</span>
+                            </div>
+                          </div>
+                          <div className="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                            <div className={`h-full ${item.color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                    <div className="pt-3 border-t border-[#363636] flex justify-between">
+                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wide">Total</span>
+                      <span className="text-sm font-bold text-white font-mono">{FMT(stats.gastoTotal)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-500">Sin costos registrados este mes</p>
+                )}
+              </div>
+
+              {/* Km del mes */}
+              {stats.kmRecorridos > 0 && stats.gastoTotal > 0 && (
+                <div className="bg-[#222] border border-[#363636] rounded-xl p-5">
+                  <div className="text-xs font-semibold text-zinc-400 mb-3">Eficiencia del mes</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs text-zinc-600">Km recorridos</div>
+                      <div className="text-lg font-bold text-white mt-0.5">{KM(stats.kmRecorridos)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-600">Costo por km</div>
+                      <div className="text-lg font-bold text-white mt-0.5">
+                        {stats.kmRecorridos > 0
+                          ? `$${Math.round(stats.gastoTotal / stats.kmRecorridos).toLocaleString('es-CL')}/km`
+                          : '—'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">
+              Sin datos de costos disponibles
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Modales ── */}
       {modalActividad && (
@@ -397,7 +843,7 @@ export default function VehiculoDetalle() {
       {modalDocs && (
         <DocumentosVehiculo
           vehiculo={vehiculo}
-          onClose={() => setModalDocs(false)}
+          onClose={() => { setModalDocs(false); cargarVehiculo() }}
         />
       )}
       {modalEditar && (
@@ -677,7 +1123,11 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
   const [error,       setError]       = useState('')
 
   useEffect(() => {
-    api.get('/flota/conductores?limit=200').then(r => setConductores(r.data.data || [])).catch(() => {})
+    api.get('/flota/conductores?activo=true').then(r => {
+      // El endpoint retorna un array directo (no paginado)
+      const list = Array.isArray(r.data) ? r.data : (r.data.data || [])
+      setConductores(list)
+    }).catch(() => {})
   }, [])
 
   function set(key, value) {
