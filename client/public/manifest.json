@@ -4,8 +4,8 @@
   "description": "Gestión de flotas y reservas para talleres automotrices",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1F2937",
-  "theme_color": "#1F2937",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "orientation": "portrait-primary",
   "icons": [
     {
