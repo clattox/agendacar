@@ -22,7 +22,11 @@ export default function Login() {
   useDocumentTitle('Ingresar — AgendaCar')
 
   useEffect(() => {
-    if (estaAutenticado()) navigate(from, { replace: true })
+    if (estaAutenticado()) {
+      const usuario = JSON.parse(localStorage.getItem('usuario') || 'null')
+      const destino = usuario?.tenant?.soloFlota ? '/flota' : from
+      navigate(destino, { replace: true })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

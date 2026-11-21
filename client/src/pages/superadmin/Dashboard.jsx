@@ -301,7 +301,7 @@ export default function SuperadminDashboard() {
       )}
 
       {/* Lista de tenants */}
-      <div className="mt-6 rounded-xl border border-line bg-surface shadow-card overflow-hidden">
+      <div className="mt-6 rounded-xl border border-line bg-surface shadow-card overflow-hidden overflow-x-auto">
         {loading ? (
           <div className="p-6 text-center text-sm text-ink-muted">Cargando…</div>
         ) : tenants.length === 0 ? (
@@ -412,30 +412,28 @@ export default function SuperadminDashboard() {
                       <button
                         onClick={() => abrirEditar(t)}
                         title="Editar datos del cliente"
-                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink"
+                        className="rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
-                        <span className="hidden lg:inline">Editar</span>
+                        <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => abrirReset(t.id)}
                         title="Resetear contraseña del admin"
-                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink"
+                        className="rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-graphite-100 hover:text-ink"
                       >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                        <span className="hidden lg:inline">Reset pass</span>
+                        <RotateCcw className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleToggle(t.id)}
                         disabled={toggling === t.id}
-                        className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                        title={t.activo ? 'Desactivar taller' : 'Activar taller'}
+                        className={`rounded-lg p-1.5 transition-colors disabled:opacity-50 ${
                           t.activo
-                            ? 'text-red-600 hover:bg-red-50'
+                            ? 'text-red-500 hover:bg-red-50'
                             : 'text-green-700 hover:bg-green-50'
                         }`}
                       >
-                        <PowerOff className="h-3.5 w-3.5" />
-                        {t.activo ? 'Desactivar' : 'Activar'}
+                        <PowerOff className="h-4 w-4" />
                       </button>
                     </div>
                   </td>
