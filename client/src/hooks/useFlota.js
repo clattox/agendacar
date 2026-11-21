@@ -120,3 +120,34 @@ export function useCrearVehiculo() {
 
   return { loading, error, execute }
 }
+
+// Documentos de un vehículo específico
+export function useDocumentosVehiculo(vehiculoId) {
+  return useQuery(
+    vehiculoId ? `/flota/documentos/vehiculo/${vehiculoId}` : null,
+    [vehiculoId]
+  )
+}
+
+// Crear documento con PDF
+export function useCrearDocumento() {
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState(null)
+
+  const execute = useCallback(async (vehiculoId, payload) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await api.post(`/flota/documentos/vehiculo/${vehiculoId}`, payload)
+      return res.data
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message
+      setError(msg)
+      throw new Error(msg)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  return { loading, error, execute }
+}

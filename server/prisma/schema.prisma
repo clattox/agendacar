@@ -378,6 +378,8 @@ model VehiculoDocumento {
   numeroDocumento  String?
   monto            Int?
   proveedor        String?
+  archivoBase64    String?       // PDF en base64
+  archivoNombre    String?       // nombre original del archivo
 
   activo           Boolean       @default(true)
 

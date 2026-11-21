@@ -78,7 +78,7 @@ router.post('/vehiculo/:vehiculoId', async (req, res) => {
   try {
     const { tenantId } = req.user
     const { tipo, fechaEmision, fechaVencimiento, numeroDocumento,
-            monto, proveedor } = req.body
+            monto, proveedor, archivoBase64, archivoNombre } = req.body
 
     if (!tipo || !fechaVencimiento) {
       return res.status(400).json({ error: 'tipo y fechaVencimiento son obligatorios' })
@@ -106,6 +106,8 @@ router.post('/vehiculo/:vehiculoId', async (req, res) => {
         numeroDocumento: numeroDocumento || null,
         monto:           monto || null,
         proveedor:       proveedor || null,
+        archivoBase64:   archivoBase64 || null,
+        archivoNombre:   archivoNombre || null,
         activo:          true,
       },
     })

@@ -2,8 +2,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useVehiculos, useDashboard } from '../../hooks/useFlota'
-import NuevaActividad from '../../components/flota/NuevaActividad'
-import NuevoVehiculo  from '../../components/flota/NuevoVehiculo'
+import NuevaActividad      from '../../components/flota/NuevaActividad'
+import NuevoVehiculo       from '../../components/flota/NuevoVehiculo'
+import DocumentosVehiculo  from '../../components/flota/DocumentosVehiculo'
 
 const ESTADOS = {
   OPERATIVO:         { label: 'Operativo',          color: 'text-green-400  bg-green-400/10  border-green-400/30'  },
@@ -16,6 +17,7 @@ export default function FlotaVehiculos() {
   const [filters, setFilters]           = useState({ estado: '', search: '' })
   const [modalVehiculo, setModalVehiculo]   = useState(null)
   const [modalNuevo,    setModalNuevo]      = useState(false)
+  const [modalDocs,     setModalDocs]       = useState(null)  // { id, patente, marca, modelo }
 
   const { data: dash }                    = useDashboard()
   const { data, loading, error, refetch } = useVehiculos(filters)
@@ -103,6 +105,7 @@ export default function FlotaVehiculos() {
                   marca:   `${v.marca} ${v.modelo}`,
                   odometroActual: v.odometroActual,
                 })}
+                onDocumentos={() => setModalDocs({ id: v.id, patente: v.patente, marca: v.marca, modelo: v.modelo })}
               />
             ))}
           </tbody>
@@ -127,11 +130,18 @@ export default function FlotaVehiculos() {
           onSuccess={() => { setModalNuevo(false); refetch() }}
         />
       )}
+
+      {modalDocs && (
+        <DocumentosVehiculo
+          vehiculo={modalDocs}
+          onClose={() => setModalDocs(null)}
+        />
+      )}
     </div>
   )
 }
 
-function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad }) {
+function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos }) {
   const estado = ESTADOS[v.estado] ?? ESTADOS.OPERATIVO
   return (
     <tr
@@ -161,6 +171,12 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad }) {
             className="px-3 py-1.5 text-xs font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-lg hover:bg-amber-400/20 transition-colors"
           >
             + Actividad
+          </button>
+          <button
+            onClick={onDocumentos}
+            className="px-3 py-1.5 text-xs font-semibold text-blue-400 bg-blue-400/10 border border-blue-400/30 rounded-lg hover:bg-blue-400/20 transition-colors"
+          >
+            Docs
           </button>
           <button
             onClick={onVerFicha}
