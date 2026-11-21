@@ -190,6 +190,117 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Soluciones ── */}
+      <section className="relative border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <FadeIn>
+            <p className="text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-300">
+              Soluciones AgendaCar
+            </p>
+            <h2 className="mt-3 text-center text-3xl font-bold tracking-tight sm:text-4xl">
+              Una plataforma. Más soluciones.
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-center text-sm leading-relaxed text-white/50">
+              Herramientas diseñadas para simplificar la operación y ayudarte a crecer.
+            </p>
+          </FadeIn>
+
+          <div className="mt-10 grid gap-5 sm:grid-cols-2">
+
+            {/* Card — Agenda */}
+            <FadeIn delay={80}>
+              <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-400/15">
+                    <svg className="h-5 w-5 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <path d="M16 2v4M8 2v4M3 10h18" />
+                      <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-bold">Agenda para talleres</h3>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-white/55">
+                  Gestiona reservas, servicios, clientes y horarios. Permite que tus clientes agenden online las 24 horas.
+                </p>
+                {/* Mini screenshot — agenda */}
+                <div className="mt-5 flex-1 overflow-hidden rounded-xl border border-white/10 bg-[#0f1115] p-3 text-[11px]">
+                  <div className="mb-2 flex items-center justify-between text-white/40">
+                    <span className="font-semibold text-white/70">Reservas del día</span>
+                    <span>Hoy, 21 nov</span>
+                  </div>
+                  {[
+                    { hora: '09:00', cliente: 'Toyota Hilux', serv: 'Mantención', dur: '90 min', color: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' },
+                    { hora: '10:30', cliente: 'Nissan Qashqai', serv: 'Frenos', dur: '60 min', color: 'bg-blue-500/20 border-blue-500/30 text-blue-300' },
+                    { hora: '14:00', cliente: 'Hyundai Tucson', serv: 'Diagnóstico', dur: '45 min', color: 'bg-violet-500/20 border-violet-500/30 text-violet-300' },
+                  ].map(r => (
+                    <div key={r.hora} className="mb-1.5 flex items-center gap-2">
+                      <span className="w-10 shrink-0 text-white/35">{r.hora}</span>
+                      <div className={`flex flex-1 items-center justify-between rounded-md border px-2 py-1 ${r.color}`}>
+                        <span className="font-medium">{r.cliente} · {r.serv}</span>
+                        <span className="text-[10px] opacity-70">{r.dur}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* Card — Flota */}
+            <FadeIn delay={160}>
+              <div className="flex h-full flex-col rounded-2xl border border-accent-400/40 bg-accent-400/[0.05] p-6 ring-1 ring-accent-400/20">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-400/15">
+                    <svg className="h-5 w-5 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
+                      <circle cx="7.5" cy="17.5" r="2.5" />
+                      <circle cx="16.5" cy="17.5" r="2.5" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-bold">Control de Flota</h3>
+                  <span className="ml-auto shrink-0 rounded-full bg-accent-400/20 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-300">
+                    Beta
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-white/55">
+                  Administra vehículos, conductores, documentos y gastos de tu flota. Kilometraje, combustible, peajes y alertas de vencimiento en un solo lugar. Portal móvil para conductores incluido.
+                </p>
+                {/* Mini screenshot — flota */}
+                <div className="mt-5 flex-1 overflow-hidden rounded-xl border border-white/10 bg-[#0f1115] p-3 text-[11px]">
+                  <div className="mb-3 font-semibold text-white/70">Control de Flota</div>
+                  <div className="mb-3 grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Vehículos', val: '24', color: 'text-white' },
+                      { label: 'Operativos', val: '20', color: 'text-emerald-400' },
+                      { label: 'En taller', val: '3', color: 'text-amber-400' },
+                    ].map(s => (
+                      <div key={s.label} className="rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-center">
+                        <div className={`text-base font-bold ${s.color}`}>{s.val}</div>
+                        <div className="text-[10px] text-white/40">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mb-1.5 flex items-center justify-between text-white/40">
+                    <span>Gastos del mes</span>
+                    <span className="font-semibold text-white/70">$2.845.000</span>
+                  </div>
+                  <div className="flex items-end gap-1 h-8">
+                    {[40, 65, 50, 80, 55, 90, 70].map((h, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-sm bg-accent-400/50"
+                        style={{ height: `${h}%` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA final ── */}
       <section className="relative border-t border-white/10">
         <div className="mx-auto max-w-6xl px-6 py-20 text-center">
