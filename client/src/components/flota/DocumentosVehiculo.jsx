@@ -28,11 +28,13 @@ function abrirPDF(base64, nombre) {
   const dataUrl = base64.startsWith('data:')
     ? base64
     : `data:application/pdf;base64,${base64}`
-  const win = window.open()
-  if (win) {
-    win.document.write(`<iframe src="${dataUrl}" style="width:100%;height:100vh;border:none;" title="${nombre || 'Documento'}"></iframe>`)
-    win.document.close()
-  }
+  const a = document.createElement('a')
+  a.href = dataUrl
+  a.target = '_blank'
+  a.rel = 'noopener noreferrer'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
 }
 
 export default function DocumentosVehiculo({ vehiculo, onClose }) {

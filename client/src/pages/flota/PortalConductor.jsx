@@ -218,7 +218,13 @@ export default function PortalConductor() {
                                     for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
                                     const blob = new Blob([arr], { type: 'application/pdf' })
                                     const url = URL.createObjectURL(blob)
-                                    window.open(url, '_blank')
+                                    const a = document.createElement('a')
+                                    a.href = url
+                                    a.target = '_blank'
+                                    a.rel = 'noopener noreferrer'
+                                    document.body.appendChild(a)
+                                    a.click()
+                                    document.body.removeChild(a)
                                     setTimeout(() => URL.revokeObjectURL(url), 10000)
                                   }}
                                   className="flex-shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
