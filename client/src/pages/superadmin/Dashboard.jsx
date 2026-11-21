@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Building2, CalendarClock, CheckCircle2, Eye, EyeOff, MapPin, Pencil, Plus, PowerOff, RotateCcw, Truck, Users, X } from 'lucide-react'
 import SuperadminLayout from '../../components/superadmin/SuperadminLayout'
-import { getTenants, createTenant, toggleTenant, toggleFlota, editarTenant, getStats, actualizarVencimiento, resetPasswordTenant } from '../../services/superadminService'
+import { getTenants, createTenant, toggleTenant, toggleFlota, toggleSoloFlota, editarTenant, getStats, actualizarVencimiento, resetPasswordTenant } from '../../services/superadminService'
 import { getApiErrorMessage } from '../../lib/errors'
 import { Button, Input } from '../../components/ui'
 
@@ -21,6 +21,7 @@ export default function SuperadminDashboard() {
   const [guardando, setGuardando] = useState(false)
   const [toggling, setToggling] = useState(null)
   const [togglingFlota, setTogglingFlota] = useState(null)
+  const [togglingSoloFlota, setTogglingSoloFlota] = useState(null)
   const [editandoVenc, setEditandoVenc] = useState(null) // id del tenant editando
   const [vencInput, setVencInput] = useState('')
   const [guardandoVenc, setGuardandoVenc] = useState(false)
@@ -115,6 +116,19 @@ export default function SuperadminDashboard() {
       setError('No pudimos actualizar el módulo de flota.')
     } finally {
       setTogglingFlota(null)
+    }
+  }
+
+  const handleToggleSoloFlota = async (id, actual) => {
+    if (togglingSoloFlota) return
+    setTogglingSoloFlota(id)
+    try {
+      const actualizado = await toggleSoloFlota(id, !actual)
+      setTenants(prev => prev.map(t => t.id === id ? actualizado : t))
+    } catch {
+      setError('No pudimos actualizar el modo Solo Flota.')
+    } finally {
+      setTogglingSoloFlota(null)
     }
   }
 
@@ -369,6 +383,20 @@ export default function SuperadminDashboard() {
                         <Truck className="h-3 w-3" />
                         Flota
                       </button>
+                      {t.flotaActiva && (
+                        <button
+                          onClick={() => handleToggleSoloFlota(t.id, t.soloFlota)}
+                          disabled={togglingSoloFlota === t.id}
+                          title={t.soloFlota ? 'Activar módulo Taller (modo completo)' : 'Desactivar Taller (solo Flota)'}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                            !t.soloFlota
+                              ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                              : 'bg-graphite-100 text-ink-soft hover:bg-graphite-200'
+                          }`}
+                        >
+                          Taller
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3">

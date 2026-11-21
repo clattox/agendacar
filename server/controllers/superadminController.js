@@ -82,6 +82,8 @@ const toggleTenant = async (req, res) => {
       data.vencimiento = req.body.vencimiento ? new Date(req.body.vencimiento) : null
     } else if (req.body.flotaActiva !== undefined) {
       data.flotaActiva = Boolean(req.body.flotaActiva)
+    } else if (req.body.soloFlota !== undefined) {
+      data.soloFlota = Boolean(req.body.soloFlota)
     } else {
       data.activo = !tenant.activo
     }

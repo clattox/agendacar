@@ -20,6 +20,7 @@ model Tenant {
   capacidad          Int        @default(1) // vehículos simultáneos (1-4)
   inspeccionActiva   Boolean    @default(true)
   flotaActiva        Boolean    @default(false)
+  soloFlota          Boolean    @default(false)  // si true: solo accede al módulo de flota (sin taller)
   recordatorioActivo Boolean    @default(false)
   recordatorioHora   Int        @default(20)  // hora en Chile (0-23)
   recordatorioDias   String     @default("1,2,3,4,5") // días semana JS (0=Dom..6=Sáb)

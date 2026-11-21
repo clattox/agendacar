@@ -48,7 +48,9 @@ export default function Login() {
         turnstileToken
       })
       saveSession(data)
-      navigate(from, { replace: true })
+      // soloFlota: accede solo al módulo de flota, sin taller
+      const destino = data.usuario?.tenant?.soloFlota ? '/flota' : from
+      navigate(destino, { replace: true })
     } catch (err) {
       setError(getApiErrorMessage(err, 'Email o contraseña incorrectos'))
       turnstileRef.current?.reset()
