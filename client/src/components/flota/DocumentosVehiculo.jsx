@@ -87,16 +87,41 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
   function set(k, v) {
     setForm(p => {
       const next = { ...p, [k]: v }
-      // Auto-calcular fecha de vencimiento al cambiar tipo, cuotas o año
+      const tipo       = k === 'tipo' ? v : next.tipo
+      const emision    = k === 'fechaEmision' ? v : next.fechaEmision
+
+      // Auto-calcular vencimiento para Permiso de Circulación (por cuotas/año)
       if ((k === 'tipo' && v === 'PERMISO_CIRCULACION') || k === 'cuotas' || k === 'anioPermiso') {
-        const tipo   = k === 'tipo' ? v : next.tipo
         const cuotas = k === 'cuotas' ? Number(v) : Number(next.cuotas)
         const year   = k === 'anioPermiso' ? Number(v) : Number(next.anioPermiso)
         if (tipo === 'PERMISO_CIRCULACION') {
           next.fechaVencimiento = getFechaPermiso(cuotas, year)
         }
       }
-      // Si cambia tipo a otro, limpiar fecha auto si venía de permiso
+
+      // Auto-calcular vencimiento para SOAP y Revisión Técnica al cambiar emisión o tipo
+      if (k === 'fechaEmision' || k === 'tipo') {
+        if (emision && (tipo === 'SOAP' || tipo === 'REVISION_TECNICA')) {
+          const d = new Date(emision + 'T12:00:00')
+          const nextYear = d.getFullYear() + 1
+          if (tipo === 'SOAP') {
+            // SOAP: siempre vence el 31 de marzo del año siguiente
+            next.fechaVencimiento = `${nextYear}-03-31`
+          } else {
+            // Revisión Técnica: vence el último día del mismo mes, año siguiente
+            const mes = d.getMonth() // 0-based
+            const ultimoDia = new Date(nextYear, mes + 1, 0).getDate()
+            const mesStr = String(mes + 1).padStart(2, '0')
+            next.fechaVencimiento = `${nextYear}-${mesStr}-${ultimoDia}`
+          }
+        }
+        // Si cambia tipo y no aplica auto-cálculo, limpiar vencimiento previo auto
+        if (k === 'tipo' && v !== 'PERMISO_CIRCULACION' && v !== 'SOAP' && v !== 'REVISION_TECNICA') {
+          next.fechaVencimiento = ''
+        }
+      }
+
+      // Reset cuotas al cambiar a otro tipo
       if (k === 'tipo' && v !== 'PERMISO_CIRCULACION') {
         next.cuotas = 1
       }
@@ -310,6 +335,11 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
                 <Field label="Fecha de vencimiento *">
                   <input required type="date" value={form.fechaVencimiento}
                     onChange={e => set('fechaVencimiento', e.target.value)} className={INPUT} />
+                  {(form.tipo === 'SOAP' || form.tipo === 'REVISION_TECNICA') && form.fechaVencimiento && form.fechaEmision && (
+                    <p className="text-xs text-[#737B86] mt-1">
+                      Calculado automáticamente desde la fecha de emisión · puedes ajustarlo si es necesario
+                    </p>
+                  )}
                 </Field>
               )}
 
