@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { FileText, Upload, Eye, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import { useDocumentosVehiculo, useCrearDocumento } from '../../hooks/useFlota'
+import api from '../../lib/api'
 
 const TIPOS = [
   { value: 'REVISION_TECNICA',    label: 'Revisión Técnica' },
@@ -14,6 +15,14 @@ const TIPOS = [
 
 const TIPO_LABEL = Object.fromEntries(TIPOS.map(t => [t.value, t.label]))
 
+// Fechas fijas para Permiso de Circulación en Chile
+function getFechaPermiso(cuotas, year) {
+  const y = year ?? new Date().getFullYear()
+  return cuotas === 2
+    ? `${y}-08-31`   // 31 agosto → 2 cuotas
+    : `${y}-03-31`   // 31 marzo  → 1 cuota
+}
+
 function alertaBadge(doc) {
   if (!doc.activo) return null
   if (!doc.fechaVencimiento) return null
@@ -23,8 +32,23 @@ function alertaBadge(doc) {
   return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#DCFCE7] text-[#16A34A] border border-[#86EFAC]"><CheckCircle className="w-3 h-3"/>Vigente</span>
 }
 
+function cuotaBadge(doc) {
+  if (doc.tipo !== 'PERMISO_CIRCULACION' || doc.cuotas !== 2) return null
+  if (doc.segundaCuotaPagada) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#DCFCE7] text-[#16A34A] border border-[#86EFAC]">
+        <CheckCircle className="w-3 h-3"/>2ª cuota pagada
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#FEF3C7] text-[#D97706] border border-[#FCD34D]">
+      <AlertTriangle className="w-3 h-3"/>2ª cuota pendiente
+    </span>
+  )
+}
+
 function abrirPDF(base64, nombre) {
-  // base64 puede venir con o sin el prefijo data:
   const dataUrl = base64.startsWith('data:')
     ? base64
     : `data:application/pdf;base64,${base64}`
@@ -44,13 +68,41 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
   const [form, setForm] = useState({
     tipo: '', fechaVencimiento: '', fechaEmision: '',
     numeroDocumento: '', monto: '',
+    cuotas: 1, anioPermiso: new Date().getFullYear(),
   })
-  const [archivo, setArchivo]     = useState(null)   // { base64, nombre }
+  const [archivo, setArchivo]       = useState(null)
   const [uploadError, setUploadError] = useState(null)
-  const [formError, setFormError] = useState(null)
+  const [formError, setFormError]   = useState(null)
+
+  // Estado para modal de segunda cuota
+  const [modalCuota, setModalCuota] = useState(null)   // doc completo
+  const [cuotaFecha, setCuotaFecha] = useState('')
+  const [cuotaGuardando, setCuotaGuardando] = useState(false)
+  const [cuotaError, setCuotaError] = useState(null)
+
   const fileRef = useRef()
 
-  function set(k, v) { setForm(p => ({ ...p, [k]: v })) }
+  const esPermiso = form.tipo === 'PERMISO_CIRCULACION'
+
+  function set(k, v) {
+    setForm(p => {
+      const next = { ...p, [k]: v }
+      // Auto-calcular fecha de vencimiento al cambiar tipo, cuotas o año
+      if ((k === 'tipo' && v === 'PERMISO_CIRCULACION') || k === 'cuotas' || k === 'anioPermiso') {
+        const tipo   = k === 'tipo' ? v : next.tipo
+        const cuotas = k === 'cuotas' ? Number(v) : Number(next.cuotas)
+        const year   = k === 'anioPermiso' ? Number(v) : Number(next.anioPermiso)
+        if (tipo === 'PERMISO_CIRCULACION') {
+          next.fechaVencimiento = getFechaPermiso(cuotas, year)
+        }
+      }
+      // Si cambia tipo a otro, limpiar fecha auto si venía de permiso
+      if (k === 'tipo' && v !== 'PERMISO_CIRCULACION') {
+        next.cuotas = 1
+      }
+      return next
+    })
+  }
 
   function handleFile(e) {
     setUploadError(null)
@@ -85,8 +137,13 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
         monto:           form.monto ? Number(form.monto) : undefined,
         archivoBase64:   archivo?.base64  || undefined,
         archivoNombre:   archivo?.nombre  || undefined,
+        cuotas:          esPermiso ? Number(form.cuotas) : 1,
       })
-      setForm({ tipo: '', fechaVencimiento: '', fechaEmision: '', numeroDocumento: '', monto: '' })
+      setForm({
+        tipo: '', fechaVencimiento: '', fechaEmision: '',
+        numeroDocumento: '', monto: '', cuotas: 1,
+        anioPermiso: new Date().getFullYear(),
+      })
       setArchivo(null)
       if (fileRef.current) fileRef.current.value = ''
       refetch()
@@ -95,8 +152,29 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
     }
   }
 
-  // Agrupar por tipo, mostrar solo el activo (más reciente)
-  const activos = (docs ?? []).filter(d => d.activo)
+  async function guardarSegundaCuota() {
+    if (!cuotaFecha) {
+      setCuotaError('Ingresa la fecha de pago')
+      return
+    }
+    setCuotaError(null)
+    setCuotaGuardando(true)
+    try {
+      await api.put(`/flota/documentos/${modalCuota.id}`, {
+        segundaCuotaPagada: true,
+        segundaCuotaFecha: cuotaFecha,
+      })
+      setModalCuota(null)
+      setCuotaFecha('')
+      refetch()
+    } catch (err) {
+      setCuotaError(err.message)
+    } finally {
+      setCuotaGuardando(false)
+    }
+  }
+
+  const activos   = (docs ?? []).filter(d => d.activo)
   const historial = (docs ?? []).filter(d => !d.activo)
 
   return (
@@ -142,23 +220,38 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
                           {TIPO_LABEL[doc.tipo] ?? doc.tipo}
                         </span>
                         {alertaBadge(doc)}
+                        {cuotaBadge(doc)}
                       </div>
                       <div className="text-xs text-[#737B86] mt-0.5">
                         Vence: {new Date(doc.fechaVencimiento).toLocaleDateString('es-CL')}
                         {doc.numeroDocumento && ` · N° ${doc.numeroDocumento}`}
+                        {doc.tipo === 'PERMISO_CIRCULACION' && doc.cuotas === 2 && (
+                          <span className="ml-1">· 2 cuotas</span>
+                        )}
                       </div>
                     </div>
-                    {doc.archivoBase64 ? (
-                      <button
-                        onClick={() => abrirPDF(doc.archivoBase64, doc.archivoNombre)}
-                        className="ml-3 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors whitespace-nowrap"
-                      >
-                        <Eye className="w-3 h-3" />
-                        Ver PDF
-                      </button>
-                    ) : (
-                      <span className="ml-3 text-xs text-[#A0A6AE] italic">Sin PDF</span>
-                    )}
+                    <div className="flex items-center gap-2 ml-3">
+                      {/* Botón registrar 2ª cuota */}
+                      {doc.tipo === 'PERMISO_CIRCULACION' && doc.cuotas === 2 && !doc.segundaCuotaPagada && (
+                        <button
+                          onClick={() => { setModalCuota(doc); setCuotaFecha(''); setCuotaError(null) }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-300 rounded-lg hover:bg-amber-100 transition-colors whitespace-nowrap"
+                        >
+                          Registrar 2ª cuota
+                        </button>
+                      )}
+                      {doc.archivoBase64 ? (
+                        <button
+                          onClick={() => abrirPDF(doc.archivoBase64, doc.archivoNombre)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors whitespace-nowrap"
+                        >
+                          <Eye className="w-3 h-3" />
+                          Ver PDF
+                        </button>
+                      ) : (
+                        <span className="text-xs text-[#A0A6AE] italic">Sin PDF</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -175,19 +268,46 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Tipo + vencimiento */}
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Tipo *">
-                  <select required value={form.tipo} onChange={e => set('tipo', e.target.value)} className={INPUT}>
-                    <option value="">Seleccionar…</option>
-                    {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
-                </Field>
+              {/* Tipo */}
+              <Field label="Tipo *">
+                <select required value={form.tipo} onChange={e => set('tipo', e.target.value)} className={INPUT}>
+                  <option value="">Seleccionar…</option>
+                  {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </Field>
+
+              {/* Opciones específicas de Permiso de Circulación */}
+              {esPermiso && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                  <p className="text-xs font-semibold text-amber-800">Permiso de Circulación</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Cuotas">
+                      <select value={form.cuotas} onChange={e => set('cuotas', Number(e.target.value))} className={INPUT}>
+                        <option value={1}>1 cuota — vence 31 marzo</option>
+                        <option value={2}>2 cuotas — vence 31 agosto</option>
+                      </select>
+                    </Field>
+                    <Field label="Año del permiso">
+                      <input
+                        type="number" min="2020" max="2040" value={form.anioPermiso}
+                        onChange={e => set('anioPermiso', e.target.value)}
+                        className={INPUT}
+                      />
+                    </Field>
+                  </div>
+                  <p className="text-xs text-amber-700">
+                    Fecha de vencimiento calculada automáticamente: <strong>{form.fechaVencimiento ? new Date(form.fechaVencimiento + 'T12:00:00').toLocaleDateString('es-CL') : '—'}</strong>
+                  </p>
+                </div>
+              )}
+
+              {/* Vencimiento (oculto para Permiso, ya que se auto-calcula) */}
+              {!esPermiso && (
                 <Field label="Fecha de vencimiento *">
                   <input required type="date" value={form.fechaVencimiento}
                     onChange={e => set('fechaVencimiento', e.target.value)} className={INPUT} />
                 </Field>
-              </div>
+              )}
 
               {/* Emisión + número */}
               <div className="grid grid-cols-2 gap-3">
@@ -271,6 +391,48 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
 
         </div>
       </div>
+
+      {/* ——— Modal: Registrar segunda cuota ——— */}
+      {modalCuota && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl border border-[#E1E4E8] shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-base font-bold text-[#252A31]">Registrar 2ª cuota pagada</h3>
+            <p className="text-sm text-[#737B86]">
+              Vehículo: <strong className="font-mono">{vehiculo.patente}</strong>
+            </p>
+            <Field label="Fecha de pago de la 2ª cuota *">
+              <input
+                type="date"
+                value={cuotaFecha}
+                onChange={e => setCuotaFecha(e.target.value)}
+                className={INPUT}
+              />
+            </Field>
+            {cuotaError && (
+              <p className="text-[#DC2626] text-sm bg-[#FEE2E2] border border-[#FCA5A5] rounded-lg px-3 py-2">
+                {cuotaError}
+              </p>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setModalCuota(null); setCuotaFecha('') }}
+                className="px-4 py-2 text-sm font-semibold text-[#737B86] hover:text-[#252A31] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={guardarSegundaCuota}
+                disabled={cuotaGuardando}
+                className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-semibold text-sm px-5 py-2 rounded-lg transition-colors"
+              >
+                {cuotaGuardando ? 'Guardando…' : 'Confirmar pago'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

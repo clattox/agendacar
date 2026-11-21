@@ -373,6 +373,21 @@ async function main () {
       ON "AlertaDocumentoLog"("tenantId")
   `)
 
+  // ── Migración: permiso_circulacion_cuotas + eliminar nroLicencia ────────────
+  console.log('[migrate] permiso_circulacion_cuotas...')
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "VehiculoDocumento"
+    ADD COLUMN IF NOT EXISTS "cuotas" INTEGER NOT NULL DEFAULT 1
+  `)
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "VehiculoDocumento"
+    ADD COLUMN IF NOT EXISTS "segundaCuotaPagada" BOOLEAN NOT NULL DEFAULT false
+  `)
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "VehiculoDocumento"
+    ADD COLUMN IF NOT EXISTS "segundaCuotaFecha" DATE
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

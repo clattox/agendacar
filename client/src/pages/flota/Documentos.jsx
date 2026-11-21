@@ -200,8 +200,16 @@ export default function FlotaDocumentos() {
                     </td>
 
                     {/* Documento */}
-                    <td className="px-4 py-3 text-[#252A31] whitespace-nowrap">
-                      {TIPO_LABELS[doc.tipo] ?? doc.tipo}
+                    <td className="px-4 py-3 text-[#252A31]">
+                      <div className="whitespace-nowrap">{TIPO_LABELS[doc.tipo] ?? doc.tipo}</div>
+                      {doc.tipo === 'PERMISO_CIRCULACION' && doc.cuotas === 2 && (
+                        <div className="mt-1">
+                          {doc.segundaCuotaPagada
+                            ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#DCFCE7] text-[#16A34A] border border-[#86EFAC]">✓ 2ª cuota pagada</span>
+                            : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#FEF3C7] text-[#D97706] border border-[#FCD34D]">⚠ 2ª cuota pendiente</span>
+                          }
+                        </div>
+                      )}
                     </td>
 
                     {/* Vencimiento con día de semana */}

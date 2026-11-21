@@ -119,7 +119,8 @@ router.post('/vehiculo/:vehiculoId', async (req, res) => {
   try {
     const { tenantId } = req.user
     const { tipo, fechaEmision, fechaVencimiento, numeroDocumento,
-            monto, proveedor, archivoBase64, archivoNombre } = req.body
+            monto, proveedor, archivoBase64, archivoNombre,
+            cuotas, segundaCuotaPagada, segundaCuotaFecha } = req.body
 
     if (!tipo || !fechaVencimiento) {
       return res.status(400).json({ error: 'tipo y fechaVencimiento son obligatorios' })
@@ -140,22 +141,53 @@ router.post('/vehiculo/:vehiculoId', async (req, res) => {
     const documento = await prisma.vehiculoDocumento.create({
       data: {
         tenantId,
-        vehiculoId:      req.params.vehiculoId,
+        vehiculoId:         req.params.vehiculoId,
         tipo,
-        fechaEmision:    fechaEmision    ? new Date(fechaEmision)    : null,
-        fechaVencimiento: new Date(fechaVencimiento),
-        numeroDocumento: numeroDocumento || null,
-        monto:           monto || null,
-        proveedor:       proveedor || null,
-        archivoBase64:   archivoBase64 || null,
-        archivoNombre:   archivoNombre || null,
-        activo:          true,
+        fechaEmision:       fechaEmision    ? new Date(fechaEmision)    : null,
+        fechaVencimiento:   new Date(fechaVencimiento),
+        numeroDocumento:    numeroDocumento || null,
+        monto:              monto || null,
+        proveedor:          proveedor || null,
+        archivoBase64:      archivoBase64 || null,
+        archivoNombre:      archivoNombre || null,
+        activo:             true,
+        // Permiso de Circulación en cuotas
+        cuotas:             tipo === 'PERMISO' ? (Number(cuotas) || 1) : 1,
+        segundaCuotaPagada: tipo === 'PERMISO' && cuotas === 2 ? Boolean(segundaCuotaPagada) : false,
+        segundaCuotaFecha:  tipo === 'PERMISO' && cuotas === 2 && segundaCuotaFecha
+                              ? new Date(segundaCuotaFecha) : null,
       },
     })
     res.status(201).json(documento)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al crear documento' })
+  }
+})
+
+// ——— PUT /api/flota/documentos/:documentoId ——————————————————
+// Actualizar datos de un documento (segunda cuota pagada, etc.)
+router.put('/:documentoId', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { segundaCuotaPagada, segundaCuotaFecha } = req.body
+
+    const doc = await prisma.vehiculoDocumento.findFirst({
+      where: { id: req.params.documentoId, tenantId },
+    })
+    if (!doc) return res.status(404).json({ error: 'Documento no encontrado' })
+
+    const updated = await prisma.vehiculoDocumento.update({
+      where: { id: req.params.documentoId },
+      data: {
+        segundaCuotaPagada: Boolean(segundaCuotaPagada),
+        segundaCuotaFecha:  segundaCuotaFecha ? new Date(segundaCuotaFecha) : null,
+      },
+    })
+    res.json(updated)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al actualizar documento' })
   }
 })
 

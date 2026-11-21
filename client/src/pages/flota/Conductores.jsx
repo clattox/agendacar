@@ -197,7 +197,6 @@ function ModalEditar({ conductor, onClose, onDone }) {
     rut:               conductor.rut               || '',
     telefono:          conductor.telefono          || '',
     email:             conductor.email             || '',
-    licenciaNumero:    conductor.licenciaNumero    || '',
     licenciaCategoria: conductor.licenciaCategoria || '',
     licenciaVence:     conductor.licenciaVence
       ? conductor.licenciaVence.substring(0, 10)
@@ -294,26 +293,15 @@ function ModalEditar({ conductor, onClose, onDone }) {
             </div>
           </div>
 
-          {/* Licencia */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-[#737B86] mb-1.5">N° licencia</label>
-              <input
-                value={form.licenciaNumero}
-                onChange={e => setForm(p => ({ ...p, licenciaNumero: e.target.value }))}
-                placeholder="B1234567"
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-[#737B86] mb-1.5">Categoría</label>
-              <input
-                value={form.licenciaCategoria}
-                onChange={e => setForm(p => ({ ...p, licenciaCategoria: e.target.value }))}
-                placeholder="B, C, D…"
-                className="input"
-              />
-            </div>
+          {/* Categoría licencia */}
+          <div>
+            <label className="block text-xs font-medium text-[#737B86] mb-1.5">Categoría licencia</label>
+            <input
+              value={form.licenciaCategoria}
+              onChange={e => setForm(p => ({ ...p, licenciaCategoria: e.target.value }))}
+              placeholder="B, C, D…"
+              className="input"
+            />
           </div>
 
           {/* Vencimiento licencia */}
@@ -365,7 +353,7 @@ function ModalEditar({ conductor, onClose, onDone }) {
 // ——— Página principal ————————————————————————————————
 export default function FlotaConductores() {
   const { data, loading, error, refetch } = useConductores()
-  const [form,         setForm]         = useState({ nombre: '', rut: '', telefono: '', email: '', licencia: '' })
+  const [form,         setForm]         = useState({ nombre: '', rut: '', telefono: '', email: '' })
   const [saving,       setSaving]       = useState(false)
   const [saveErr,      setSaveErr]      = useState('')
   const [showNew,      setShowNew]      = useState(false)
@@ -404,7 +392,7 @@ export default function FlotaConductores() {
     setSaving(true); setSaveErr('')
     try {
       await api.post('/flota/conductores', form)
-      setForm({ nombre: '', rut: '', telefono: '', email: '', licencia: '' })
+      setForm({ nombre: '', rut: '', telefono: '', email: '' })
       setShowNew(false)
       refetch()
     } catch (err) {
@@ -445,7 +433,6 @@ export default function FlotaConductores() {
             ['rut',      'RUT',               'text',  '12.345.678-9'],
             ['telefono', 'Teléfono',          'tel',   '+56 9 1234 5678'],
             ['email',    'Email',             'email', 'juan@ejemplo.cl'],
-            ['licencia', 'N° licencia',       'text',  'B1234567'],
           ].map(([key, label, type, placeholder]) => (
             <div key={key}>
               <label className="field-label block mb-1">{label}</label>

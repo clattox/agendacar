@@ -393,6 +393,11 @@ model VehiculoDocumento {
   archivoBase64    String?       // PDF en base64
   archivoNombre    String?       // nombre original del archivo
 
+  // Permiso de Circulación en cuotas
+  cuotas              Int       @default(1)   // 1 o 2
+  segundaCuotaPagada  Boolean   @default(false)
+  segundaCuotaFecha   DateTime?               // fecha de pago de la 2ª cuota
+
   activo           Boolean       @default(true)
 
   createdAt        DateTime      @default(now())
