@@ -599,19 +599,32 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
       {/* Acciones rápidas + menú */}
       <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
-          {/* Botón rápido: + Actividad */}
+
+          {/* Botón: + Actividad — texto en desktop, solo ícono en móvil */}
           <button
             onClick={onNuevaActividad}
             title="Nueva actividad"
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors whitespace-nowrap"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path d="M12 5v14M5 12h14"/>
             </svg>
-            Actividad
+            <span className="hidden md:inline">Actividad</span>
           </button>
 
-          {/* Menú 3 puntos */}
+          {/* Botón: Documentos — texto en desktop, solo ícono en móvil */}
+          <button
+            onClick={onDocumentos}
+            title="Documentos legales"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#4B5563] bg-[#F3F4F6] hover:bg-[#E5E7EB] border border-[#D1D5DB] transition-colors whitespace-nowrap"
+          >
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span className="hidden md:inline">Documentos</span>
+          </button>
+
+          {/* Menú 3 puntos — solo acciones secundarias */}
           <div className="relative">
             <button
               ref={btnRef}
@@ -634,7 +647,6 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
                   style={{ top: menuPos.top, right: menuPos.right }}
                 >
                   <MenuItem label="Ver ficha"         onClick={() => { setMenuOpen(false); onVerFicha() }} />
-                  <MenuItem label="Documentos"        onClick={() => { setMenuOpen(false); onDocumentos() }} />
                   <MenuItem label="Cambiar conductor" onClick={() => { setMenuOpen(false); onAsignar() }} />
                   <MenuItem
                     label={toggling ? 'Procesando…' : v.estado === 'FUERA_DE_SERVICIO' ? 'Reactivar vehículo' : 'Dar de baja'}
