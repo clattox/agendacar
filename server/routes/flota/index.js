@@ -2,7 +2,27 @@
 const router = require('express').Router()
 const requireFlota = require('../../middleware/requireFlota')
 
-// Verifica módulo activo en todas las rutas de flota
+// Portal conductor: acceso directo sin verificar flotaActiva en tenant
+// (el conductor pertenece a un tenant que ya tiene flota activa por definición)
+// Solo conductores con rol=conductor pueden acceder a estas rutas
+const soloRolConductor = (req, res, next) => {
+  if (req.user?.rol !== 'conductor') {
+    return res.status(403).json({ error: 'Acceso exclusivo para conductores' })
+  }
+  next()
+}
+
+router.use('/portal', soloRolConductor, require('./portalConductor'))
+
+// Rutas admin: verifica módulo activo + rol admin
+const soloAdmin = (req, res, next) => {
+  if (req.user?.rol === 'conductor') {
+    return res.status(403).json({ error: 'Sin acceso al panel de administración' })
+  }
+  next()
+}
+
+router.use(soloAdmin)
 router.use(requireFlota)
 
 router.use('/dashboard',   require('./dashboard'))

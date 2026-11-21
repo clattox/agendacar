@@ -24,6 +24,10 @@ export default function Login() {
   useEffect(() => {
     if (estaAutenticado()) {
       const usuario = JSON.parse(localStorage.getItem('usuario') || 'null')
+      if (usuario?.rol === 'conductor') {
+        navigate('/flota/conductor', { replace: true })
+        return
+      }
       const destino = usuario?.tenant?.soloFlota ? '/flota' : from
       navigate(destino, { replace: true })
     }
@@ -52,6 +56,11 @@ export default function Login() {
         turnstileToken
       })
       saveSession(data)
+      // conductor: accede solo al portal de conductor
+      if (data.usuario?.rol === 'conductor') {
+        navigate('/flota/conductor', { replace: true })
+        return
+      }
       // soloFlota: accede solo al módulo de flota, sin taller
       const destino = data.usuario?.tenant?.soloFlota ? '/flota' : from
       navigate(destino, { replace: true })

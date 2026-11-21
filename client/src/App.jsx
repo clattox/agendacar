@@ -26,11 +26,12 @@ import SuperadminLogin from './pages/superadmin/Login'
 import SuperadminDashboard from './pages/superadmin/Dashboard'
 
 // Control de Flota — carga diferida
-const FlotaLayout      = lazy(() => import('./components/flota/FlotaLayout'))
-const FlotaDashboard   = lazy(() => import('./pages/flota/Dashboard'))
-const FlotaVehiculos   = lazy(() => import('./pages/flota/Vehiculos'))
-const FlotaConductores = lazy(() => import('./pages/flota/Conductores'))
-const FlotaDocumentos  = lazy(() => import('./pages/flota/Documentos'))
+const FlotaLayout       = lazy(() => import('./components/flota/FlotaLayout'))
+const FlotaDashboard    = lazy(() => import('./pages/flota/Dashboard'))
+const FlotaVehiculos    = lazy(() => import('./pages/flota/Vehiculos'))
+const FlotaConductores  = lazy(() => import('./pages/flota/Conductores'))
+const FlotaDocumentos   = lazy(() => import('./pages/flota/Documentos'))
+const PortalConductor   = lazy(() => import('./pages/flota/PortalConductor'))
 
 // Componentes
 import ProtectedRoute from './components/admin/ProtectedRoute'
@@ -73,6 +74,16 @@ export default function App() {
         <Route path="/superadmin" element={<SuperadminRoute />}>
           <Route index element={<SuperadminDashboard />} />
         </Route>
+
+        {/* ——— Portal Conductor (layout propio, sin sidebar admin) ———— */}
+        <Route
+          path="/flota/conductor"
+          element={
+            <Suspense fallback={<FlotaSpinner />}>
+              <PortalConductor />
+            </Suspense>
+          }
+        />
 
         {/* ——— Control de Flota ————————————————————————————
             Montado en /flota — mismo JWT, mismo tenant.

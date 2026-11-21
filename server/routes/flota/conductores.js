@@ -1,6 +1,7 @@
 // routes/flota/conductores.js
 const router = require('express').Router()
 const { PrismaClient } = require('@prisma/client')
+const bcrypt = require('bcryptjs')
 const prisma = new PrismaClient()
 
 // GET /api/flota/conductores
@@ -22,6 +23,7 @@ router.get('/', async (req, res) => {
       where,
       include: {
         _count: { select: { flotaVehiculos: true } },
+        usuario: { select: { id: true, email: true } },
       },
       orderBy: { nombre: 'asc' },
     })
@@ -103,6 +105,79 @@ router.put('/:id', async (req, res) => {
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al actualizar conductor' })
+  }
+})
+
+// ——— POST /api/flota/conductores/:id/acceso ————————————————
+// Crear cuenta de acceso (usuario) para un conductor
+router.post('/:id/acceso', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { email, password } = req.body
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'email y password son obligatorios' })
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' })
+    }
+
+    const conductor = await prisma.conductor.findFirst({
+      where: { id: req.params.id, tenantId },
+    })
+    if (!conductor) return res.status(404).json({ error: 'Conductor no encontrado' })
+    if (conductor.usuarioId) {
+      return res.status(400).json({ error: 'Este conductor ya tiene una cuenta de acceso' })
+    }
+
+    // Verificar que el email no esté en uso
+    const emailExiste = await prisma.usuario.findUnique({ where: { email } })
+    if (emailExiste) return res.status(400).json({ error: 'El email ya está en uso' })
+
+    const hash = await bcrypt.hash(password, 10)
+    const usuario = await prisma.usuario.create({
+      data: {
+        nombre:   conductor.nombre,
+        email,
+        password: hash,
+        rol:      'conductor',
+        tenantId,
+      },
+    })
+
+    await prisma.conductor.update({
+      where: { id: req.params.id },
+      data:  { usuarioId: usuario.id },
+    })
+
+    res.status(201).json({ message: 'Acceso creado', email, usuarioId: usuario.id })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al crear acceso' })
+  }
+})
+
+// ——— DELETE /api/flota/conductores/:id/acceso ——————————————
+// Eliminar cuenta de acceso de un conductor
+router.delete('/:id/acceso', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const conductor = await prisma.conductor.findFirst({
+      where: { id: req.params.id, tenantId },
+    })
+    if (!conductor) return res.status(404).json({ error: 'Conductor no encontrado' })
+    if (!conductor.usuarioId) return res.status(400).json({ error: 'Este conductor no tiene cuenta de acceso' })
+
+    await prisma.conductor.update({
+      where: { id: req.params.id },
+      data:  { usuarioId: null },
+    })
+    await prisma.usuario.delete({ where: { id: conductor.usuarioId } })
+
+    res.json({ message: 'Acceso eliminado' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar acceso' })
   }
 })
 

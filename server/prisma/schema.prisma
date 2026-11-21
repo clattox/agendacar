@@ -63,10 +63,11 @@ model Usuario {
   nombre    String
   email     String   @unique
   password  String
-  rol           String       @default("admin")
+  rol           String       @default("admin")  // admin | conductor | superadmin
   tenantId      Int?
   tenant        Tenant?      @relation(fields: [tenantId], references: [id])
   inspecciones  Inspeccion[]
+  conductor     Conductor?   // si rol=conductor, aquí está su perfil de flota
   createdAt     DateTime     @default(now())
 }
 
@@ -319,6 +320,9 @@ model Conductor {
   telefono          String?
   email             String?
   activo            Boolean   @default(true)
+
+  usuarioId         Int?      @unique  // cuenta de acceso al portal conductor
+  usuario           Usuario?  @relation(fields: [usuarioId], references: [id])
 
   flotaVehiculos    FlotaVehiculo[]
   estadosCambios    EstadoCambioFlota[]
