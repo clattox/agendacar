@@ -195,7 +195,7 @@ export default function FlotaDocumentos() {
                   >
                     {/* Vehículo */}
                     <td className="px-5 py-3 whitespace-nowrap">
-                      <div className="font-semibold text-[#252A31] font-mono text-xs">{doc.vehiculo?.patente}</div>
+                      <div className="font-bold text-[#252A31] font-mono text-sm tracking-wide">{doc.vehiculo?.patente}</div>
                       <div className="text-xs text-[#737B86]">{doc.vehiculo?.marca} {doc.vehiculo?.modelo}</div>
                     </td>
 
