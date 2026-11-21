@@ -30,9 +30,10 @@ export default function PortalConductor() {
   const navigate  = useNavigate()
   const usuario   = getUsuario()
 
-  const [datos,   setDatos]   = useState(null)   // { conductor, vehiculo }
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState('')
+  const [datos,         setDatos]         = useState(null)   // { conductor, vehiculo, vehiculos }
+  const [vehiculoActivo, setVehiculoActivo] = useState(null)  // vehículo seleccionado
+  const [loading,       setLoading]       = useState(true)
+  const [error,         setError]         = useState('')
 
   // Form actividad
   const [form,    setForm]    = useState({
@@ -64,12 +65,33 @@ export default function PortalConductor() {
     cargar()
   }, [])
 
-  async function cargar() {
+  // Limpiar campos del formulario al cambiar de vehículo
+  useEffect(() => {
+    if (!vehiculoActivo) return
+    setForm(prev => ({
+      ...prev,
+      odometroActual: '',
+      litros: '', monto: '', estacion: '', autopista: '',
+      notas: '',
+      fecha: new Date().toISOString().slice(0, 10),
+    }))
+    setExito('')
+    setErrorForm('')
+  }, [vehiculoActivo?.id])
+
+  async function cargar(mantenerVehiculo = false) {
     setLoading(true)
     setError('')
     try {
       const res = await api.get('/flota/portal/mi-vehiculo')
       setDatos(res.data)
+      // Si ya hay un vehículo activo seleccionado, actualizar sus datos frescos
+      if (mantenerVehiculo && vehiculoActivo) {
+        const fresco = res.data.vehiculos?.find(v => v.id === vehiculoActivo.id)
+        setVehiculoActivo(fresco || res.data.vehiculo)
+      } else {
+        setVehiculoActivo(res.data.vehiculo) // null si múltiples, objeto si uno solo
+      }
     } catch (e) {
       setError(e.response?.data?.error || 'No se pudo cargar tu información')
     } finally {
@@ -89,6 +111,7 @@ export default function PortalConductor() {
     try {
       await api.post('/flota/portal/actividad', {
         ...form,
+        vehiculoId:     vehiculoActivo.id,
         odometroActual: form.odometroActual ? Number(form.odometroActual) : undefined,
         litros:         form.litros         ? Number(form.litros)         : undefined,
         monto:          form.monto          ? Number(form.monto)          : undefined,
@@ -99,7 +122,7 @@ export default function PortalConductor() {
         notas: '', odometroActual: '', litros: '', monto: '', estacion: '', autopista: '',
         fecha: new Date().toISOString().slice(0, 10),
       }))
-      cargar() // refresca odómetro
+      cargar(true) // refresca odómetro, mantiene el vehículo seleccionado
     } catch (e) {
       setErrorForm(e.response?.data?.error || 'Error al registrar actividad')
     } finally {
@@ -154,8 +177,62 @@ export default function PortalConductor() {
 
         {!loading && !error && datos && (
           <>
+            {/* ——— Selector de vehículo (solo si hay más de uno) ——— */}
+            {datos.vehiculos?.length > 1 && (
+              <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#2d3039] flex items-center gap-2">
+                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                  </svg>
+                  <span className="text-sm font-semibold">Mis Vehículos</span>
+                  <span className="ml-auto text-xs text-zinc-500">{datos.vehiculos.length} asignados</span>
+                </div>
+                <div className="p-3 flex flex-col gap-2">
+                  {datos.vehiculos.map(v => {
+                    const activo = vehiculoActivo?.id === v.id
+                    // alerta más crítica entre los documentos
+                    const alertas = v.documentos?.map(d => d.alerta) || []
+                    const nivelAlerta = alertas.includes('VENCIDO') ? 'VENCIDO'
+                      : alertas.includes('CRITICO') ? 'CRITICO' : null
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => setVehiculoActivo(v)}
+                        className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all border
+                          ${activo
+                            ? 'bg-amber-500/10 border-amber-500/30'
+                            : 'border-[#2d3039] hover:bg-[#2b2d35]'}`}
+                      >
+                        <div>
+                          <div className={`text-sm font-bold tracking-wide ${activo ? 'text-amber-400' : 'text-white'}`}>
+                            {v.patente}
+                          </div>
+                          <div className="text-xs text-zinc-400 mt-0.5">
+                            {v.marca} {v.modelo} {v.anio}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {nivelAlerta && (
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full
+                              ${nivelAlerta === 'VENCIDO' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                              {nivelAlerta === 'VENCIDO' ? 'Doc. vencido' : 'Doc. por vencer'}
+                            </span>
+                          )}
+                          {activo && (
+                            <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* ——— Vehículo ——————————————————————————— */}
-            {datos.vehiculo ? (
+            {vehiculoActivo ? (
               <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
                 <div className="px-4 py-3 border-b border-[#2d3039] flex items-center gap-2">
                   <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -163,36 +240,38 @@ export default function PortalConductor() {
                     <circle cx="7.5" cy="17.5" r="2.5" />
                     <circle cx="16.5" cy="17.5" r="2.5" />
                   </svg>
-                  <span className="text-sm font-semibold">Mi Vehículo</span>
+                  <span className="text-sm font-semibold">
+                    {datos.vehiculos?.length > 1 ? vehiculoActivo.patente : 'Mi Vehículo'}
+                  </span>
                 </div>
                 <div className="px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-lg font-bold tracking-wide">{datos.vehiculo.patente}</div>
+                      <div className="text-lg font-bold tracking-wide">{vehiculoActivo.patente}</div>
                       <div className="text-sm text-zinc-400 mt-0.5">
-                        {datos.vehiculo.marca} {datos.vehiculo.modelo} {datos.vehiculo.anio}
+                        {vehiculoActivo.marca} {vehiculoActivo.modelo} {vehiculoActivo.anio}
                       </div>
-                      {datos.vehiculo.color && (
-                        <div className="text-xs text-zinc-500 mt-0.5">{datos.vehiculo.color}</div>
+                      {vehiculoActivo.color && (
+                        <div className="text-xs text-zinc-500 mt-0.5">{vehiculoActivo.color}</div>
                       )}
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-zinc-500 mb-0.5">Odómetro actual</div>
                       <div className="text-base font-semibold text-amber-400">
-                        {datos.vehiculo.odometroActual.toLocaleString('es-CL')} km
+                        {vehiculoActivo.odometroActual.toLocaleString('es-CL')} km
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Documentos */}
-                {datos.vehiculo.documentos?.length > 0 && (
+                {vehiculoActivo.documentos?.length > 0 && (
                   <div className="border-t border-[#2d3039] px-4 py-3">
                     <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
                       Documentos
                     </div>
                     <div className="space-y-2">
-                      {datos.vehiculo.documentos.map(doc => {
+                      {vehiculoActivo.documentos.map(doc => {
                         const c = ALERTA_COLOR[doc.alerta]
                         return (
                           <div key={doc.id} className={`flex items-center justify-between rounded-lg px-3 py-2 ${c.bg}`}>
@@ -235,7 +314,7 @@ export default function PortalConductor() {
                   </div>
                 )}
 
-                {(!datos.vehiculo.documentos || datos.vehiculo.documentos.length === 0) && (
+                {(!vehiculoActivo.documentos || vehiculoActivo.documentos.length === 0) && (
                   <div className="border-t border-[#2d3039] px-4 py-3 text-xs text-zinc-500 text-center">
                     Sin documentos registrados
                   </div>
@@ -243,13 +322,18 @@ export default function PortalConductor() {
               </section>
             ) : (
               <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] px-4 py-8 text-center">
-                <div className="text-zinc-500 text-sm">No tienes un vehículo asignado</div>
-                <div className="text-zinc-600 text-xs mt-1">Consulta con el administrador de flota</div>
+                {datos.vehiculos?.length > 1
+                  ? <div className="text-zinc-500 text-sm">Selecciona un vehículo arriba</div>
+                  : <>
+                      <div className="text-zinc-500 text-sm">No tienes un vehículo asignado</div>
+                      <div className="text-zinc-600 text-xs mt-1">Consulta con el administrador de flota</div>
+                    </>
+                }
               </section>
             )}
 
             {/* ——— Registrar actividad ——————————————— */}
-            {datos.vehiculo && (
+            {vehiculoActivo && (
               <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
                 <div className="px-4 py-3 border-b border-[#2d3039] flex items-center gap-2">
                   <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -310,10 +394,10 @@ export default function PortalConductor() {
                     <Field label="Odómetro actual (km)">
                       <input
                         type="number"
-                        min={datos.vehiculo.odometroActual}
+                        min={vehiculoActivo.odometroActual}
                         value={form.odometroActual}
                         onChange={e => setForm(p => ({ ...p, odometroActual: e.target.value }))}
-                        placeholder={`Actual: ${datos.vehiculo.odometroActual.toLocaleString('es-CL')} km`}
+                        placeholder={`Actual: ${vehiculoActivo.odometroActual.toLocaleString('es-CL')} km`}
                         className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
                       />
                     </Field>
@@ -370,7 +454,7 @@ export default function PortalConductor() {
                           type="number"
                           value={form.odometroActual}
                           onChange={e => setForm(p => ({ ...p, odometroActual: e.target.value }))}
-                          placeholder={`Actual: ${datos.vehiculo.odometroActual.toLocaleString('es-CL')} km`}
+                          placeholder={`Actual: ${vehiculoActivo.odometroActual.toLocaleString('es-CL')} km`}
                           className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
                         />
                       </Field>
