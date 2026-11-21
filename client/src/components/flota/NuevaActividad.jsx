@@ -1,6 +1,6 @@
 // components/flota/NuevaActividad.jsx
 import { useState } from 'react'
-import { useRegistrarActividad } from '../../hooks/useFlota'
+import { useRegistrarActividad, useConductores } from '../../hooks/useFlota'
 
 const TIPOS = [
   { id: 'TRASLADO',      label: 'Traslado',      desc: 'Viaje o comisión'          },
@@ -33,7 +33,10 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
   const [validationErr, setValidationErr] = useState('')
 
   const { loading, error, execute } = useRegistrarActividad()
+  const { data: conductores } = useConductores()
   const hoy = new Date().toISOString().slice(0, 10)
+
+  const TIPOS_CON_CONDUCTOR = ['TRASLADO', 'MANTENCION']
 
   function set(key, value) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -53,10 +56,11 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
 
     try {
       await execute({
-        vehiculoId: vehiculo.id,
+        vehiculoId:      vehiculo.id,
         tipo,
-        fecha: form.fecha || hoy,
-        notas: form.notas,
+        fecha:           form.fecha || hoy,
+        notas:           form.notas,
+        registradoPorId: form.registradoPorId || undefined,
         ...buildDetalle(tipo, form),
       })
       setSubmitted(true)
@@ -126,11 +130,28 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
           </div>
         </div>
 
-        {/* Fecha común */}
-        <div className="px-5 pt-4">
+        {/* Fecha + Conductor (solo en tipos relevantes) */}
+        <div className="px-5 pt-4 flex flex-col gap-4">
           <Field label="Fecha">
             <input type="date" defaultValue={hoy} onChange={e => set('fecha', e.target.value)} className="input" />
           </Field>
+
+          {TIPOS_CON_CONDUCTOR.includes(tipo) && (
+            <Field label="Conductor">
+              <select
+                className="input"
+                value={form.registradoPorId ?? ''}
+                onChange={e => set('registradoPorId', e.target.value || undefined)}
+              >
+                <option value="">— Sin especificar —</option>
+                {Array.isArray(conductores) && conductores.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre} {c.apellido ?? ''}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
 
         {/* Formularios por tipo */}
