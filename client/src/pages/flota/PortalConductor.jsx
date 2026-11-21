@@ -807,20 +807,18 @@ export default function PortalConductor() {
               <div className="border-t border-[#2d3039]">
                 {/* Controles: año + mes/anual + exportar */}
                 <div className="px-4 py-3 flex flex-wrap items-center gap-2 border-b border-[#2d3039]">
-                  {/* Selector año — año actual primero */}
-                  <div className="flex gap-1">
-                    {[new Date().getFullYear(), new Date().getFullYear() - 1].map(a => (
-                      <button
-                        key={a}
-                        onClick={() => cambiarAnio(a)}
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all
-                          ${anioReporte === a
-                            ? 'bg-amber-500 text-black'
-                            : 'text-zinc-400 hover:text-white bg-[#1C1F26]'}`}
-                      >
-                        {a}
-                      </button>
-                    ))}
+                  {/* Selector año */}
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-zinc-500 mb-0.5">Año</span>
+                    <select
+                      value={anioReporte}
+                      onChange={e => cambiarAnio(Number(e.target.value))}
+                      className="bg-[#1C1F26] border border-[#2d3039] text-xs text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
+                    >
+                      {[new Date().getFullYear(), new Date().getFullYear() - 1].map(a => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
                   </div>
                   {/* Toggle mensual/anual */}
                   {reporteData && (
@@ -836,15 +834,18 @@ export default function PortalConductor() {
                   )}
                   {/* Selector mes (solo vista mensual) */}
                   {reporteData && !verAnioPortal && (
-                    <select
-                      value={mesMostrado}
-                      onChange={e => setMesMostrado(Number(e.target.value))}
-                      className="bg-[#1C1F26] border border-[#2d3039] text-xs text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
-                    >
-                      {MESES_NOMBRE.map((m, i) => (
-                        <option key={i + 1} value={i + 1}>{m}</option>
-                      ))}
-                    </select>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-zinc-500 mb-0.5">Mes</span>
+                      <select
+                        value={mesMostrado}
+                        onChange={e => setMesMostrado(Number(e.target.value))}
+                        className="bg-[#1C1F26] border border-[#2d3039] text-xs text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
+                      >
+                        {MESES_NOMBRE.map((m, i) => (
+                          <option key={i + 1} value={i + 1}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                   {/* Exportar PDF */}
                   {reporteData && reporteData.totales.nActividades > 0 && (
