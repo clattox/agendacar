@@ -7,6 +7,228 @@ import NuevoVehiculo       from '../../components/flota/NuevoVehiculo'
 import DocumentosVehiculo  from '../../components/flota/DocumentosVehiculo'
 import api from '../../lib/api'
 
+// ——— Cargar SheetJS una sola vez desde CDN ————————————————————
+function loadSheetJS() {
+  return new Promise((resolve, reject) => {
+    if (window.XLSX) { resolve(window.XLSX); return }
+    const s = document.createElement('script')
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+    s.onload  = () => resolve(window.XLSX)
+    s.onerror = () => reject(new Error('No se pudo cargar la librería Excel'))
+    document.head.appendChild(s)
+  })
+}
+
+// ——— Generar Excel con 3 hojas ————————————————————————————————
+async function generarExcel({ filas, tenant, anio }) {
+  const XLSX = await loadSheetJS()
+
+  const wb = XLSX.utils.book_new()
+
+  // ── Hoja 1: BASE_DATOS ──────────────────────────────────────────
+  const encabezadoBase = [
+    'Año', 'Mes', 'Región', 'Unidad', 'Patente',
+    'KM Inicial', 'KM Final', 'Recorrido Mensual',
+    'Tipo Combustible', 'Gasto Combustible ($)',
+    'Gasto Peajes ($)', 'Gasto Seguros ($)',
+    'Total Gasto ($)', 'Costo por KM ($)',
+  ]
+  const filasBase = filas.map(f => [
+    f.anio, f.mes, f.region, f.unidad, f.patente,
+    f.kmInicial, f.kmFinal, f.recorrido,
+    f.tipoCombustible,
+    f.gastoCombustible, f.gastoPeajes, f.gastoSeguros,
+    f.totalGasto, f.costoKm,
+  ])
+  // Fila de totales
+  const totalKm      = filas.reduce((s, f) => s + f.recorrido, 0)
+  const totalComb    = filas.reduce((s, f) => s + f.gastoCombustible, 0)
+  const totalPeajes  = filas.reduce((s, f) => s + f.gastoPeajes, 0)
+  const totalSeguros = filas.reduce((s, f) => s + f.gastoSeguros, 0)
+  const totalGasto   = filas.reduce((s, f) => s + f.totalGasto, 0)
+  filasBase.push([
+    '', 'TOTALES', '', '', '',
+    '', '', totalKm,
+    '', totalComb, totalPeajes, totalSeguros, totalGasto,
+    totalKm > 0 ? Math.round(totalGasto / totalKm) : 0,
+  ])
+
+  const wsBase = XLSX.utils.aoa_to_sheet([encabezadoBase, ...filasBase])
+  // Anchos de columna aproximados
+  wsBase['!cols'] = [
+    { wch: 6 }, { wch: 12 }, { wch: 12 }, { wch: 24 }, { wch: 10 },
+    { wch: 10 }, { wch: 10 }, { wch: 16 },
+    { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 },
+  ]
+  XLSX.utils.book_append_sheet(wb, wsBase, 'BASE_DATOS')
+
+  // ── Hoja 2: Reporte_Transparencia ──────────────────────────────
+  // Agrupar filas por mes
+  const porMes = {}
+  for (const f of filas) {
+    if (!porMes[f.mes]) porMes[f.mes] = {
+      mes: f.mes, vehiculos: new Set(), kmTotal: 0,
+      combustible: 0, peajes: 0, seguros: 0,
+    }
+    const m = porMes[f.mes]
+    m.vehiculos.add(f.patente)
+    m.kmTotal      += f.recorrido
+    m.combustible  += f.gastoCombustible
+    m.peajes       += f.gastoPeajes
+    m.seguros      += f.gastoSeguros
+  }
+
+  const titulo = 'Sistema Automatizado de Gestión de Flota y Reportabilidad de Transparencia'
+  const encabezadoT = [
+    'Año', 'Mes', 'N° Vehículos', 'KM Mensuales Recorridos',
+    'Unidad Monetaria',
+    'Monto Combustible ($)', 'Monto Peajes ($)', 'Monto Seguros ($)',
+  ]
+  const filasT = Object.values(porMes).map(m => [
+    anio, m.mes, m.vehiculos.size, m.kmTotal,
+    'Pesos', m.combustible, m.peajes, m.seguros,
+  ])
+
+  const datosT = [[titulo], [], encabezadoT, ...filasT]
+  const wsT = XLSX.utils.aoa_to_sheet(datosT)
+  wsT['!cols'] = [
+    { wch: 6 }, { wch: 12 }, { wch: 14 }, { wch: 24 },
+    { wch: 16 }, { wch: 22 }, { wch: 18 }, { wch: 18 },
+  ]
+  // Merge para el título (fila 0, columnas 0–7)
+  wsT['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }]
+  XLSX.utils.book_append_sheet(wb, wsT, 'Reporte_Transparencia')
+
+  // ── Hoja 3: LISTAS_VALIDACION ───────────────────────────────────
+  const anioActual = new Date().getFullYear()
+  const anios   = [2024, 2025, 2026, 2027, 2028, 2029]
+  const meses   = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO',
+                   'JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE']
+  const combustibles = ['Bencina', 'Diesel']
+
+  const maxRows = Math.max(anios.length, meses.length, combustibles.length)
+  const filasL = [['Años', 'Meses', 'Tipo Combustible']]
+  for (let i = 0; i < maxRows; i++) {
+    filasL.push([anios[i] ?? '', meses[i] ?? '', combustibles[i] ?? ''])
+  }
+  const wsL = XLSX.utils.aoa_to_sheet(filasL)
+  wsL['!cols'] = [{ wch: 8 }, { wch: 14 }, { wch: 18 }]
+  XLSX.utils.book_append_sheet(wb, wsL, 'LISTAS_VALIDACION')
+
+  // ── Descargar ────────────────────────────────────────────────────
+  const nombre = `Flota_${tenant.nombre.replace(/\s+/g, '_')}_${anio}.xlsx`
+  XLSX.writeFile(wb, nombre)
+}
+
+// ——— Modal generador de Excel ——————————————————————————————————
+function ModalExcel({ onClose }) {
+  const anioActual = new Date().getFullYear()
+  const [anio,     setAnio]     = useState(anioActual)
+  const [cargando, setCargando] = useState(false)
+  const [err,      setErr]      = useState('')
+
+  async function handleDescargar() {
+    setCargando(true); setErr('')
+    try {
+      const r = await api.get(`/flota/reportes/datos?anio=${anio}`)
+      const { filas, tenant } = r.data
+      if (!filas.length) {
+        setErr(`No hay registros de actividad para ${anio}.`)
+        return
+      }
+      await generarExcel({ filas, tenant, anio })
+      onClose()
+    } catch (e) {
+      setErr(e.message || 'Error al generar el reporte')
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
+      <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl w-full max-w-sm shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2d3039]">
+          <div>
+            <div className="text-sm font-semibold text-white">Reporte Excel</div>
+            <div className="text-xs text-zinc-400">Control de Flota — Base de datos y transparencia</div>
+          </div>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-5 py-5 space-y-5">
+          {/* Info */}
+          <div className="bg-[#1C1F26] border border-[#2d3039] rounded-xl px-4 py-3 space-y-1.5 text-xs text-zinc-400">
+            <div className="flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
+              Hoja BASE_DATOS con km, combustible y peajes por vehículo
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
+              Hoja Reporte_Transparencia con resumen mensual
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
+              Hoja LISTAS_VALIDACION con años, meses y combustibles
+            </div>
+          </div>
+
+          {/* Selector año */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Año del reporte</label>
+            <select
+              value={anio}
+              onChange={e => setAnio(Number(e.target.value))}
+              className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500/50"
+            >
+              {[anioActual - 1, anioActual, anioActual + 1].filter(a => a >= 2024).map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+
+          {err && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-400">{err}</div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-1">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors">
+              Cancelar
+            </button>
+            <button
+              onClick={handleDescargar}
+              disabled={cargando}
+              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-semibold text-sm px-5 py-2 rounded-lg transition-colors"
+            >
+              {cargando ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Generando…
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Descargar Excel
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ——— Modal asignar conductor ——————————————————————————————————
 function ModalAsignarConductor({ vehiculo, onClose, onDone }) {
   const [conductores, setConductores] = useState([])
@@ -111,6 +333,7 @@ export default function FlotaVehiculos() {
   const [modalNuevo,      setModalNuevo]      = useState(false)
   const [modalDocs,       setModalDocs]       = useState(null)
   const [modalAsignar,    setModalAsignar]    = useState(null) // vehiculo completo
+  const [modalExcel,      setModalExcel]      = useState(false)
 
   const { data: dash }                    = useDashboard()
   const { data, loading, error, refetch } = useVehiculos(filters)
@@ -158,7 +381,16 @@ export default function FlotaVehiculos() {
           <option value="FUERA_DE_SERVICIO">Fuera de servicio</option>
         </select>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => setModalExcel(true)}
+            className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Excel
+          </button>
           <button
             onClick={() => setModalNuevo(true)}
             className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
@@ -238,6 +470,10 @@ export default function FlotaVehiculos() {
           onClose={() => setModalAsignar(null)}
           onDone={() => { setModalAsignar(null); refetch() }}
         />
+      )}
+
+      {modalExcel && (
+        <ModalExcel onClose={() => setModalExcel(false)} />
       )}
     </div>
   )

@@ -30,5 +30,6 @@ router.use('/vehiculos',   require('./vehiculos'))
 router.use('/conductores', require('./conductores'))
 router.use('/actividades', require('./actividades'))
 router.use('/documentos',  require('./documentos'))
+router.use('/reportes',    require('./reportes'))
 
 module.exports = router
