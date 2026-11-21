@@ -71,7 +71,7 @@ router.post('/', async (req, res) => {
   try {
     const { tenantId } = req.user
     const { marca, modelo, anio, patente, color, categoria,
-            numeroInterno, conductorId } = req.body
+            numeroInterno, region, unidadOperativa, conductorId } = req.body
 
     if (!marca || !modelo || !anio || !patente) {
       return res.status(400).json({ error: 'Faltan campos obligatorios: marca, modelo, anio, patente' })
@@ -82,6 +82,8 @@ router.post('/', async (req, res) => {
         tenantId,
         marca, modelo, anio, patente: patente.toUpperCase(),
         color, categoria, numeroInterno,
+        region: region || null,
+        unidadOperativa: unidadOperativa || null,
         conductorId: conductorId || null,
       },
     })
@@ -124,7 +126,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { tenantId } = req.user
     const { marca, modelo, anio, patente, color, categoria,
-            numeroInterno, conductorId,
+            numeroInterno, region, unidadOperativa, conductorId,
             proxMantencionKm, proxMantencionFecha,
             tieneTag } = req.body
 
@@ -142,6 +144,8 @@ router.put('/:id', async (req, res) => {
         ...(color !== undefined && { color }),
         ...(categoria !== undefined && { categoria }),
         ...(numeroInterno !== undefined && { numeroInterno }),
+        ...(region !== undefined && { region: region || null }),
+        ...(unidadOperativa !== undefined && { unidadOperativa: unidadOperativa || null }),
         ...(conductorId !== undefined && { conductorId }),
         ...(proxMantencionKm !== undefined && { proxMantencionKm }),
         ...(proxMantencionFecha !== undefined && { proxMantencionFecha: proxMantencionFecha ? new Date(proxMantencionFecha) : null }),

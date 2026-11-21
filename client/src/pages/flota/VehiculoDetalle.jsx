@@ -252,6 +252,8 @@ export default function VehiculoDetalle() {
               {vehiculo.categoria && <span className="text-[#737B86] text-sm">{vehiculo.categoria}</span>}
               {vehiculo.color && <span className="text-[#737B86] text-sm">{vehiculo.color}</span>}
               {vehiculo.numeroInterno && <span className="text-xs bg-[#F4F5F6] text-[#737B86] px-2 py-0.5 rounded font-mono border border-[#E1E4E8]">#{vehiculo.numeroInterno}</span>}
+              {vehiculo.region && <span className="text-xs text-[#737B86]">{vehiculo.region}</span>}
+              {vehiculo.unidadOperativa && <span className="text-xs text-[#737B86]">{vehiculo.unidadOperativa}</span>}
             </div>
           </div>
 
@@ -1111,6 +1113,8 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
     color:              vehiculo.color || '',
     categoria:          vehiculo.categoria || '',
     numeroInterno:      vehiculo.numeroInterno || '',
+    region:             vehiculo.region || '',
+    unidadOperativa:    vehiculo.unidadOperativa || '',
     conductorId:        vehiculo.conductorId || '',
     proxMantencionKm:   vehiculo.proxMantencionKm || '',
     proxMantencionFecha: vehiculo.proxMantencionFecha
@@ -1150,6 +1154,8 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
         color:            form.color || null,
         categoria:        form.categoria || null,
         numeroInterno:    form.numeroInterno || null,
+        region:           form.region || null,
+        unidadOperativa:  form.unidadOperativa || null,
         conductorId:      form.conductorId || null,
         proxMantencionKm: form.proxMantencionKm ? Number(form.proxMantencionKm) : null,
         proxMantencionFecha: form.proxMantencionFecha || null,
@@ -1213,6 +1219,17 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
           <div>
             <label className="field-label">N° interno</label>
             <input className="input mt-1" value={form.numeroInterno} onChange={e => set('numeroInterno', e.target.value)} placeholder="01" />
+          </div>
+          {/* Región / Unidad operativa */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Región</label>
+              <input className="input mt-1" value={form.region} onChange={e => set('region', e.target.value)} placeholder="Biobío" />
+            </div>
+            <div>
+              <label className="field-label">Unidad operativa</label>
+              <input className="input mt-1" value={form.unidadOperativa} onChange={e => set('unidadOperativa', e.target.value)} placeholder="Flota norte" />
+            </div>
           </div>
           {/* Conductor */}
           <div>

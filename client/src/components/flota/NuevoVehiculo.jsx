@@ -10,6 +10,7 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
   const [form, setForm] = useState({
     marca: '', modelo: '', anio: '', patente: '',
     color: '', categoria: '', numeroInterno: '',
+    region: '', unidadOperativa: '',
   })
   const [error,   setError]   = useState(null)
   const [catalogo, setCatalogo] = useState({}) // { marca: [modelo,...] }
@@ -38,9 +39,11 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
         ...form,
         anio:    Number(form.anio),
         patente: form.patente.toUpperCase(),
-        color:          form.color         || undefined,
-        categoria:      form.categoria     || undefined,
-        numeroInterno:  form.numeroInterno || undefined,
+        color:           form.color           || undefined,
+        categoria:       form.categoria       || undefined,
+        numeroInterno:   form.numeroInterno   || undefined,
+        region:          form.region          || undefined,
+        unidadOperativa: form.unidadOperativa || undefined,
       })
       onSuccess()
     } catch (err) {
@@ -156,6 +159,26 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
                 value={form.numeroInterno}
                 onChange={e => set('numeroInterno', e.target.value)}
                 placeholder="V-01"
+                className={INPUT}
+              />
+            </Field>
+          </div>
+
+          {/* Fila región / unidad operativa */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Región">
+              <input
+                value={form.region}
+                onChange={e => set('region', e.target.value)}
+                placeholder="Biobío"
+                className={INPUT}
+              />
+            </Field>
+            <Field label="Unidad operativa">
+              <input
+                value={form.unidadOperativa}
+                onChange={e => set('unidadOperativa', e.target.value)}
+                placeholder="Flota norte"
                 className={INPUT}
               />
             </Field>

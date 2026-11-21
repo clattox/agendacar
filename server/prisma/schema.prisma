@@ -346,6 +346,8 @@ model FlotaVehiculo {
   color               String?
   categoria           String?
   numeroInterno       String?
+  region              String?
+  unidadOperativa     String?
 
   estado              EstadoVehiculo      @default(OPERATIVO)
   odometroActual      Int                 @default(0)
