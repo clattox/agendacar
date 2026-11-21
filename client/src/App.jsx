@@ -31,7 +31,8 @@ const FlotaDashboard    = lazy(() => import('./pages/flota/Dashboard'))
 const FlotaVehiculos    = lazy(() => import('./pages/flota/Vehiculos'))
 const FlotaConductores  = lazy(() => import('./pages/flota/Conductores'))
 const FlotaDocumentos   = lazy(() => import('./pages/flota/Documentos'))
-const PortalConductor   = lazy(() => import('./pages/flota/PortalConductor'))
+const PortalConductor      = lazy(() => import('./pages/flota/PortalConductor'))
+const FlotaVehiculoDetalle = lazy(() => import('./pages/flota/VehiculoDetalle'))
 
 // Componentes
 import ProtectedRoute from './components/admin/ProtectedRoute'
@@ -97,9 +98,10 @@ export default function App() {
               <FlotaLayout>
                 <Routes>
                   <Route index element={<FlotaDashboard />} />
-                  <Route path="vehiculos"   element={<FlotaVehiculos />} />
-                  <Route path="conductores" element={<FlotaConductores />} />
-                  <Route path="documentos"  element={<FlotaDocumentos />} />
+                  <Route path="vehiculos"      element={<FlotaVehiculos />} />
+                  <Route path="vehiculos/:id" element={<FlotaVehiculoDetalle />} />
+                  <Route path="conductores"   element={<FlotaConductores />} />
+                  <Route path="documentos"    element={<FlotaDocumentos />} />
                 </Routes>
               </FlotaLayout>
             </Suspense>
