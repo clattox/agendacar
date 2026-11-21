@@ -323,10 +323,10 @@ export default function FlotaConductores() {
   }
 
   return (
-    <div className="p-7">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-7">
+      <div className="flex flex-wrap gap-3 items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-[#252A31]">Conductores</h1>
-        <button onClick={() => setShowNew(v => !v)} className="btn-primary">
+        <button onClick={() => setShowNew(v => !v)} className="btn-primary whitespace-nowrap">
           {showNew ? 'Cancelar' : '+ Nuevo conductor'}
         </button>
       </div>
@@ -363,8 +363,8 @@ export default function FlotaConductores() {
       {loading && <p className="text-[#737B86] text-sm">Cargando…</p>}
       {error   && <p className="text-[#DC2626] text-sm">Error: {error}</p>}
 
-      <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="bg-[#F4F5F6] border-b border-[#E5E7EB] text-xs text-[#737B86] font-semibold uppercase tracking-wide">
               <th className="text-left px-5 py-3">Conductor</th>
@@ -402,7 +402,7 @@ export default function FlotaConductores() {
                     <div className="font-semibold text-[#252A31]">{c.nombre}</div>
                     {c.email && <div className="text-xs text-[#737B86]">{c.email}</div>}
                   </td>
-                  <td className="px-4 py-3 text-[#252A31] font-mono text-xs">{c.rut ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#252A31] font-mono text-xs whitespace-nowrap">{c.rut ?? '—'}</td>
                   <td className="px-4 py-3">
                     {waUrl ? (
                       <a

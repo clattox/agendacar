@@ -350,7 +350,7 @@ export default function FlotaVehiculos() {
   )
 
   return (
-    <div className="p-7">
+    <div className="p-4 md:p-7">
 
       {/* KPI chips */}
       {dash && (
@@ -364,26 +364,28 @@ export default function FlotaVehiculos() {
       )}
 
       {/* Toolbar */}
-      <div className="flex gap-3 mb-5 flex-wrap items-center">
-        <input
-          type="text"
-          placeholder="Buscar patente, marca…"
-          value={filters.search}
-          onChange={e => handleFilter('search', e.target.value)}
-          className="bg-white border border-[#E1E4E8] rounded-lg px-3 py-2 text-sm text-[#252A31] placeholder-[#A0A6AE] outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 w-56"
-        />
-        <select
-          value={filters.estado}
-          onChange={e => handleFilter('estado', e.target.value)}
-          className="bg-white border border-[#E1E4E8] rounded-lg px-3 py-2 text-sm text-[#252A31] outline-none focus:border-amber-500"
-        >
-          <option value="">Todos los estados</option>
-          <option value="OPERATIVO">Operativo</option>
-          <option value="EN_TALLER">En taller</option>
-          <option value="FUERA_DE_SERVICIO">Fuera de servicio</option>
-        </select>
+      <div className="flex flex-col sm:flex-row gap-3 mb-5 sm:flex-wrap sm:items-center">
+        <div className="flex gap-3 flex-1 min-w-0">
+          <input
+            type="text"
+            placeholder="Buscar patente, marca…"
+            value={filters.search}
+            onChange={e => handleFilter('search', e.target.value)}
+            className="bg-white border border-[#E1E4E8] rounded-lg px-3 py-2 text-sm text-[#252A31] placeholder-[#A0A6AE] outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 flex-1 min-w-0 sm:w-48 sm:flex-none"
+          />
+          <select
+            value={filters.estado}
+            onChange={e => handleFilter('estado', e.target.value)}
+            className="bg-white border border-[#E1E4E8] rounded-lg px-2 py-2 text-sm text-[#252A31] outline-none focus:border-amber-500 min-w-0"
+          >
+            <option value="">Todos</option>
+            <option value="OPERATIVO">Operativo</option>
+            <option value="EN_TALLER">En taller</option>
+            <option value="FUERA_DE_SERVICIO">Fuera serv.</option>
+          </select>
+        </div>
 
-        <div className="ml-auto flex gap-2">
+        <div className="flex gap-2 flex-wrap sm:ml-auto">
           <button
             onClick={() => setModalTag(true)}
             className="inline-flex items-center gap-2 bg-[#DBEAFE] hover:bg-blue-100 text-[#2563EB] border border-blue-200 font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
@@ -413,8 +415,8 @@ export default function FlotaVehiculos() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr className="bg-[#F4F5F6] border-b border-[#E5E7EB] text-xs text-[#737B86] font-semibold uppercase tracking-wide">
               <th className="text-left px-5 py-3">Vehículo</th>
