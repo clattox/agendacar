@@ -421,15 +421,16 @@ export default function FlotaVehiculos() {
               <th className="text-left px-4 py-3">Estado</th>
               <th className="text-left px-4 py-3">Conductor</th>
               <th className="text-right px-4 py-3">Odómetro</th>
+              <th className="text-left px-4 py-3">Próx. Mantención</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={5} className="text-center py-12 text-zinc-500">Cargando…</td></tr>
+              <tr><td colSpan={6} className="text-center py-12 text-zinc-500">Cargando…</td></tr>
             )}
             {!loading && vehiculos.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-12 text-zinc-500">No se encontraron vehículos</td></tr>
+              <tr><td colSpan={6} className="text-center py-12 text-zinc-500">No se encontraron vehículos</td></tr>
             )}
             {vehiculos.map(v => (
               <VehiculoRow
@@ -496,7 +497,23 @@ export default function FlotaVehiculos() {
 }
 
 function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, onAsignar }) {
+  const [menuOpen, setMenuOpen] = useState(false)
   const estado = ESTADOS[v.estado] ?? ESTADOS.OPERATIVO
+
+  // Estado mantención
+  const hoy = new Date()
+  let estadoMant = 'OK'
+  if (v.proxMantencionFecha) {
+    const diff = Math.ceil((new Date(v.proxMantencionFecha) - hoy) / 86400000)
+    if (diff < 0) estadoMant = 'VENCIDA'
+    else if (diff <= 30) estadoMant = 'PROXIMA'
+  }
+  if (v.proxMantencionKm) {
+    const diffKm = v.proxMantencionKm - v.odometroActual
+    if (diffKm <= 0) estadoMant = 'VENCIDA'
+    else if (diffKm <= 1000 && estadoMant !== 'VENCIDA') estadoMant = 'PROXIMA'
+  }
+
   return (
     <tr
       className="border-b border-[#363636] last:border-0 hover:bg-[#2b2b2b] transition-colors cursor-pointer"
@@ -536,29 +553,58 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
       <td className="px-4 py-3 text-right font-mono text-zinc-300">
         {v.odometroActual.toLocaleString('es-CL')} km
       </td>
+      {/* Próxima mantención */}
       <td className="px-4 py-3">
-        <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
-          <button
-            onClick={onNuevaActividad}
-            className="px-3 py-1.5 text-xs font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-lg hover:bg-amber-400/20 transition-colors"
+        {!v.proxMantencionFecha && !v.proxMantencionKm ? (
+          <span className="text-zinc-600 text-xs">—</span>
+        ) : (
+          <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-md
+            ${estadoMant === 'VENCIDA' ? 'bg-red-500/10 text-red-400'
+            : estadoMant === 'PROXIMA' ? 'bg-amber-500/10 text-amber-400'
+            : 'bg-green-500/10 text-green-400'}`}
           >
-            + Actividad
-          </button>
+            {v.proxMantencionFecha
+              ? new Date(v.proxMantencionFecha).toLocaleDateString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit' })
+              : `${Number(v.proxMantencionKm).toLocaleString('es-CL')} km`}
+          </span>
+        )}
+      </td>
+      {/* Menú contextual (3 puntos) */}
+      <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+        <div className="relative flex justify-end">
           <button
-            onClick={onDocumentos}
-            className="px-3 py-1.5 text-xs font-semibold text-blue-400 bg-blue-400/10 border border-blue-400/30 rounded-lg hover:bg-blue-400/20 transition-colors"
+            onClick={() => setMenuOpen(o => !o)}
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700/60 transition-colors"
           >
-            Docs
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+            </svg>
           </button>
-          <button
-            onClick={onVerFicha}
-            className="px-3 py-1.5 text-xs font-semibold text-zinc-300 bg-zinc-700/50 border border-zinc-600 rounded-lg hover:bg-zinc-700 transition-colors"
-          >
-            Ver ficha
-          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-8 z-20 w-44 bg-[#22252e] border border-[#2d3039] rounded-xl shadow-2xl py-1 overflow-hidden">
+                <MenuItem label="Ver ficha" onClick={() => { setMenuOpen(false); onVerFicha() }} />
+                <MenuItem label="+ Actividad" onClick={() => { setMenuOpen(false); onNuevaActividad() }} />
+                <MenuItem label="Documentos" onClick={() => { setMenuOpen(false); onDocumentos() }} />
+                <MenuItem label="Cambiar conductor" onClick={() => { setMenuOpen(false); onAsignar() }} />
+              </div>
+            </>
+          )}
         </div>
       </td>
     </tr>
+  )
+}
+
+function MenuItem({ label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors"
+    >
+      {label}
+    </button>
   )
 }
 

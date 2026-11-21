@@ -373,6 +373,7 @@ export default function FlotaConductores() {
               <th className="text-left px-4 py-3">RUT</th>
               <th className="text-left px-4 py-3">Teléfono</th>
               <th className="text-left px-4 py-3">Licencia</th>
+              <th className="text-left px-4 py-3">Vehículo</th>
               <th className="text-left px-4 py-3">Estado</th>
               <th className="text-left px-4 py-3">Portal</th>
               <th className="px-4 py-3" />
@@ -380,57 +381,126 @@ export default function FlotaConductores() {
           </thead>
           <tbody>
             {!loading && conductores.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-12 text-zinc-500">Sin conductores registrados</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-zinc-500">Sin conductores registrados</td></tr>
             )}
-            {conductores.map(c => (
-              <tr key={c.id} className="border-b border-[#363636] last:border-0 hover:bg-[#2b2b2b] transition-colors">
-                <td className="px-5 py-3">
-                  <div className="font-semibold text-white">{c.nombre}</div>
-                  {c.email && <div className="text-xs text-zinc-400">{c.email}</div>}
-                </td>
-                <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{c.rut ?? '—'}</td>
-                <td className="px-4 py-3 text-zinc-300">{c.telefono ?? '—'}</td>
-                <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{c.licenciaNumero ?? c.licencia ?? '—'}</td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
-                    ${c.activo
-                      ? 'bg-green-400/10 text-green-400 border border-green-400/30'
-                      : 'bg-zinc-700/50 text-zinc-500 border border-zinc-700'}`}>
-                    {c.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => setModalAcceso(c)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border
-                      ${c.usuario
-                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
-                        : 'border-[#2d3039] text-zinc-500 hover:text-white hover:border-zinc-600'}`}
-                  >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      {c.usuario
-                        ? <><circle cx="12" cy="12" r="3" /><path d="M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0z"/></>
-                        : <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>
-                      }
-                    </svg>
-                    {c.usuario ? 'Con acceso' : 'Sin acceso'}
-                  </button>
-                </td>
-                {/* Botón editar */}
-                <td className="px-3 py-3">
-                  <button
-                    onClick={() => setModalEditar(c)}
-                    title="Editar conductor"
-                    className="p-1.5 rounded-lg text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {conductores.map(c => {
+              // Vigencia licencia
+              const hoy = new Date()
+              const vence = c.licenciaVence ? new Date(c.licenciaVence) : null
+              const diasVence = vence ? Math.ceil((vence - hoy) / 86400000) : null
+              const licAlerta = diasVence !== null
+                ? (diasVence < 0 ? 'VENCIDA' : diasVence <= 30 ? 'PROXIMA' : 'OK')
+                : null
+
+              // WhatsApp link
+              const telWA = c.telefono
+                ? c.telefono.replace(/\D/g, '')
+                : null
+              const waUrl = telWA ? `https://wa.me/${telWA.startsWith('56') ? telWA : '56' + telWA}` : null
+
+              return (
+                <tr key={c.id} className="border-b border-[#363636] last:border-0 hover:bg-[#2b2b2b] transition-colors">
+                  <td className="px-5 py-3">
+                    <div className="font-semibold text-white">{c.nombre}</div>
+                    {c.email && <div className="text-xs text-zinc-400">{c.email}</div>}
+                  </td>
+                  <td className="px-4 py-3 text-zinc-300 font-mono text-xs">{c.rut ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    {waUrl ? (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-green-400 hover:text-green-300 transition-colors"
+                        title="Abrir en WhatsApp"
+                      >
+                        <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                          <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.86L.057 23.571a.5.5 0 0 0 .613.614l5.775-1.513A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.95 0-3.78-.54-5.343-1.476l-.38-.23-3.976 1.042 1.058-3.878-.248-.395A9.954 9.954 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                        </svg>
+                        {c.telefono}
+                      </a>
+                    ) : (
+                      <span className="text-zinc-500">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {(c.licenciaCategoria || c.licenciaNumero) ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5">
+                          {c.licenciaCategoria && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-zinc-700 text-zinc-200">
+                              {c.licenciaCategoria}
+                            </span>
+                          )}
+                          <span className="text-xs text-zinc-400 font-mono">{c.licenciaNumero ?? ''}</span>
+                        </div>
+                        {vence && (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold w-fit
+                            ${licAlerta === 'VENCIDA' ? 'bg-red-500/20 text-red-400'
+                            : licAlerta === 'PROXIMA' ? 'bg-amber-500/20 text-amber-400'
+                            : 'bg-zinc-700/50 text-zinc-400'}`}
+                          >
+                            {licAlerta === 'VENCIDA' ? 'VENCIDA'
+                              : `Vence ${vence.toLocaleDateString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit' })}`}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-600">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {c.vehiculoAsignado ? (
+                      <div>
+                        <div className="text-sm font-mono text-zinc-200">{c.vehiculoAsignado.patente}</div>
+                        <div className="text-xs text-zinc-500">{c.vehiculoAsignado.marca} {c.vehiculoAsignado.modelo}</div>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-600 text-xs italic">Sin vehículo</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                      ${c.activo
+                        ? 'bg-green-400/10 text-green-400 border border-green-400/30'
+                        : 'bg-zinc-700/50 text-zinc-500 border border-zinc-700'}`}>
+                      {c.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => setModalAcceso(c)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border
+                        ${c.usuario
+                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                          : 'border-[#2d3039] text-zinc-500 hover:text-white hover:border-zinc-600'}`}
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        {c.usuario
+                          ? <><circle cx="12" cy="12" r="3" /><path d="M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0z"/></>
+                          : <><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>
+                        }
+                      </svg>
+                      {c.usuario ? 'Con acceso' : 'Sin acceso'}
+                    </button>
+                  </td>
+                  {/* Botón editar */}
+                  <td className="px-3 py-3">
+                    <button
+                      onClick={() => setModalEditar(c)}
+                      title="Editar conductor"
+                      className="p-1.5 rounded-lg text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

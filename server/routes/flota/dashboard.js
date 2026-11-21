@@ -18,12 +18,18 @@ router.get('/', async (req, res) => {
     const hasta60 = new Date()
     hasta60.setDate(hasta60.getDate() + 60)
 
+    // Mantenciones: próximas (dentro de 1000 km o 30 días) y vencidas
+    const hoy = new Date()
+    const en30dias = new Date()
+    en30dias.setDate(en30dias.getDate() + 30)
+
     const [
       totalVehiculos,
       porEstado,
       sinConductor,
       actividadesDelMes,
       documentosProximos,
+      vehiculosConDatos,
     ] = await Promise.all([
 
       prisma.flotaVehiculo.count({ where: { tenantId } }),
@@ -64,6 +70,15 @@ router.get('/', async (req, res) => {
         },
         orderBy: { fechaVencimiento: 'asc' },
       }),
+
+      // Todos los vehículos con conductor y última actividad de km
+      prisma.flotaVehiculo.findMany({
+        where: { tenantId },
+        include: {
+          conductor: { select: { id: true, nombre: true } },
+        },
+        orderBy: { patente: 'asc' },
+      }),
     ])
 
     // Mapear estado a conteos
@@ -79,7 +94,6 @@ router.get('/', async (req, res) => {
     }
 
     // Enriquecer documentos con días restantes
-    const hoy = new Date()
     const alertasDocumentos = documentosProximos.map(doc => ({
       ...doc,
       diasRestantes: Math.ceil((doc.fechaVencimiento - hoy) / (1000 * 60 * 60 * 24)),
@@ -87,6 +101,44 @@ router.get('/', async (req, res) => {
              : (Math.ceil((doc.fechaVencimiento - hoy) / 86400000) <= 15) ? 'CRITICO'
              : 'PROXIMO',
     }))
+
+    // Tabla operacional de vehículos
+    const tablaVehiculos = vehiculosConDatos.map(v => {
+      // Estado mantención
+      let estadoMant = 'OK'
+      const hoyMs = hoy.getTime()
+
+      if (v.proxMantencionFecha) {
+        const fechaMs = new Date(v.proxMantencionFecha).getTime()
+        const diffDias = Math.ceil((fechaMs - hoyMs) / 86400000)
+        if (diffDias < 0) estadoMant = 'VENCIDA'
+        else if (diffDias <= 30) estadoMant = 'PROXIMA'
+      }
+      if (v.proxMantencionKm) {
+        const diffKm = v.proxMantencionKm - v.odometroActual
+        if (diffKm <= 0) estadoMant = 'VENCIDA'
+        else if (diffKm <= 1000 && estadoMant !== 'VENCIDA') estadoMant = 'PROXIMA'
+      }
+
+      return {
+        id:                 v.id,
+        patente:            v.patente,
+        marca:              v.marca,
+        modelo:             v.modelo,
+        anio:               v.anio,
+        estado:             v.estado,
+        conductor:          v.conductor,
+        odometroActual:     v.odometroActual,
+        proxMantencionKm:   v.proxMantencionKm,
+        proxMantencionFecha:v.proxMantencionFecha,
+        estadoMant,
+      }
+    })
+
+    // Alertas de atención
+    const mantVencidas = tablaVehiculos.filter(v => v.estadoMant === 'VENCIDA')
+    const mantProximas = tablaVehiculos.filter(v => v.estadoMant === 'PROXIMA')
+    const fueraDeServicio = vehiculosConDatos.filter(v => v.estado === 'FUERA_DE_SERVICIO')
 
     res.json({
       vehiculos: {
@@ -107,7 +159,14 @@ router.get('/', async (req, res) => {
         documentosVencidos: alertasDocumentos.filter(d => d.alerta === 'VENCIDO'),
         documentosCriticos: alertasDocumentos.filter(d => d.alerta === 'CRITICO'),
         documentosProximos: alertasDocumentos.filter(d => d.alerta === 'PROXIMO'),
+        mantVencidas,
+        mantProximas,
+        fueraDeServicio: fueraDeServicio.map(v => ({
+          id: v.id, patente: v.patente, marca: v.marca, modelo: v.modelo,
+          conductor: v.conductor,
+        })),
       },
+      tablaVehiculos,
     })
   } catch (err) {
     console.error(err)

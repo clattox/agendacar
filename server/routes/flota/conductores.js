@@ -24,10 +24,20 @@ router.get('/', async (req, res) => {
       include: {
         _count: { select: { flotaVehiculos: true } },
         usuario: { select: { id: true, email: true } },
+        flotaVehiculos: {
+          where: { tenantId },
+          select: { id: true, patente: true, marca: true, modelo: true },
+          take: 1,
+        },
       },
       orderBy: { nombre: 'asc' },
     })
-    res.json(conductores)
+    // Añadir vehiculoAsignado como campo directo para facilitar el frontend
+    const result = conductores.map(c => ({
+      ...c,
+      vehiculoAsignado: c.flotaVehiculos?.[0] ?? null,
+    }))
+    res.json(result)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al obtener conductores' })
