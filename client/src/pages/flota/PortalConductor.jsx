@@ -293,10 +293,14 @@ export default function PortalConductor() {
                               {doc.archivoBase64 && (
                                 <button
                                   onClick={() => {
+                                    // Blob URL evita bloqueo de data: URLs en Chrome/Android
                                     const b64 = doc.archivoBase64.startsWith('data:')
-                                      ? doc.archivoBase64
-                                      : `data:application/pdf;base64,${doc.archivoBase64}`
-                                    setPdfModal({ dataUrl: b64, nombre: doc.archivoNombre || TIPO_DOC[doc.tipo] || 'Documento' })
+                                      ? doc.archivoBase64.split(',')[1]
+                                      : doc.archivoBase64
+                                    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+                                    const blob = new Blob([bytes], { type: 'application/pdf' })
+                                    const url = URL.createObjectURL(blob)
+                                    setPdfModal({ dataUrl: url, nombre: doc.archivoNombre || TIPO_DOC[doc.tipo] || 'Documento' })
                                   }}
                                   className="flex-shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
                                   title="Ver PDF"
@@ -525,11 +529,11 @@ export default function PortalConductor() {
       {pdfModal && (
         <div
           className="fixed inset-0 z-50 flex flex-col bg-black/90"
-          onClick={() => setPdfModal(null)}
+          onClick={() => { URL.revokeObjectURL(pdfModal.dataUrl); setPdfModal(null) }}
         >
           <div className="flex items-center justify-between px-4 py-3 bg-[#1C1F26] border-b border-[#2d3039] flex-shrink-0" onClick={e => e.stopPropagation()}>
             <span className="text-sm font-semibold text-white truncate">{pdfModal.nombre}</span>
-            <button onClick={() => setPdfModal(null)} className="text-zinc-400 hover:text-white p-1 ml-3 flex-shrink-0">
+            <button onClick={() => { URL.revokeObjectURL(pdfModal.dataUrl); setPdfModal(null) }} className="text-zinc-400 hover:text-white p-1 ml-3 flex-shrink-0">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path d="M6 18L18 6M6 6l12 12" />
               </svg>
