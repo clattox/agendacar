@@ -301,10 +301,34 @@ export default function FlotaConductores() {
   const [saving,       setSaving]       = useState(false)
   const [saveErr,      setSaveErr]      = useState('')
   const [showNew,      setShowNew]      = useState(false)
-  const [modalAcceso,  setModalAcceso]  = useState(null) // conductor seleccionado
-  const [modalEditar,  setModalEditar]  = useState(null) // conductor a editar
+  const [modalAcceso,       setModalAcceso]       = useState(null)
+  const [modalEditar,       setModalEditar]       = useState(null)
+  const [mostrarInactivos,  setMostrarInactivos]  = useState(false)
+  const [toggling,          setToggling]          = useState(null) // id del que se está procesando
 
-  const conductores = data?.data ?? data ?? []
+  const todosLosConductores = data?.data ?? data ?? []
+  const conductores = mostrarInactivos
+    ? todosLosConductores
+    : todosLosConductores.filter(c => c.activo !== false)
+
+  async function handleToggleActivo(c) {
+    if (toggling) return
+    const desactivar = c.activo !== false
+    if (desactivar && !window.confirm(`¿Desactivar a ${c.nombre}? Perderá acceso al portal si lo tenía.`)) return
+    setToggling(c.id)
+    try {
+      await api.put(`/flota/conductores/${c.id}`, { activo: !desactivar })
+      // Si se desactiva y tenía acceso al portal, revocarlo también
+      if (desactivar && c.usuario) {
+        await api.delete(`/flota/conductores/${c.id}/acceso`).catch(() => {})
+      }
+      refetch()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error al actualizar conductor')
+    } finally {
+      setToggling(null)
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -326,9 +350,21 @@ export default function FlotaConductores() {
     <div className="p-4 md:p-7">
       <div className="flex flex-wrap gap-3 items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-[#252A31]">Conductores</h1>
-        <button onClick={() => setShowNew(v => !v)} className="btn-primary whitespace-nowrap">
-          {showNew ? 'Cancelar' : '+ Nuevo conductor'}
-        </button>
+        <div className="flex gap-2 items-center flex-wrap">
+          <button
+            onClick={() => setMostrarInactivos(v => !v)}
+            className={`text-sm px-3 py-1.5 rounded-lg border font-medium transition-colors whitespace-nowrap ${
+              mostrarInactivos
+                ? 'bg-[#252A31] text-white border-[#252A31]'
+                : 'bg-white text-[#737B86] border-[#E1E4E8] hover:border-[#C6CAD0]'
+            }`}
+          >
+            {mostrarInactivos ? 'Ocultar inactivos' : 'Ver inactivos'}
+          </button>
+          <button onClick={() => setShowNew(v => !v)} className="btn-primary whitespace-nowrap">
+            {showNew ? 'Cancelar' : '+ Nuevo conductor'}
+          </button>
+        </div>
       </div>
 
       {/* Formulario nuevo conductor */}
@@ -399,7 +435,12 @@ export default function FlotaConductores() {
               return (
                 <tr key={c.id} className="border-b border-[#E5E7EB] last:border-0 hover:bg-[#F4F5F6] transition-colors">
                   <td className="px-5 py-3">
-                    <div className="font-semibold text-[#252A31]">{c.nombre}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-[#252A31]">{c.nombre}</span>
+                      {c.activo === false && (
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-[#F4F5F6] text-[#737B86] border border-[#E1E4E8]">Inactivo</span>
+                      )}
+                    </div>
                     {c.email && <div className="text-xs text-[#737B86]">{c.email}</div>}
                   </td>
                   <td className="px-4 py-3 text-[#252A31] font-mono text-xs whitespace-nowrap">{c.rut ?? '—'}</td>
@@ -483,18 +524,42 @@ export default function FlotaConductores() {
                       {c.usuario ? 'Con acceso' : 'Sin acceso'}
                     </button>
                   </td>
-                  {/* Botón editar */}
+                  {/* Botones editar + desactivar */}
                   <td className="px-3 py-3">
-                    <button
-                      onClick={() => setModalEditar(c)}
-                      title="Editar conductor"
-                      className="p-1.5 rounded-lg text-[#737B86] hover:text-amber-500 hover:bg-[#FFF4DE] transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setModalEditar(c)}
+                        title="Editar conductor"
+                        className="p-1.5 rounded-lg text-[#737B86] hover:text-amber-500 hover:bg-[#FFF4DE] transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleToggleActivo(c)}
+                        disabled={toggling === c.id}
+                        title={c.activo === false ? 'Reactivar conductor' : 'Desactivar conductor'}
+                        className={`p-1.5 rounded-lg transition-colors disabled:opacity-40 ${
+                          c.activo === false
+                            ? 'text-[#16A34A] hover:bg-green-50'
+                            : 'text-[#737B86] hover:text-red-500 hover:bg-red-50'
+                        }`}
+                      >
+                        {c.activo === false ? (
+                          // Icono check-circle (reactivar)
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/>
+                          </svg>
+                        ) : (
+                          // Icono ban (desactivar)
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )

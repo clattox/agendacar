@@ -333,11 +333,28 @@ export default function FlotaVehiculos() {
   const [modalVehiculo,   setModalVehiculo]   = useState(null)
   const [modalNuevo,      setModalNuevo]      = useState(false)
   const [modalDocs,       setModalDocs]       = useState(null)
-  const [modalAsignar,    setModalAsignar]    = useState(null) // vehiculo completo
+  const [modalAsignar,    setModalAsignar]    = useState(null)
   const [modalExcel,      setModalExcel]      = useState(false)
   const [modalTag,        setModalTag]        = useState(false)
+  const [toggling,        setToggling]        = useState(null)
 
   const { data: dash }                    = useDashboard()
+
+  async function handleToggleEstado(v) {
+    if (toggling) return
+    const esFueraDeServicio = v.estado === 'FUERA_DE_SERVICIO'
+    const nuevoEstado = esFueraDeServicio ? 'OPERATIVO' : 'FUERA_DE_SERVICIO'
+    if (!esFueraDeServicio && !window.confirm(`¿Marcar ${v.patente} como Fuera de servicio?`)) return
+    setToggling(v.id)
+    try {
+      await api.put(`/flota/vehiculos/${v.id}`, { estado: nuevoEstado })
+      refetch()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error al actualizar vehículo')
+    } finally {
+      setToggling(null)
+    }
+  }
   const { data, loading, error, refetch } = useVehiculos(filters)
   const vehiculos = data?.data ?? []
 
@@ -447,6 +464,8 @@ export default function FlotaVehiculos() {
                 })}
                 onDocumentos={() => setModalDocs({ id: v.id, patente: v.patente, marca: v.marca, modelo: v.modelo })}
                 onAsignar={() => setModalAsignar(v)}
+                onToggleEstado={() => handleToggleEstado(v)}
+                toggling={toggling === v.id}
               />
             ))}
           </tbody>
@@ -498,7 +517,7 @@ export default function FlotaVehiculos() {
   )
 }
 
-function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, onAsignar }) {
+function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, onAsignar, onToggleEstado, toggling }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const estado = ESTADOS[v.estado] ?? ESTADOS.OPERATIVO
 
@@ -594,6 +613,11 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
                 <MenuItem label="+ Actividad" onClick={() => { setMenuOpen(false); onNuevaActividad() }} />
                 <MenuItem label="Documentos" onClick={() => { setMenuOpen(false); onDocumentos() }} />
                 <MenuItem label="Cambiar conductor" onClick={() => { setMenuOpen(false); onAsignar() }} />
+                <MenuItem
+                  label={toggling ? 'Procesando…' : v.estado === 'FUERA_DE_SERVICIO' ? 'Reactivar vehículo' : 'Dar de baja'}
+                  onClick={() => { setMenuOpen(false); onToggleEstado() }}
+                  danger={v.estado !== 'FUERA_DE_SERVICIO'}
+                />
               </div>
             </>
           )}
@@ -603,11 +627,13 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
   )
 }
 
-function MenuItem({ label, onClick }) {
+function MenuItem({ label, onClick, danger = false }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-4 py-2 text-sm text-[#252A31] hover:bg-[#F4F5F6] transition-colors"
+      className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-[#F4F5F6] ${
+        danger ? 'text-red-500' : 'text-[#252A31]'
+      }`}
     >
       {label}
     </button>

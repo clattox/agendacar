@@ -128,7 +128,7 @@ router.put('/:id', async (req, res) => {
     const { marca, modelo, anio, patente, color, categoria,
             numeroInterno, region, unidadOperativa, conductorId,
             proxMantencionKm, proxMantencionFecha,
-            tieneTag } = req.body
+            tieneTag, estado } = req.body
 
     // Verificar que pertenece al tenant
     const existing = await prisma.flotaVehiculo.findFirst({ where: { id: req.params.id, tenantId } })
@@ -150,6 +150,7 @@ router.put('/:id', async (req, res) => {
         ...(proxMantencionKm !== undefined && { proxMantencionKm }),
         ...(proxMantencionFecha !== undefined && { proxMantencionFecha: proxMantencionFecha ? new Date(proxMantencionFecha) : null }),
         ...(tieneTag !== undefined && { tieneTag: !!tieneTag }),
+        ...(estado !== undefined && { estado }),
       },
     })
     res.json(vehiculo)
