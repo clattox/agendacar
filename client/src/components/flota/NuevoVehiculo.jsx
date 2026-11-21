@@ -1,6 +1,7 @@
 // components/flota/NuevoVehiculo.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCrearVehiculo } from '../../hooks/useFlota'
+import api from '../../lib/api'
 
 const CATEGORIAS = ['Camioneta', 'Furgón', 'Sedán', 'SUV', 'Camión', 'Van', 'Moto', 'Otro']
 
@@ -10,10 +11,23 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
     marca: '', modelo: '', anio: '', patente: '',
     color: '', categoria: '', numeroInterno: '',
   })
-  const [error, setError] = useState(null)
+  const [error,   setError]   = useState(null)
+  const [catalogo, setCatalogo] = useState({}) // { marca: [modelo,...] }
+
+  // Cargar catálogo al montar
+  useEffect(() => {
+    api.get('/flota/vehiculos/catalogo')
+      .then(r => setCatalogo(r.data.catalogo || {}))
+      .catch(() => {}) // silencioso — el catálogo es opcional
+  }, [])
 
   function set(key, value) {
-    setForm(prev => ({ ...prev, [key]: value }))
+    setForm(prev => {
+      const next = { ...prev, [key]: value }
+      // Si cambia la marca, limpiar modelo para evitar combinaciones inválidas
+      if (key === 'marca') next.modelo = ''
+      return next
+    })
   }
 
   async function handleSubmit(e) {
@@ -33,6 +47,10 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
       setError(err.message)
     }
   }
+
+  // Marcas y modelos disponibles en el catálogo
+  const marcas   = Object.keys(catalogo).sort()
+  const modelos  = form.marca && catalogo[form.marca] ? catalogo[form.marca] : []
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
@@ -54,20 +72,32 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
             <Field label="Marca *">
               <input
                 required
+                list="catalogo-marcas"
                 value={form.marca}
                 onChange={e => set('marca', e.target.value)}
                 placeholder="Toyota"
                 className={INPUT}
               />
+              {marcas.length > 0 && (
+                <datalist id="catalogo-marcas">
+                  {marcas.map(m => <option key={m} value={m} />)}
+                </datalist>
+              )}
             </Field>
             <Field label="Modelo *">
               <input
                 required
+                list="catalogo-modelos"
                 value={form.modelo}
                 onChange={e => set('modelo', e.target.value)}
                 placeholder="Hilux"
                 className={INPUT}
               />
+              {modelos.length > 0 && (
+                <datalist id="catalogo-modelos">
+                  {modelos.map(m => <option key={m} value={m} />)}
+                </datalist>
+              )}
             </Field>
           </div>
 

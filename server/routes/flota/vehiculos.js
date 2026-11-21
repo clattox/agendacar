@@ -42,6 +42,29 @@ router.get('/', async (req, res) => {
   }
 })
 
+// ——— GET /api/flota/vehiculos/catalogo ————————————————————————
+// Retorna marcas y modelos del CatalogoVehiculo del tenant
+router.get('/catalogo', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const registros = await prisma.catalogoVehiculo.findMany({
+      where: { tenantId },
+      select: { marca: true, modelo: true },
+      orderBy: [{ marca: 'asc' }, { modelo: 'asc' }],
+    })
+    // Agrupar: { marca: [modelo, ...] }
+    const catalogo = {}
+    for (const { marca, modelo } of registros) {
+      if (!catalogo[marca]) catalogo[marca] = []
+      catalogo[marca].push(modelo)
+    }
+    res.json({ catalogo })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener catálogo' })
+  }
+})
+
 // ——— POST /api/flota/vehiculos ——————————————————————————————
 // Crear vehículo
 router.post('/', async (req, res) => {

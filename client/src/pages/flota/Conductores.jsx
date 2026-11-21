@@ -122,6 +122,180 @@ function ModalAcceso({ conductor, onClose, onDone }) {
   )
 }
 
+// ——— Modal editar conductor ————————————————————————————
+function ModalEditar({ conductor, onClose, onDone }) {
+  const [form, setForm] = useState({
+    nombre:            conductor.nombre            || '',
+    rut:               conductor.rut               || '',
+    telefono:          conductor.telefono          || '',
+    email:             conductor.email             || '',
+    licenciaNumero:    conductor.licenciaNumero    || '',
+    licenciaCategoria: conductor.licenciaCategoria || '',
+    licenciaVence:     conductor.licenciaVence
+      ? conductor.licenciaVence.substring(0, 10)
+      : '',
+    activo: conductor.activo !== false,
+  })
+  const [saving, setSaving] = useState(false)
+  const [err,    setErr]    = useState('')
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.nombre.trim()) return setErr('El nombre es obligatorio')
+    setSaving(true); setErr('')
+    try {
+      await api.put(`/flota/conductores/${conductor.id}`, {
+        ...form,
+        licenciaVence: form.licenciaVence || null,
+      })
+      onDone()
+    } catch (error) {
+      setErr(error.response?.data?.error || 'Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const INPUT_CLS = 'w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
+      <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2d3039] sticky top-0 bg-[#22252e] z-10">
+          <div>
+            <div className="text-sm font-semibold text-white">Editar conductor</div>
+            <div className="text-xs text-zinc-400">{conductor.nombre}</div>
+          </div>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">
+          {err && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-400">
+              {err}
+            </div>
+          )}
+
+          {/* Nombre */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Nombre completo *</label>
+            <input
+              required
+              value={form.nombre}
+              onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))}
+              placeholder="Juan Pérez"
+              className={INPUT_CLS}
+            />
+          </div>
+
+          {/* RUT */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">RUT</label>
+            <input
+              value={form.rut}
+              onChange={e => setForm(p => ({ ...p, rut: e.target.value }))}
+              placeholder="12.345.678-9"
+              className={INPUT_CLS}
+            />
+          </div>
+
+          {/* Teléfono / Email */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Teléfono</label>
+              <input
+                type="tel"
+                value={form.telefono}
+                onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))}
+                placeholder="+56 9 1234 5678"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                placeholder="juan@ejemplo.cl"
+                className={INPUT_CLS}
+              />
+            </div>
+          </div>
+
+          {/* Licencia */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">N° licencia</label>
+              <input
+                value={form.licenciaNumero}
+                onChange={e => setForm(p => ({ ...p, licenciaNumero: e.target.value }))}
+                placeholder="B1234567"
+                className={INPUT_CLS}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Categoría</label>
+              <input
+                value={form.licenciaCategoria}
+                onChange={e => setForm(p => ({ ...p, licenciaCategoria: e.target.value }))}
+                placeholder="B, C, D…"
+                className={INPUT_CLS}
+              />
+            </div>
+          </div>
+
+          {/* Vencimiento licencia */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Vencimiento licencia</label>
+            <input
+              type="date"
+              value={form.licenciaVence}
+              onChange={e => setForm(p => ({ ...p, licenciaVence: e.target.value }))}
+              className={INPUT_CLS}
+            />
+          </div>
+
+          {/* Estado activo */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setForm(p => ({ ...p, activo: !p.activo }))}
+              className={`relative w-10 h-5 rounded-full transition-colors ${form.activo ? 'bg-amber-500' : 'bg-zinc-700'}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.activo ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </button>
+            <span className="text-sm text-zinc-300">{form.activo ? 'Activo' : 'Inactivo'}</span>
+          </div>
+
+          {/* Botones */}
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-semibold text-sm px-5 py-2 rounded-lg transition-colors"
+            >
+              {saving ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ——— Página principal ————————————————————————————————
 export default function FlotaConductores() {
   const { data, loading, error, refetch } = useConductores()
@@ -130,6 +304,7 @@ export default function FlotaConductores() {
   const [saveErr,      setSaveErr]      = useState('')
   const [showNew,      setShowNew]      = useState(false)
   const [modalAcceso,  setModalAcceso]  = useState(null) // conductor seleccionado
+  const [modalEditar,  setModalEditar]  = useState(null) // conductor a editar
 
   const conductores = data?.data ?? data ?? []
 
@@ -200,11 +375,12 @@ export default function FlotaConductores() {
               <th className="text-left px-4 py-3">Licencia</th>
               <th className="text-left px-4 py-3">Estado</th>
               <th className="text-left px-4 py-3">Portal</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {!loading && conductores.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-12 text-zinc-500">Sin conductores registrados</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-zinc-500">Sin conductores registrados</td></tr>
             )}
             {conductores.map(c => (
               <tr key={c.id} className="border-b border-[#363636] last:border-0 hover:bg-[#2b2b2b] transition-colors">
@@ -240,6 +416,19 @@ export default function FlotaConductores() {
                     {c.usuario ? 'Con acceso' : 'Sin acceso'}
                   </button>
                 </td>
+                {/* Botón editar */}
+                <td className="px-3 py-3">
+                  <button
+                    onClick={() => setModalEditar(c)}
+                    title="Editar conductor"
+                    className="p-1.5 rounded-lg text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -252,6 +441,15 @@ export default function FlotaConductores() {
           conductor={modalAcceso}
           onClose={() => setModalAcceso(null)}
           onDone={() => { setModalAcceso(null); refetch() }}
+        />
+      )}
+
+      {/* Modal de edición */}
+      {modalEditar && (
+        <ModalEditar
+          conductor={modalEditar}
+          onClose={() => setModalEditar(null)}
+          onDone={() => { setModalEditar(null); refetch() }}
         />
       )}
     </div>
