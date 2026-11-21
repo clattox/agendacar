@@ -45,7 +45,7 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
 
     if (tipo === 'KILOMETRAJE'   && !form.odometroActual)                       return setValidationErr('Ingresa el odómetro actual')
     if (tipo === 'COMBUSTIBLE'   && (!form.tipoCombustible || !form.litros || !form.monto)) return setValidationErr('Completa tipo, litros y monto')
-    if (tipo === 'PEAJE'         && !form.monto)                                return setValidationErr('Ingresa el monto del peaje')
+    if (tipo === 'PEAJE'         && !form.esTag && !form.monto)                 return setValidationErr('Ingresa el monto del peaje o marca que es con tag')
     if (tipo === 'MANTENCION'    && !form.tipoMantencion)                       return setValidationErr('Selecciona el tipo de mantención')
     if (tipo === 'CAMBIO_ESTADO' && !form.estadoNuevo)                          return setValidationErr('Selecciona el nuevo estado')
 
@@ -240,21 +240,62 @@ function FormComb({ form, set }) {
 }
 
 function FormPeaje({ form, set }) {
+  const esTag = !!form.esTag
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Monto *">
-          <div className="relative">
-            <input type="number" className="input pr-5" placeholder="16000"
-              onChange={e => set('monto', Number(e.target.value))} />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">$</span>
+      {/* Toggle Tag */}
+      <button
+        type="button"
+        onClick={() => { set('esTag', !esTag); if (!esTag) set('monto', '') }}
+        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
+          ${esTag
+            ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
+            : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}
+      >
+        {/* Icono tag (chip/transponder) */}
+        <svg className={`w-5 h-5 flex-shrink-0 ${esTag ? 'text-blue-400' : 'text-zinc-500'}`}
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+          <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
+        </svg>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-semibold">Pagado con Tag electrónico</div>
+          <div className={`text-xs mt-0.5 ${esTag ? 'text-blue-400/70' : 'text-zinc-600'}`}>
+            {esTag
+              ? 'El administrador cargará el monto desde el estado de cuenta'
+              : 'Activar si el peaje fue cobrado por telepeaje / Tag'}
           </div>
-        </Field>
-        <Field label="Autopista / ruta">
-          <input type="text" className="input" placeholder="Ruta 5 Sur…"
+        </div>
+        <div className={`w-9 h-5 rounded-full flex-shrink-0 relative transition-colors ${esTag ? 'bg-blue-500' : 'bg-zinc-700'}`}>
+          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${esTag ? 'left-4' : 'left-0.5'}`} />
+        </div>
+      </button>
+
+      {/* Monto: oculto si es tag */}
+      {!esTag && (
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Monto *">
+            <div className="relative">
+              <input type="number" className="input pr-5" placeholder="16000"
+                onChange={e => set('monto', Number(e.target.value))} />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">$</span>
+            </div>
+          </Field>
+          <Field label="Autopista / ruta">
+            <input type="text" className="input" placeholder="Ruta 5 Sur…"
+              onChange={e => set('autopista', e.target.value)} />
+          </Field>
+        </div>
+      )}
+
+      {/* Autopista visible aunque sea tag */}
+      {esTag && (
+        <Field label="Autopista / ruta (opcional)">
+          <input type="text" className="input" placeholder="Ruta 5 Sur, Autopista Central…"
             onChange={e => set('autopista', e.target.value)} />
         </Field>
-      </div>
+      )}
+
       <div>
         <label className="field-label">Sentido del viaje</label>
         <div className="flex gap-2 mt-1.5">
@@ -409,7 +450,8 @@ function buildDetalle(tipo, form) {
       }
     case 'PEAJE':
       return {
-        monto:     form.monto,
+        monto:     form.monto || 0,
+        esTag:     !!form.esTag,
         autopista: form.autopista || undefined,
         sentido:   form.sentido   || 'IDA',
       }

@@ -109,12 +109,14 @@ router.post('/', async (req, res) => {
 
         // —— PEAJE ——
         case 'PEAJE': {
-          const { monto, autopista, sentido, proposito } = detalleRaw
-          if (!monto) throw new Error('monto es obligatorio para PEAJE')
+          const { monto, autopista, sentido, proposito, esTag } = detalleRaw
+          // Si es tag, el monto es opcional (el admin lo carga después)
+          if (!esTag && !monto) throw new Error('monto es obligatorio para PEAJE sin tag')
           await tx.peajeRegistro.create({
             data: {
               actividadId: actividad.id,
-              monto,
+              monto:       monto || 0,
+              esTag:       !!esTag,
               autopista:   autopista || null,
               sentido:     sentido || 'IDA',
               proposito:   proposito || null,

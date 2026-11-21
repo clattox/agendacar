@@ -104,7 +104,7 @@ router.get('/datos', async (req, res) => {
         if (!g.tipoCombustible) {
           // Mapear enum → texto del Excel
           const tc = act.combustibleRegistro.tipoCombustible
-          g.tipoCombustible = tc === 'DIESEL' ? 'Diesel' : tc === 'BENCINA' ? 'Bencina' : tc
+          g.tipoCombustible = tc === 'DIESEL' ? 'Diesel' : tc.startsWith('BENCINA') ? 'Bencina' : tc
         }
       }
 
@@ -155,6 +155,92 @@ router.get('/datos', async (req, res) => {
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al generar datos del reporte' })
+  }
+})
+
+// ——— GET /api/flota/reportes/peajes-tag ——————————————————————————
+// Lista todos los peajes con tag del tenant, ordenados por fecha desc.
+// Incluye los que ya tienen monto (para ver historial) y los que no.
+// ?pendientes=1 → solo los que tienen monto=0 (sin cargar aún)
+router.get('/peajes-tag', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const soloPendientes = req.query.pendientes === '1'
+
+    const peajes = await prisma.peajeRegistro.findMany({
+      where: {
+        esTag: true,
+        actividad: { tenantId },
+        ...(soloPendientes ? { monto: 0 } : {}),
+      },
+      include: {
+        actividad: {
+          select: {
+            id: true,
+            fecha: true,
+            notas: true,
+            vehiculo: {
+              select: {
+                id: true,
+                patente: true,
+                marca: true,
+                modelo: true,
+                numeroInterno: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { actividad: { fecha: 'desc' } },
+    })
+
+    const resultado = peajes.map(p => ({
+      id:        p.id,
+      monto:     p.monto,
+      autopista: p.autopista,
+      sentido:   p.sentido,
+      proposito: p.proposito,
+      pendiente: p.monto === 0,
+      fecha:     p.actividad.fecha,
+      notas:     p.actividad.notas,
+      vehiculo:  p.actividad.vehiculo,
+    }))
+
+    res.json(resultado)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener peajes con tag' })
+  }
+})
+
+// ——— PUT /api/flota/reportes/peajes-tag/:id/monto ———————————————
+// Admin carga o actualiza el monto de un peaje con tag.
+// Body: { monto: number }
+router.put('/peajes-tag/:id/monto', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { id } = req.params
+    const { monto } = req.body
+
+    if (!monto || isNaN(Number(monto)) || Number(monto) <= 0) {
+      return res.status(400).json({ error: 'monto debe ser un número mayor a 0' })
+    }
+
+    // Verificar que el peaje pertenece al tenant
+    const peaje = await prisma.peajeRegistro.findFirst({
+      where: { id, esTag: true, actividad: { tenantId } },
+    })
+    if (!peaje) return res.status(404).json({ error: 'Peaje no encontrado' })
+
+    const actualizado = await prisma.peajeRegistro.update({
+      where: { id },
+      data:  { monto: Number(monto) },
+    })
+
+    res.json({ id: actualizado.id, monto: actualizado.monto })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al actualizar monto del peaje' })
   }
 })
 

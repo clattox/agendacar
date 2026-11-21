@@ -5,6 +5,7 @@ import { useVehiculos, useDashboard } from '../../hooks/useFlota'
 import NuevaActividad      from '../../components/flota/NuevaActividad'
 import NuevoVehiculo       from '../../components/flota/NuevoVehiculo'
 import DocumentosVehiculo  from '../../components/flota/DocumentosVehiculo'
+import GastosTag           from '../../components/flota/GastosTag'
 import api from '../../lib/api'
 
 // ——— Cargar SheetJS una sola vez desde CDN ————————————————————
@@ -334,6 +335,7 @@ export default function FlotaVehiculos() {
   const [modalDocs,       setModalDocs]       = useState(null)
   const [modalAsignar,    setModalAsignar]    = useState(null) // vehiculo completo
   const [modalExcel,      setModalExcel]      = useState(false)
+  const [modalTag,        setModalTag]        = useState(false)
 
   const { data: dash }                    = useDashboard()
   const { data, loading, error, refetch } = useVehiculos(filters)
@@ -382,6 +384,16 @@ export default function FlotaVehiculos() {
         </select>
 
         <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => setModalTag(true)}
+            className="inline-flex items-center gap-2 bg-blue-900/60 hover:bg-blue-800/70 text-blue-300 border border-blue-700/40 font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+              <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
+            Gastos Tag
+          </button>
           <button
             onClick={() => setModalExcel(true)}
             className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
@@ -474,6 +486,10 @@ export default function FlotaVehiculos() {
 
       {modalExcel && (
         <ModalExcel onClose={() => setModalExcel(false)} />
+      )}
+
+      {modalTag && (
+        <GastosTag onClose={() => setModalTag(false)} />
       )}
     </div>
   )

@@ -449,7 +449,8 @@ model PeajeRegistro {
   actividadId String         @unique
   actividad   FlotaActividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
 
-  monto       Int
+  monto       Int            @default(0)
+  esTag       Boolean        @default(false)
   autopista   String?
   sentido     SentidoPeaje   @default(IDA)
   proposito   String?
