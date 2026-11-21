@@ -600,7 +600,19 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
       <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
 
-          {/* Botón: + Actividad — texto en desktop, solo ícono en móvil */}
+          {/* Botón: Ver ficha — solo ícono en móvil, texto en desktop */}
+          <button
+            onClick={onVerFicha}
+            title="Ver ficha del vehículo"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#4B5563] bg-[#F3F4F6] hover:bg-[#E5E7EB] border border-[#D1D5DB] transition-colors whitespace-nowrap"
+          >
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <span className="hidden md:inline">Ficha</span>
+          </button>
+
+          {/* Botón: + Actividad — solo ícono en móvil, texto en desktop */}
           <button
             onClick={onNuevaActividad}
             title="Nueva actividad"
@@ -612,7 +624,7 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
             <span className="hidden md:inline">Actividad</span>
           </button>
 
-          {/* Botón: Documentos — texto en desktop, solo ícono en móvil */}
+          {/* Botón: Documentos — solo ícono en móvil, texto en desktop */}
           <button
             onClick={onDocumentos}
             title="Documentos legales"
@@ -621,7 +633,7 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
             <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
-            <span className="hidden md:inline">Documentos</span>
+            <span className="hidden md:inline">Docs</span>
           </button>
 
           {/* Menú 3 puntos — solo acciones secundarias */}
@@ -646,7 +658,6 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
                   className="fixed z-50 w-44 bg-white border border-[#E1E4E8] rounded-xl shadow-lg py-1 overflow-hidden"
                   style={{ top: menuPos.top, right: menuPos.right }}
                 >
-                  <MenuItem label="Ver ficha"         onClick={() => { setMenuOpen(false); onVerFicha() }} />
                   <MenuItem label="Cambiar conductor" onClick={() => { setMenuOpen(false); onAsignar() }} />
                   <MenuItem
                     label={toggling ? 'Procesando…' : v.estado === 'FUERA_DE_SERVICIO' ? 'Reactivar vehículo' : 'Dar de baja'}

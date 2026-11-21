@@ -211,15 +211,15 @@ export default function VehiculoDetalle() {
   return (
     <div className="flex flex-col gap-0 pb-10">
 
-      {/* ── Breadcrumb ── */}
+      {/* ── Botón volver ── */}
       <button
         onClick={() => navigate('/flota/vehiculos')}
-        className="flex items-center gap-1.5 text-xs text-[#737B86] hover:text-[#252A31] transition-colors w-fit mb-5"
+        className="flex items-center gap-2 text-sm font-semibold text-[#4B5563] bg-white border border-[#D1D5DB] hover:border-[#9CA3AF] hover:text-[#252A31] transition-colors w-fit mb-5 px-3 py-2 rounded-lg shadow-sm"
       >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path d="M15 18l-6-6 6-6" />
         </svg>
-        Vehículos
+        Volver a vehículos
       </button>
 
       {/* ── Header del vehículo ── */}
