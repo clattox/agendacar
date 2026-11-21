@@ -121,31 +121,27 @@ export default function Reportes() {
   const [vehiculoId, setVehiculoId] = useState('')
   const [verAnio,    setVerAnio]    = useState(false)       // toggle tabla anual
 
-  const { data, loading, error } = useReporteMensual(anio, vehiculoId || null)
-  const { data: vehiculos }      = useVehiculosLista()
+  const { data, loading, error }                   = useReporteMensual(anio, vehiculoId || null)
+  const { data: vehiculos, error: vehiculosError } = useVehiculosLista()
 
-  // Años disponibles: año anterior, actual y siguiente (si ya empezó)
-  const anios = [anioActual - 1, anioActual].filter(a => a >= 2024)
+  // Años disponibles: desde 2024 hasta 2030 (o el año actual si supera 2030)
+  const ANIO_INICIO = 2024
+  const ANIO_FIN    = Math.max(2030, anioActual)
+  const anios = Array.from({ length: ANIO_FIN - ANIO_INICIO + 1 }, (_, i) => ANIO_INICIO + i)
 
-  // Meses disponibles hasta el mes actual en el año seleccionado
+  // Meses disponibles: todos si es año pasado o futuro; hasta el mes actual si es el año en curso
   const mesesDisponibles = MESES.map((nombre, i) => ({ idx: i, nombre })).filter(({ idx }) => {
-    if (anio < anioActual) return true
-    if (anio > anioActual) return false
+    if (anio !== anioActual) return true
     return idx <= mesActual
   })
 
   // Mes seleccionado de los datos
   const mesSeleccionado = data?.meses?.find(m => m.mesNum === mes + 1)
 
-  // Si cambiamos de año y el mes seleccionado ya no está disponible → ajustar
+  // Si cambiamos al año actual y el mes seleccionado supera el mes actual → ajustar
   function handleAnioChange(nuevoAnio) {
     setAnio(nuevoAnio)
-    if (nuevoAnio < anioActual) {
-      // año anterior: todos los meses disponibles, mantener mes
-    } else {
-      // año actual: asegurar que mes ≤ mesActual
-      if (mes > mesActual) setMes(mesActual)
-    }
+    if (nuevoAnio === anioActual && mes > mesActual) setMes(mesActual)
   }
 
   return (
@@ -163,20 +159,15 @@ export default function Reportes() {
         {/* Selector año */}
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-gray-500">Año</span>
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          <select
+            value={anio}
+            onChange={e => handleAnioChange(Number(e.target.value))}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400"
+          >
             {anios.map(a => (
-              <button
-                key={a}
-                onClick={() => handleAnioChange(a)}
-                className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap
-                  ${anio === a
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                {a}
-              </button>
+              <option key={a} value={a}>{a}</option>
             ))}
-          </div>
+          </select>
         </div>
 
         {/* Selector mes */}
@@ -199,13 +190,16 @@ export default function Reportes() {
           <select
             value={vehiculoId}
             onChange={e => setVehiculoId(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 min-w-[160px]"
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 min-w-[180px]"
           >
             <option value="">Toda la flota</option>
-            {(vehiculos || []).map(v => (
+            {Array.isArray(vehiculos) && vehiculos.map(v => (
               <option key={v.id} value={v.id}>{v.patente} — {v.marca} {v.modelo}</option>
             ))}
           </select>
+          {vehiculosError && (
+            <span className="text-[11px] text-red-500">Error al cargar vehículos</span>
+          )}
         </div>
 
         {/* Toggle vista anual */}
