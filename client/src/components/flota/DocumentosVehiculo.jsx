@@ -67,7 +67,7 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
 
   const [form, setForm] = useState({
     tipo: '', fechaVencimiento: '', fechaEmision: '',
-    numeroDocumento: '', monto: '',
+    numeroDocumento: '', monto: '', proveedor: '',
     cuotas: 1, anioPermiso: new Date().getFullYear(),
   })
   const [archivo, setArchivo]       = useState(null)
@@ -135,13 +135,14 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
         fechaEmision:    form.fechaEmision    || undefined,
         numeroDocumento: form.numeroDocumento || undefined,
         monto:           form.monto ? Number(form.monto) : undefined,
+        proveedor:       form.proveedor       || undefined,
         archivoBase64:   archivo?.base64  || undefined,
         archivoNombre:   archivo?.nombre  || undefined,
         cuotas:          esPermiso ? Number(form.cuotas) : 1,
       })
       setForm({
         tipo: '', fechaVencimiento: '', fechaEmision: '',
-        numeroDocumento: '', monto: '', cuotas: 1,
+        numeroDocumento: '', monto: '', proveedor: '', cuotas: 1,
         anioPermiso: new Date().getFullYear(),
       })
       setArchivo(null)
@@ -228,6 +229,9 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
                         {doc.tipo === 'PERMISO_CIRCULACION' && doc.cuotas === 2 && (
                           <span className="ml-1">· 2 cuotas</span>
                         )}
+                        {doc.proveedor && (
+                          <span className="ml-1">· {doc.proveedor}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-3">
@@ -306,6 +310,27 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
                 <Field label="Fecha de vencimiento *">
                   <input required type="date" value={form.fechaVencimiento}
                     onChange={e => set('fechaVencimiento', e.target.value)} className={INPUT} />
+                </Field>
+              )}
+
+              {/* Proveedor / Aseguradora / Nombre (condicional por tipo) */}
+              {(form.tipo === 'SEGURO_VOLUNTARIO' || form.tipo === 'SOAP' || form.tipo === 'OTRO') && (
+                <Field label={
+                  form.tipo === 'SEGURO_VOLUNTARIO' ? 'Aseguradora' :
+                  form.tipo === 'SOAP'              ? 'Compañía / Proveedor' :
+                                                      'Nombre del documento'
+                }>
+                  <input
+                    type="text"
+                    value={form.proveedor}
+                    placeholder={
+                      form.tipo === 'SEGURO_VOLUNTARIO' ? 'Ej: HDI, Mapfre, Renta Nacional…' :
+                      form.tipo === 'SOAP'              ? 'Ej: HDI, BCI Seguros…' :
+                                                          'Ej: Certificado de homologación…'
+                    }
+                    onChange={e => set('proveedor', e.target.value)}
+                    className={INPUT}
+                  />
                 </Field>
               )}
 

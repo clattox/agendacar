@@ -152,9 +152,9 @@ router.post('/vehiculo/:vehiculoId', async (req, res) => {
         archivoNombre:      archivoNombre || null,
         activo:             true,
         // Permiso de Circulación en cuotas
-        cuotas:             tipo === 'PERMISO' ? (Number(cuotas) || 1) : 1,
-        segundaCuotaPagada: tipo === 'PERMISO' && cuotas === 2 ? Boolean(segundaCuotaPagada) : false,
-        segundaCuotaFecha:  tipo === 'PERMISO' && cuotas === 2 && segundaCuotaFecha
+        cuotas:             tipo === 'PERMISO_CIRCULACION' ? (Number(cuotas) || 1) : 1,
+        segundaCuotaPagada: tipo === 'PERMISO_CIRCULACION' && Number(cuotas) === 2 ? Boolean(segundaCuotaPagada) : false,
+        segundaCuotaFecha:  tipo === 'PERMISO_CIRCULACION' && Number(cuotas) === 2 && segundaCuotaFecha
                               ? new Date(segundaCuotaFecha) : null,
       },
     })
