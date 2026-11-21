@@ -212,7 +212,15 @@ export default function PortalConductor() {
                               </div>
                               {doc.archivoBase64 && (
                                 <button
-                                  onClick={() => window.open('data:application/pdf;base64,' + doc.archivoBase64)}
+                                  onClick={() => {
+                                    const bytes = atob(doc.archivoBase64)
+                                    const arr = new Uint8Array(bytes.length)
+                                    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+                                    const blob = new Blob([arr], { type: 'application/pdf' })
+                                    const url = URL.createObjectURL(blob)
+                                    window.open(url, '_blank')
+                                    setTimeout(() => URL.revokeObjectURL(url), 10000)
+                                  }}
                                   className="flex-shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
                                   title="Ver PDF"
                                 >
