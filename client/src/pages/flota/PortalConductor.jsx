@@ -5,6 +5,94 @@ import { useNavigate } from 'react-router-dom'
 import { clearSession, estaAutenticado, getUsuario } from '../../lib/auth'
 import api from '../../lib/api'
 
+const CLP = v => v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
+const NUM = v => v.toLocaleString('es-CL')
+
+const MESES_NOMBRE = [
+  'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
+]
+
+function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales }) {
+  const filas = meses.map(m => {
+    const totalGasto = m.montoCombustible + m.montoPeajes
+    return `
+      <tr style="opacity:${m.nActividades === 0 ? 0.4 : 1}">
+        <td>${m.mes}</td>
+        <td class="num">${m.kmRecorridos > 0 ? `${NUM(m.kmRecorridos)} km` : '—'}</td>
+        <td class="num">${m.montoCombustible > 0 ? CLP(m.montoCombustible) : '—'}</td>
+        <td class="num">${m.montoPeajes > 0 ? CLP(m.montoPeajes) : '—'}</td>
+        <td class="num bold">${totalGasto > 0 ? CLP(totalGasto) : '—'}</td>
+        <td class="num">${m.nActividades > 0 ? m.nActividades : '—'}</td>
+      </tr>`
+  }).join('')
+
+  const filaTotales = mostrarTotales && totales ? `
+    <tfoot><tr class="total-row">
+      <td>Total</td>
+      <td class="num">${totales.kmRecorridos > 0 ? `${NUM(totales.kmRecorridos)} km` : '—'}</td>
+      <td class="num">${totales.montoCombustible > 0 ? CLP(totales.montoCombustible) : '—'}</td>
+      <td class="num">${totales.montoPeajes > 0 ? CLP(totales.montoPeajes) : '—'}</td>
+      <td class="num amber">${(totales.montoCombustible + totales.montoPeajes) > 0 ? CLP(totales.montoCombustible + totales.montoPeajes) : '—'}</td>
+      <td class="num">${totales.nActividades > 0 ? totales.nActividades : '—'}</td>
+    </tr></tfoot>` : ''
+
+  const chipsHtml = chips.map(c => `
+    <div class="chip">
+      <div class="chip-label">${c.label}</div>
+      <div class="chip-value">${c.value}</div>
+      ${c.sub ? `<div class="chip-sub">${c.sub}</div>` : ''}
+    </div>`).join('')
+
+  const html = `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>${titulo}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,Arial,sans-serif;font-size:12px;color:#111;padding:32px}
+  h1{font-size:18px;font-weight:700;margin-bottom:2px}
+  .subtitle{font-size:11px;color:#666;margin-bottom:20px}
+  .chips{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+  .chip{border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;min-width:120px}
+  .chip-label{font-size:10px;color:#6b7280;font-weight:500;text-transform:uppercase;letter-spacing:.03em}
+  .chip-value{font-size:16px;font-weight:700;margin:2px 0 1px}
+  .chip-sub{font-size:10px;color:#9ca3af}
+  h2{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  h2::before{content:'';display:inline-block;width:12px;height:12px;background:#f59e0b;border-radius:2px}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{text-align:left;padding:7px 10px;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid #e5e7eb;background:#f9fafb}
+  td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .bold{font-weight:600}
+  tfoot .total-row td{font-weight:700;border-top:2px solid #d1d5db;border-bottom:none;background:#f9fafb}
+  .amber{color:#d97706}
+  .footer{margin-top:24px;font-size:10px;color:#9ca3af;text-align:right}
+</style></head>
+<body>
+  <h1>${titulo}</h1>
+  <div class="subtitle">Generado el ${new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'})}</div>
+  <div class="chips">${chipsHtml}</div>
+  <h2>Detalle</h2>
+  <table>
+    <thead><tr>
+      <th>Mes</th>
+      <th style="text-align:right">Km recorridos</th>
+      <th style="text-align:right">Combustible</th>
+      <th style="text-align:right">Peajes</th>
+      <th style="text-align:right">Total gastos</th>
+      <th style="text-align:right">Actividades</th>
+    </tr></thead>
+    <tbody>${filas}</tbody>
+    ${filaTotales}
+  </table>
+  <div class="footer">AgendaCar · Reporte de flota</div>
+</body></html>`
+
+  const win = window.open('', '_blank')
+  win.document.write(html)
+  win.document.close()
+  win.onload = () => { win.focus(); win.print() }
+}
+
 // ——— helpers ——————————————————————————————————————————
 const TIPO_DOC = {
   REVISION_TECNICA:   'Revisión Técnica',
@@ -40,6 +128,8 @@ export default function PortalConductor() {
   const [anioReporte,   setAnioReporte]   = useState(new Date().getFullYear())
   const [reporteData,   setReporteData]   = useState(null)
   const [loadingRep,    setLoadingRep]    = useState(false)
+  const [verAnioPortal, setVerAnioPortal] = useState(false)  // false = mensual (default), true = anual
+  const mesMostrado = new Date().getMonth() + 1  // mes actual (1-indexed)
 
   // Form actividad
   const [form,    setForm]    = useState({
@@ -696,24 +786,26 @@ export default function PortalConductor() {
 
             {/* ——— Mis Reportes ——————————————————————— */}
           <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
-            <button
-              onClick={toggleReportes}
-              className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-[#2b2d35] transition-colors"
-            >
-              <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                <path d="M18 20V10M12 20V4M6 20v-6" />
-              </svg>
-              <span className="text-sm font-semibold flex-1">Mis Reportes</span>
-              <svg className={`w-4 h-4 text-zinc-500 transition-transform ${verReportes ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+            <div className="flex items-center">
+              <button
+                onClick={toggleReportes}
+                className="flex-1 px-4 py-3 flex items-center gap-2 text-left hover:bg-[#2b2d35] transition-colors"
+              >
+                <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                  <path d="M18 20V10M12 20V4M6 20v-6" />
+                </svg>
+                <span className="text-sm font-semibold flex-1">Mis Reportes</span>
+                <svg className={`w-4 h-4 text-zinc-500 transition-transform ${verReportes ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
 
             {verReportes && (
               <div className="border-t border-[#2d3039]">
-                {/* Selector de año */}
-                <div className="px-4 py-3 flex items-center gap-2 border-b border-[#2d3039]">
-                  <span className="text-xs text-zinc-500 flex-1">Año</span>
+                {/* Controles: año + mes/anual + exportar */}
+                <div className="px-4 py-3 flex flex-wrap items-center gap-2 border-b border-[#2d3039]">
+                  {/* Selector año */}
                   <div className="flex gap-1">
                     {[new Date().getFullYear() - 1, new Date().getFullYear()].map(a => (
                       <button
@@ -728,60 +820,141 @@ export default function PortalConductor() {
                       </button>
                     ))}
                   </div>
+                  {/* Toggle mensual/anual */}
+                  {reporteData && (
+                    <button
+                      onClick={() => setVerAnioPortal(v => !v)}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all border
+                        ${verAnioPortal
+                          ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                          : 'border-[#2d3039] text-zinc-400 hover:text-white'}`}
+                    >
+                      {verAnioPortal ? 'Ver mes' : 'Ver año'}
+                    </button>
+                  )}
+                  {/* Exportar PDF */}
+                  {reporteData && reporteData.totales.nActividades > 0 && (
+                    <button
+                      onClick={() => {
+                        const mesFiltrado = !verAnioPortal
+                          ? reporteData.meses.find(m => m.mesNum === mesMostrado)
+                          : null
+                        const esAnual = verAnioPortal || !mesFiltrado
+
+                        exportarPDFPortal(esAnual ? {
+                          titulo: `Reporte anual ${anioReporte}`,
+                          chips: [
+                            { label: 'Km recorridos', value: `${NUM(reporteData.totales.kmRecorridos)} km`, sub: `Año ${anioReporte}` },
+                            { label: 'Combustible',   value: CLP(reporteData.totales.montoCombustible) },
+                            { label: 'Peajes',        value: CLP(reporteData.totales.montoPeajes) },
+                            { label: 'Actividades',   value: NUM(reporteData.totales.nActividades) },
+                          ],
+                          meses: reporteData.meses,
+                          totales: reporteData.totales,
+                          mostrarTotales: true,
+                        } : {
+                          titulo: `Reporte ${MESES_NOMBRE[mesFiltrado.mesNum - 1]} ${anioReporte}`,
+                          chips: [
+                            { label: 'Km recorridos', value: `${NUM(mesFiltrado.kmRecorridos)} km`, sub: 'En el mes' },
+                            { label: 'Combustible',   value: CLP(mesFiltrado.montoCombustible) },
+                            { label: 'Peajes',        value: CLP(mesFiltrado.montoPeajes) },
+                            { label: 'Actividades',   value: NUM(mesFiltrado.nActividades) },
+                          ],
+                          meses: [mesFiltrado],
+                          mostrarTotales: false,
+                        })
+                      }}
+                      className="ml-auto flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold border border-[#2d3039] text-zinc-400 hover:text-white hover:bg-[#2b2d35] transition-colors whitespace-nowrap"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+                      </svg>
+                      PDF
+                    </button>
+                  )}
                 </div>
 
                 {loadingRep && (
                   <div className="px-4 py-6 text-center text-xs text-zinc-500">Cargando…</div>
                 )}
 
-                {!loadingRep && reporteData && (
-                  <>
-                    {/* Chips resumen */}
-                    <div className="grid grid-cols-2 gap-2 px-4 py-3 border-b border-[#2d3039]">
-                      {[
-                        { label: 'Km recorridos', value: `${reporteData.totales.kmRecorridos.toLocaleString('es-CL')} km` },
-                        { label: 'Combustible', value: `$${reporteData.totales.montoCombustible.toLocaleString('es-CL')}` },
-                        { label: 'Peajes', value: `$${reporteData.totales.montoPeajes.toLocaleString('es-CL')}` },
-                        { label: 'Actividades', value: reporteData.totales.nActividades },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="bg-[#1C1F26] rounded-xl px-3 py-2.5">
-                          <div className="text-[11px] text-zinc-500">{label}</div>
-                          <div className="text-sm font-bold text-white mt-0.5">{value}</div>
-                        </div>
-                      ))}
-                    </div>
+                {!loadingRep && reporteData && (() => {
+                  const mesDato = reporteData.meses.find(m => m.mesNum === mesMostrado)
+                  const chips = verAnioPortal ? [
+                    { label: 'Km recorridos', value: `${NUM(reporteData.totales.kmRecorridos)} km` },
+                    { label: 'Combustible',   value: CLP(reporteData.totales.montoCombustible) },
+                    { label: 'Peajes',        value: CLP(reporteData.totales.montoPeajes) },
+                    { label: 'Actividades',   value: NUM(reporteData.totales.nActividades) },
+                  ] : mesDato ? [
+                    { label: 'Km recorridos', value: `${NUM(mesDato.kmRecorridos)} km` },
+                    { label: 'Combustible',   value: CLP(mesDato.montoCombustible) },
+                    { label: 'Peajes',        value: CLP(mesDato.montoPeajes) },
+                    { label: 'Actividades',   value: NUM(mesDato.nActividades) },
+                  ] : null
+                  const filas = verAnioPortal ? reporteData.meses : (mesDato ? [mesDato] : [])
 
-                    {/* Tabla mensual compacta */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[380px] text-xs">
-                        <thead>
-                          <tr className="border-b border-[#2d3039]">
-                            <th className="text-left px-4 py-2 text-zinc-500 font-semibold">Mes</th>
-                            <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Km</th>
-                            <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Comb.</th>
-                            <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Peajes</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#1C1F26]">
-                          {reporteData.meses.map(m => (
-                            <tr key={m.mesNum} className={m.nActividades === 0 ? 'opacity-30' : ''}>
-                              <td className="px-4 py-2 font-semibold text-zinc-300">{m.mes}</td>
-                              <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
-                                {m.kmRecorridos > 0 ? `${m.kmRecorridos.toLocaleString('es-CL')}` : '—'}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
-                                {m.montoCombustible > 0 ? `$${m.montoCombustible.toLocaleString('es-CL')}` : '—'}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
-                                {m.montoPeajes > 0 ? `$${m.montoPeajes.toLocaleString('es-CL')}` : '—'}
-                              </td>
-                            </tr>
+                  return (
+                    <>
+                      {/* Chips resumen */}
+                      {chips && (
+                        <div className="grid grid-cols-2 gap-2 px-4 py-3 border-b border-[#2d3039]">
+                          {chips.map(({ label, value }) => (
+                            <div key={label} className="bg-[#1C1F26] rounded-xl px-3 py-2.5">
+                              <div className="text-[11px] text-zinc-500">{label}</div>
+                              <div className="text-sm font-bold text-white mt-0.5">{value}</div>
+                            </div>
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
+                        </div>
+                      )}
+
+                      {/* Tabla */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[320px] text-xs">
+                          <thead>
+                            <tr className="border-b border-[#2d3039]">
+                              <th className="text-left px-4 py-2 text-zinc-500 font-semibold">Mes</th>
+                              <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Km</th>
+                              <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Comb.</th>
+                              <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Peajes</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#1C1F26]">
+                            {filas.map(m => (
+                              <tr key={m.mesNum} className={m.nActividades === 0 ? 'opacity-30' : ''}>
+                                <td className="px-4 py-2 font-semibold text-zinc-300">{m.mes}</td>
+                                <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
+                                  {m.kmRecorridos > 0 ? `${NUM(m.kmRecorridos)} km` : '—'}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
+                                  {m.montoCombustible > 0 ? CLP(m.montoCombustible) : '—'}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
+                                  {m.montoPeajes > 0 ? CLP(m.montoPeajes) : '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          {verAnioPortal && (
+                            <tfoot>
+                              <tr className="border-t border-[#2d3039]">
+                                <td className="px-4 py-2 text-xs font-bold text-zinc-500">Total</td>
+                                <td className="px-3 py-2 text-right tabular-nums font-bold text-zinc-300">
+                                  {reporteData.totales.kmRecorridos > 0 ? `${NUM(reporteData.totales.kmRecorridos)} km` : '—'}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums font-bold text-zinc-300">
+                                  {reporteData.totales.montoCombustible > 0 ? CLP(reporteData.totales.montoCombustible) : '—'}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums font-bold text-amber-400">
+                                  {reporteData.totales.montoPeajes > 0 ? CLP(reporteData.totales.montoPeajes) : '—'}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          )}
+                        </table>
+                      </div>
+                    </>
+                  )
+                })()}
 
                 {!loadingRep && !reporteData && (
                   <div className="px-4 py-6 text-center text-xs text-zinc-500">

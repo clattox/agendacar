@@ -111,6 +111,99 @@ function TablaReporte({ meses, totales, titulo, mostrarTotales = true }) {
   )
 }
 
+function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true }) {
+  const filas = meses.map(m => {
+    const totalGasto = m.montoCombustible + m.montoPeajes
+    const sinDatos   = m.nActividades === 0
+    return `
+      <tr style="opacity:${sinDatos ? 0.4 : 1}">
+        <td>${m.mes}</td>
+        <td class="num">${m.kmRecorridos > 0 ? `${NUM(m.kmRecorridos)} km` : '—'}</td>
+        <td class="num">${m.litros > 0 ? `${NUM(Math.round(m.litros * 10) / 10)} L` : '—'}</td>
+        <td class="num">${m.montoCombustible > 0 ? CLP(m.montoCombustible) : '—'}</td>
+        <td class="num">${m.montoPeajes > 0 ? CLP(m.montoPeajes) : '—'}</td>
+        <td class="num bold">${totalGasto > 0 ? CLP(totalGasto) : '—'}</td>
+        <td class="num">${m.nActividades > 0 ? m.nActividades : '—'}</td>
+      </tr>`
+  }).join('')
+
+  const filaTotales = mostrarTotales && totales ? `
+    <tfoot>
+      <tr class="total-row">
+        <td>Total</td>
+        <td class="num">${totales.kmRecorridos > 0 ? `${NUM(totales.kmRecorridos)} km` : '—'}</td>
+        <td class="num">${totales.litros > 0 ? `${NUM(Math.round(totales.litros * 10) / 10)} L` : '—'}</td>
+        <td class="num">${totales.montoCombustible > 0 ? CLP(totales.montoCombustible) : '—'}</td>
+        <td class="num">${totales.montoPeajes > 0 ? CLP(totales.montoPeajes) : '—'}</td>
+        <td class="num amber">${(totales.montoCombustible + totales.montoPeajes) > 0 ? CLP(totales.montoCombustible + totales.montoPeajes) : '—'}</td>
+        <td class="num">${totales.nActividades > 0 ? totales.nActividades : '—'}</td>
+      </tr>
+    </tfoot>` : ''
+
+  const chipsHtml = chips.map(c => `
+    <div class="chip">
+      <div class="chip-label">${c.label}</div>
+      <div class="chip-value">${c.value}</div>
+      ${c.sub ? `<div class="chip-sub">${c.sub}</div>` : ''}
+    </div>`).join('')
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${titulo}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, Arial, sans-serif; font-size: 12px; color: #111; padding: 32px; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+  .subtitle { font-size: 11px; color: #666; margin-bottom: 20px; }
+  .chips { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .chip { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; min-width: 130px; }
+  .chip-label { font-size: 10px; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
+  .chip-value { font-size: 16px; font-weight: 700; margin: 2px 0 1px; }
+  .chip-sub { font-size: 10px; color: #9ca3af; }
+  h2 { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  h2::before { content: ''; display: inline-block; width: 12px; height: 12px; background: #f59e0b; border-radius: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 2px solid #e5e7eb; background: #f9fafb; }
+  td { padding: 7px 10px; border-bottom: 1px solid #f3f4f6; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .bold { font-weight: 600; }
+  tfoot .total-row td { font-weight: 700; border-top: 2px solid #d1d5db; border-bottom: none; background: #f9fafb; }
+  .amber { color: #d97706; }
+  .footer { margin-top: 24px; font-size: 10px; color: #9ca3af; text-align: right; }
+</style>
+</head>
+<body>
+  <h1>${titulo}</h1>
+  <div class="subtitle">Generado el ${new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'long', year:'numeric' })}</div>
+  <div class="chips">${chipsHtml}</div>
+  <h2>Detalle</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Mes</th>
+        <th style="text-align:right">Km recorridos</th>
+        <th style="text-align:right">Litros</th>
+        <th style="text-align:right">Combustible</th>
+        <th style="text-align:right">Peajes</th>
+        <th style="text-align:right">Total gastos</th>
+        <th style="text-align:right">Actividades</th>
+      </tr>
+    </thead>
+    <tbody>${filas}</tbody>
+    ${filaTotales}
+  </table>
+  <div class="footer">AgendaCar · Reporte de flota</div>
+</body>
+</html>`
+
+  const win = window.open('', '_blank')
+  win.document.write(html)
+  win.document.close()
+  win.onload = () => { win.focus(); win.print() }
+}
+
 export default function Reportes() {
   const hoy       = new Date()
   const anioActual = hoy.getFullYear()
@@ -230,7 +323,7 @@ export default function Reportes() {
           {/* ——— Vista: MES SELECCIONADO ——— */}
           {!verAnio && (
             <>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 justify-between">
                 <h2 className="text-base font-semibold text-gray-800">
                   {MESES[mes]} {anio}
                   {vehiculoId && vehiculos && (
@@ -239,6 +332,30 @@ export default function Reportes() {
                     </span>
                   )}
                 </h2>
+                {mesSeleccionado && mesSeleccionado.nActividades > 0 && (
+                  <button
+                    onClick={() => {
+                      const patente = vehiculoId && vehiculos ? vehiculos.find(v => v.id === vehiculoId)?.patente : null
+                      exportarPDF({
+                        titulo: `Reporte ${MESES[mes]} ${anio}${patente ? ' · ' + patente : ''}`,
+                        chips: [
+                          { label: 'Km recorridos', value: `${NUM(mesSeleccionado.kmRecorridos)} km`, sub: 'En el mes' },
+                          { label: 'Combustible', value: CLP(mesSeleccionado.montoCombustible), sub: mesSeleccionado.litros > 0 ? `${NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L cargados` : 'Sin registros' },
+                          { label: 'Peajes', value: CLP(mesSeleccionado.montoPeajes), sub: 'En el mes' },
+                          { label: 'Total gastos', value: CLP(mesSeleccionado.montoCombustible + mesSeleccionado.montoPeajes), sub: `${mesSeleccionado.nActividades} actividades` },
+                        ],
+                        meses: [mesSeleccionado],
+                        mostrarTotales: false,
+                      })
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+                    </svg>
+                    Exportar PDF
+                  </button>
+                )}
               </div>
 
               {/* Stats del mes */}
@@ -291,6 +408,41 @@ export default function Reportes() {
           {/* ——— Vista: AÑO COMPLETO ——— */}
           {verAnio && (
             <>
+              <div className="flex flex-wrap items-center gap-2 justify-between">
+                <h2 className="text-base font-semibold text-gray-800">
+                  Año {anio}
+                  {vehiculoId && vehiculos && (
+                    <span className="ml-2 text-sm font-normal text-gray-400">
+                      · {vehiculos.find(v => v.id === vehiculoId)?.patente}
+                    </span>
+                  )}
+                </h2>
+                {data.totales.nActividades > 0 && (
+                  <button
+                    onClick={() => {
+                      const patente = vehiculoId && vehiculos ? vehiculos.find(v => v.id === vehiculoId)?.patente : null
+                      exportarPDF({
+                        titulo: `Reporte anual ${anio}${patente ? ' · ' + patente : ''}`,
+                        chips: [
+                          { label: 'Km totales', value: `${NUM(data.totales.kmRecorridos)} km`, sub: `Año ${anio}` },
+                          { label: 'Combustible', value: CLP(data.totales.montoCombustible), sub: `${NUM(Math.round(data.totales.litros * 10) / 10)} L cargados` },
+                          { label: 'Peajes', value: CLP(data.totales.montoPeajes), sub: `Año ${anio}` },
+                          { label: 'Actividades', value: NUM(data.totales.nActividades), sub: `Registros ${anio}` },
+                        ],
+                        meses: data.meses,
+                        totales: data.totales,
+                        mostrarTotales: true,
+                      })
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+                    </svg>
+                    Exportar PDF
+                  </button>
+                )}
+              </div>
               {/* Stats anuales */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <StatChip
