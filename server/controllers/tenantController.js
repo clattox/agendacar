@@ -14,6 +14,18 @@ const getTenant = async (req, res) => {
   }
 }
 
+// Devuelve los datos del tenant del usuario autenticado (para el panel admin/flota)
+const getTenantMe = async (req, res) => {
+  const { tenantId } = req.user
+  try {
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } })
+    if (!tenant) return res.status(404).json({ error: 'Tenant no encontrado' })
+    res.json(tenant)
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener datos del tenant' })
+  }
+}
+
 const updateTenant = async (req, res) => {
   const {
     nombre, telefono, direccion, email, logoUrl, inspeccionActiva,
@@ -53,4 +65,4 @@ const updateTenant = async (req, res) => {
   }
 }
 
-module.exports = { getTenant, updateTenant }
+module.exports = { getTenant, getTenantMe, updateTenant }
