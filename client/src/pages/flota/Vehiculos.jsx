@@ -596,41 +596,55 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
           </span>
         )}
       </td>
-      {/* Menú contextual (3 puntos) */}
+      {/* Acciones rápidas + menú */}
       <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
-        <div className="relative flex justify-end">
+        <div className="flex items-center justify-end gap-1">
+          {/* Botón rápido: + Actividad */}
           <button
-            ref={btnRef}
-            onClick={() => {
-              const rect = btnRef.current.getBoundingClientRect()
-              setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
-              setMenuOpen(o => !o)
-            }}
-            className="p-1.5 rounded-lg text-[#737B86] hover:text-[#252A31] hover:bg-[#ECEEF1] transition-colors"
+            onClick={onNuevaActividad}
+            title="Nueva actividad"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors whitespace-nowrap"
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path d="M12 5v14M5 12h14"/>
             </svg>
+            Actividad
           </button>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <div
-                className="fixed z-50 w-44 bg-white border border-[#E1E4E8] rounded-xl shadow-lg py-1 overflow-hidden"
-                style={{ top: menuPos.top, right: menuPos.right }}
-              >
-                <MenuItem label="Ver ficha" onClick={() => { setMenuOpen(false); onVerFicha() }} />
-                <MenuItem label="+ Actividad" onClick={() => { setMenuOpen(false); onNuevaActividad() }} />
-                <MenuItem label="Documentos" onClick={() => { setMenuOpen(false); onDocumentos() }} />
-                <MenuItem label="Cambiar conductor" onClick={() => { setMenuOpen(false); onAsignar() }} />
-                <MenuItem
-                  label={toggling ? 'Procesando…' : v.estado === 'FUERA_DE_SERVICIO' ? 'Reactivar vehículo' : 'Dar de baja'}
-                  onClick={() => { setMenuOpen(false); onToggleEstado() }}
-                  danger={v.estado !== 'FUERA_DE_SERVICIO'}
-                />
-              </div>
-            </>
-          )}
+
+          {/* Menú 3 puntos */}
+          <div className="relative">
+            <button
+              ref={btnRef}
+              onClick={() => {
+                const rect = btnRef.current.getBoundingClientRect()
+                setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+                setMenuOpen(o => !o)
+              }}
+              className="p-1.5 rounded-lg text-[#737B86] hover:text-[#252A31] hover:bg-[#ECEEF1] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+              </svg>
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div
+                  className="fixed z-50 w-44 bg-white border border-[#E1E4E8] rounded-xl shadow-lg py-1 overflow-hidden"
+                  style={{ top: menuPos.top, right: menuPos.right }}
+                >
+                  <MenuItem label="Ver ficha"         onClick={() => { setMenuOpen(false); onVerFicha() }} />
+                  <MenuItem label="Documentos"        onClick={() => { setMenuOpen(false); onDocumentos() }} />
+                  <MenuItem label="Cambiar conductor" onClick={() => { setMenuOpen(false); onAsignar() }} />
+                  <MenuItem
+                    label={toggling ? 'Procesando…' : v.estado === 'FUERA_DE_SERVICIO' ? 'Reactivar vehículo' : 'Dar de baja'}
+                    onClick={() => { setMenuOpen(false); onToggleEstado() }}
+                    danger={v.estado !== 'FUERA_DE_SERVICIO'}
+                  />
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </td>
     </tr>
