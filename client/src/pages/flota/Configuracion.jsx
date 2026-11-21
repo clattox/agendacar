@@ -6,14 +6,25 @@ import { useState, useEffect } from 'react'
 import api from '../../lib/api'
 
 // ——— helpers ————————————————————————————————————————————
-function Section({ title, icon, children }) {
+function Section({ title, icon, children, collapsible = false, defaultOpen = false, badge }) {
+  const [open, setOpen] = useState(defaultOpen || !collapsible)
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+      <div
+        className={`px-5 py-3.5 border-b border-gray-100 flex items-center gap-2 ${collapsible ? 'cursor-pointer select-none hover:bg-gray-50 transition-colors' : ''}`}
+        onClick={collapsible ? () => setOpen(v => !v) : undefined}
+      >
         <span className="text-amber-500">{icon}</span>
-        <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
+        <h2 className="text-sm font-semibold text-gray-800 flex-1">{title}</h2>
+        {badge && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">{badge}</span>}
+        {collapsible && (
+          <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        )}
       </div>
-      <div className="px-5 py-5">{children}</div>
+      {open && <div className="px-5 py-5">{children}</div>}
     </div>
   )
 }
@@ -175,6 +186,99 @@ function SeccionOrganizacion() {
   )
 }
 
+// ——— Sección Alertas de documentos ——————————————————————
+function SeccionAlertaDocumentos() {
+  const [cfg,    setCfg]    = useState(null)
+  const [loading,setLoading]= useState(true)
+  const [saving, setSaving] = useState(false)
+  const [ok,     setOk]     = useState('')
+  const [err,    setErr]    = useState('')
+
+  useEffect(() => {
+    api.get('/flota/documentos/configuracion')
+      .then(r => setCfg({ alertaDocActiva: r.data.alertaDocActiva ?? false, alertaDocDias: r.data.alertaDocDias ?? '20,10,5' }))
+      .catch(() => setErr('No se pudo cargar la configuración'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setOk(''); setErr('')
+
+    // Validar formato días
+    const diasValidos = String(cfg.alertaDocDias).split(',').every(s => /^\d+$/.test(s.trim()))
+    if (!diasValidos) return setErr('Los días deben ser números separados por coma — ej: 20,10,5')
+
+    setSaving(true)
+    try {
+      await api.put('/flota/documentos/configuracion', cfg)
+      setOk('Configuración guardada')
+      setTimeout(() => setOk(''), 3000)
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="text-sm text-gray-400 py-2">Cargando…</div>
+  if (!cfg)    return <Alert type="err" msg={err} />
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <p className="text-sm text-gray-500">
+        Cuando un documento de la flota esté próximo a vencer, AgendaCar enviará un aviso automático
+        al correo del administrador. Útil especialmente para revisiones técnicas y permisos de circulación.
+      </p>
+
+      <Alert type="ok"  msg={ok} />
+      <Alert type="err" msg={err} />
+
+      {/* Toggle */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setCfg(c => ({ ...c, alertaDocActiva: !c.alertaDocActiva }))}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+            cfg.alertaDocActiva ? 'bg-amber-500' : 'bg-gray-200'
+          }`}
+        >
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+            cfg.alertaDocActiva ? 'translate-x-6' : 'translate-x-1'
+          }`} />
+        </button>
+        <div>
+          <span className="text-sm font-medium text-gray-800">
+            {cfg.alertaDocActiva ? 'Alertas activadas' : 'Alertas desactivadas'}
+          </span>
+          <p className="text-xs text-gray-400">
+            Los correos se enviarán a: <span className="font-mono">{/* se muestra el email del tenant */}</span> el email del administrador configurado arriba
+          </p>
+        </div>
+      </div>
+
+      {/* Días — solo si activo */}
+      {cfg.alertaDocActiva && (
+        <Field
+          label="Avisar cuando falten (días antes del vencimiento)"
+          hint='Ingresa los días separados por coma. Ejemplo: "20,10,5" enviará tres avisos: a los 20, 10 y 5 días antes.'
+        >
+          <Input
+            value={cfg.alertaDocDias}
+            onChange={e => setCfg(c => ({ ...c, alertaDocDias: e.target.value }))}
+            placeholder="20,10,5"
+            className="max-w-xs"
+          />
+        </Field>
+      )}
+
+      <div className="flex justify-end pt-1">
+        <SaveBtn loading={saving} />
+      </div>
+    </form>
+  )
+}
+
 // ——— Sección Cambio de contraseña ————————————————————————
 function SeccionCuenta() {
   const [form,   setForm]   = useState({ actual: '', nueva: '', confirmar: '' })
@@ -253,6 +357,8 @@ export default function Configuracion() {
       </div>
 
       <Section
+        collapsible
+        defaultOpen={false}
         title="Organización"
         icon={
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -264,6 +370,8 @@ export default function Configuracion() {
       </Section>
 
       <Section
+        collapsible
+        defaultOpen={false}
         title="Cuenta"
         icon={
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -273,6 +381,19 @@ export default function Configuracion() {
         }
       >
         <SeccionCuenta />
+      </Section>
+
+      <Section
+        collapsible
+        defaultOpen={false}
+        title="Alertas de documentos"
+        icon={
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        }
+      >
+        <SeccionAlertaDocumentos />
       </Section>
     </div>
   )
