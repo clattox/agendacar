@@ -3,6 +3,7 @@
 // Sidebar fija + área de contenido.
 
 import { NavLink, useNavigate } from 'react-router-dom'
+import { clearSession } from '../../lib/auth'
 
 const NAV = [
   {
@@ -63,13 +64,13 @@ export default function FlotaLayout({ children }) {
         {/* Logo / branding */}
         <div className="px-5 py-5 border-b border-[#2d3039]">
           <button
-            onClick={() => navigate('/admin')}
+            onClick={() => { clearSession(); navigate('/admin/login') }}
             className="flex items-center gap-2.5 text-zinc-400 hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
-            <span className="text-xs font-semibold">AgendaCar</span>
+            <span className="text-xs font-semibold">Salir</span>
           </button>
           <div className="mt-3">
             <div className="flex items-center gap-2">
