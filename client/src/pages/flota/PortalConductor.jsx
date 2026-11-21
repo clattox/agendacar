@@ -807,9 +807,9 @@ export default function PortalConductor() {
               <div className="border-t border-[#2d3039]">
                 {/* Controles: año + mes/anual + exportar */}
                 <div className="px-4 py-3 flex flex-wrap items-center gap-2 border-b border-[#2d3039]">
-                  {/* Selector año */}
+                  {/* Selector año — año actual primero */}
                   <div className="flex gap-1">
-                    {[new Date().getFullYear() - 1, new Date().getFullYear()].map(a => (
+                    {[new Date().getFullYear(), new Date().getFullYear() - 1].map(a => (
                       <button
                         key={a}
                         onClick={() => cambiarAnio(a)}
