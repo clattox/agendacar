@@ -61,7 +61,7 @@ function Alert({ type, msg }) {
 
 // ——— Sección Organización ————————————————————————————————
 function SeccionOrganizacion() {
-  const [form,    setForm]    = useState({ nombre: '', rut: '', direccion: '', email: '', telefono: '' })
+  const [form,    setForm]    = useState({ nombre: '', rut: '', direccion: '', email: '', telefono: '', logoUrl: '' })
   const [loading, setLoading] = useState(true)
   const [saving,  setSaving]  = useState(false)
   const [ok,      setOk]      = useState('')
@@ -69,8 +69,8 @@ function SeccionOrganizacion() {
 
   useEffect(() => {
     api.get('/tenant/me').then(r => {
-      const { nombre, rut, direccion, email, telefono } = r.data
-      setForm({ nombre: nombre || '', rut: rut || '', direccion: direccion || '', email: email || '', telefono: telefono || '' })
+      const { nombre, rut, direccion, email, telefono, logoUrl } = r.data
+      setForm({ nombre: nombre || '', rut: rut || '', direccion: direccion || '', email: email || '', telefono: telefono || '', logoUrl: logoUrl || '' })
     }).catch(() => setErr('No se pudo cargar la información'))
       .finally(() => setLoading(false))
   }, [])
@@ -133,8 +133,38 @@ function SeccionOrganizacion() {
             value={form.direccion}
             onChange={e => setForm(p => ({ ...p, direccion: e.target.value }))}
             placeholder="Calle, número, ciudad"
-            className="md:col-span-2"
           />
+        </Field>
+      </div>
+
+      {/* Logo */}
+      <div className="border-t border-gray-100 pt-4">
+        <Field label="Logo de la empresa" hint="URL pública de imagen (JPG, PNG, SVG). Se mostrará en el panel y la barra lateral.">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Preview */}
+            <div className="w-14 h-14 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {form.logoUrl ? (
+                <img
+                  src={form.logoUrl}
+                  alt="Logo"
+                  className="w-full h-full object-contain p-1"
+                  onError={e => { e.target.style.display = 'none' }}
+                />
+              ) : (
+                <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <rect x="3" y="3" width="18" height="18" rx="3" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                </svg>
+              )}
+            </div>
+            <Input
+              value={form.logoUrl}
+              onChange={e => setForm(p => ({ ...p, logoUrl: e.target.value }))}
+              placeholder="https://empresa.cl/logo.png"
+              className="flex-1 min-w-0"
+            />
+          </div>
         </Field>
       </div>
 

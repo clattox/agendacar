@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { clearSession } from '../../lib/auth'
+import { useTenantInfo } from '../../hooks/useFlota'
 
 const NAV = [
   {
@@ -74,7 +75,7 @@ const NAV = [
   },
 ]
 
-function SidebarContent({ onNavigate, navigate }) {
+function SidebarContent({ onNavigate, navigate, tenant }) {
   return (
     <div className="flex flex-col h-full">
       {/* Branding */}
@@ -88,15 +89,29 @@ function SidebarContent({ onNavigate, navigate }) {
           </svg>
           <span className="text-xs font-semibold">Salir</span>
         </button>
-        <div className="mt-3 flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-amber-500 flex items-center justify-center flex-shrink-0">
-            <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
-              <circle cx="7.5" cy="17.5" r="2.5" />
-              <circle cx="16.5" cy="17.5" r="2.5" />
-            </svg>
+        <div className="mt-3 flex items-center gap-2.5">
+          {/* Logo de empresa */}
+          {tenant?.logoUrl ? (
+            <img
+              src={tenant.logoUrl}
+              alt={tenant.nombre}
+              className="w-8 h-8 rounded-lg object-contain bg-white/10 p-0.5 flex-shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
+                <circle cx="7.5" cy="17.5" r="2.5" />
+                <circle cx="16.5" cy="17.5" r="2.5" />
+              </svg>
+            </div>
+          )}
+          <div className="min-w-0">
+            <div className="text-[11px] text-[#8B9299] leading-none mb-0.5">Control de Flota</div>
+            <div className="text-sm font-bold text-white leading-tight truncate">
+              {tenant?.nombre || '—'}
+            </div>
           </div>
-          <span className="text-sm font-bold text-white">Control de Flota</span>
         </div>
       </div>
 
@@ -141,6 +156,7 @@ export default function FlotaLayout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { data: tenant } = useTenantInfo()
 
   // Cierra el drawer al cambiar de ruta
   useEffect(() => {
@@ -162,7 +178,7 @@ export default function FlotaLayout({ children }) {
 
       {/* ——— Sidebar desktop (md+) ——— */}
       <aside className="hidden md:flex w-56 flex-shrink-0 flex-col bg-[#30343B] border-r border-[#272B31]">
-        <SidebarContent onNavigate={() => {}} navigate={navigate} />
+        <SidebarContent onNavigate={() => {}} navigate={navigate} tenant={tenant} />
       </aside>
 
       {/* ——— Drawer móvil ——— */}
@@ -190,7 +206,7 @@ export default function FlotaLayout({ children }) {
             <path d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <SidebarContent onNavigate={() => setDrawerOpen(false)} navigate={navigate} />
+        <SidebarContent onNavigate={() => setDrawerOpen(false)} navigate={navigate} tenant={tenant} />
       </aside>
 
       {/* ——— Área principal ——— */}
@@ -200,22 +216,32 @@ export default function FlotaLayout({ children }) {
         <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#30343B] border-b border-[#272B31] flex-shrink-0">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="text-[#D1D5DB] hover:text-white transition-colors p-1 -ml-1"
+            className="text-[#D1D5DB] hover:text-white transition-colors p-1 -ml-1 flex-shrink-0"
             aria-label="Abrir menú"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-amber-500 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
-                <circle cx="7.5" cy="17.5" r="2.5" />
-                <circle cx="16.5" cy="17.5" r="2.5" />
-              </svg>
-            </div>
-            <span className="text-sm font-bold text-white">Control de Flota</span>
+          <div className="flex items-center gap-2 min-w-0">
+            {tenant?.logoUrl ? (
+              <img
+                src={tenant.logoUrl}
+                alt={tenant.nombre}
+                className="w-6 h-6 rounded object-contain bg-white/10 flex-shrink-0"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded bg-amber-500 flex items-center justify-center flex-shrink-0">
+                <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
+                  <circle cx="7.5" cy="17.5" r="2.5" />
+                  <circle cx="16.5" cy="17.5" r="2.5" />
+                </svg>
+              </div>
+            )}
+            <span className="text-sm font-bold text-white truncate">
+              {tenant?.nombre || 'Control de Flota'}
+            </span>
           </div>
         </header>
 

@@ -1,13 +1,28 @@
 // pages/flota/Dashboard.jsx
 import { useNavigate } from 'react-router-dom'
-import { useDashboard } from '../../hooks/useFlota'
+import { useDashboard, useTenantInfo } from '../../hooks/useFlota'
+import { getUsuario } from '../../lib/auth'
 
-const fmt = n => n != null ? `$${Number(n).toLocaleString('es-CL')}` : '—'
+const fmt   = n => n != null ? `$${Number(n).toLocaleString('es-CL')}` : '—'
 const fmtKm = n => n != null ? `${Number(n).toLocaleString('es-CL')} km` : '—'
+
+function saludo() {
+  const h = new Date().getHours()
+  if (h >= 5  && h < 12) return 'Buenos días'
+  if (h >= 12 && h < 19) return 'Buenas tardes'
+  return 'Buenas noches'
+}
+
+function primerNombre(nombreCompleto) {
+  if (!nombreCompleto) return ''
+  return nombreCompleto.trim().split(/\s+/)[0]
+}
 
 export default function FlotaDashboard() {
   const { data, loading, error } = useDashboard()
-  const navigate = useNavigate()
+  const { data: tenant }         = useTenantInfo()
+  const navigate                 = useNavigate()
+  const usuario                  = getUsuario()
 
   if (loading) return <div className="p-8 text-[#737B86] text-sm">Cargando…</div>
   if (error)   return <div className="p-8 text-red-500 text-sm">Error: {error}</div>
@@ -38,7 +53,46 @@ export default function FlotaDashboard() {
 
   return (
     <div className="p-4 md:p-7">
-      <h1 className="text-xl font-bold text-[#252A31] mb-6">Dashboard</h1>
+
+      {/* ——— Header de bienvenida ——— */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4 min-w-0">
+          {/* Logo de la empresa */}
+          {tenant?.logoUrl ? (
+            <img
+              src={tenant.logoUrl}
+              alt={tenant.nombre}
+              className="w-12 h-12 rounded-xl object-contain bg-white border border-[#E1E4E8] p-1 flex-shrink-0"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
+                <circle cx="7.5" cy="17.5" r="2.5" />
+                <circle cx="16.5" cy="17.5" r="2.5" />
+              </svg>
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-xs text-[#737B86] font-medium">
+              {saludo()}{usuario?.nombre ? `, ${primerNombre(usuario.nombre)}` : ''}
+            </p>
+            <h1 className="text-xl font-bold text-[#252A31] leading-tight truncate">
+              {tenant?.nombre || 'Control de Flota'}
+            </h1>
+          </div>
+        </div>
+
+        {/* Fecha del día */}
+        <div className="text-right flex-shrink-0">
+          <p className="text-xs text-[#737B86]">
+            {new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+          <p className="text-sm font-semibold text-[#737B86] capitalize">
+            {new Date().getFullYear()}
+          </p>
+        </div>
+      </div>
 
       {/* Bloque "Requiere atención" */}
       {atencion.length > 0 && (

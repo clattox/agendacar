@@ -161,6 +161,11 @@ export function useCrearDocumento() {
   return { loading, error, execute }
 }
 
+// ——— Tenant info (nombre, logo) ——————————————————————————————
+export function useTenantInfo() {
+  return useQuery('/tenant/me', [])
+}
+
 // ——— Reporte mensual (admin) ————————————————————————————————
 export function useReporteMensual(anio, vehiculoId) {
   const qs = vehiculoId
