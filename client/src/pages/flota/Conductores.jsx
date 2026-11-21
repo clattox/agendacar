@@ -5,9 +5,12 @@ import api from '../../lib/api'
 
 // ——— Modal acceso conductor ————————————————————————————
 function ModalAcceso({ conductor, onClose, onDone }) {
-  const [form,    setForm]    = useState({ email: '', password: '' })
-  const [saving,  setSaving]  = useState(false)
-  const [err,     setErr]     = useState('')
+  const [form,        setForm]        = useState({ email: '', password: '' })
+  const [resetPwd,    setResetPwd]    = useState('')      // nueva contraseña al hacer reset
+  const [showReset,   setShowReset]   = useState(false)   // toggle del formulario de reset
+  const [saving,      setSaving]      = useState(false)
+  const [err,         setErr]         = useState('')
+  const [okMsg,       setOkMsg]       = useState('')
 
   async function handleCrear(e) {
     e.preventDefault()
@@ -19,6 +22,21 @@ function ModalAcceso({ conductor, onClose, onDone }) {
       onDone()
     } catch (error) {
       setErr(error.response?.data?.error || 'Error al crear acceso')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleResetPassword(e) {
+    e.preventDefault()
+    if (resetPwd.length < 6) return setErr('Debe tener al menos 6 caracteres')
+    setSaving(true); setErr(''); setOkMsg('')
+    try {
+      await api.patch(`/flota/conductores/${conductor.id}/password`, { password: resetPwd })
+      setOkMsg('Contraseña actualizada correctamente')
+      setResetPwd(''); setShowReset(false)
+    } catch (error) {
+      setErr(error.response?.data?.error || 'Error al cambiar la contraseña')
     } finally {
       setSaving(false)
     }
@@ -61,16 +79,66 @@ function ModalAcceso({ conductor, onClose, onDone }) {
               {err}
             </div>
           )}
+          {okMsg && (
+            <div className="bg-[#DCFCE7] border border-[#86EFAC] rounded-lg px-3 py-2 text-sm text-[#16A34A] mb-4">
+              {okMsg}
+            </div>
+          )}
 
           {tieneAcceso ? (
             <div className="space-y-4">
+              {/* Info acceso activo */}
               <div className="bg-[#DCFCE7] border border-[#86EFAC] rounded-xl px-4 py-3">
                 <div className="text-xs text-[#16A34A] font-semibold mb-0.5">Acceso activo</div>
                 <div className="text-sm text-[#252A31] font-mono">{conductor.usuario.email}</div>
               </div>
+
+              {/* Cambiar contraseña */}
+              {!showReset ? (
+                <button
+                  onClick={() => { setShowReset(true); setErr(''); setOkMsg('') }}
+                  className="w-full py-2 rounded-xl text-sm font-semibold border border-[#E1E4E8] text-[#252A31] hover:bg-[#F4F5F6] transition-colors"
+                >
+                  Cambiar contraseña
+                </button>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-[#737B86] mb-1.5">Nueva contraseña</label>
+                    <input
+                      type="password"
+                      value={resetPwd}
+                      onChange={e => setResetPwd(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="input"
+                      minLength={6}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setShowReset(false); setResetPwd(''); setErr('') }}
+                      className="flex-1 py-2 rounded-xl text-sm font-semibold border border-[#E1E4E8] text-[#737B86] hover:bg-[#F4F5F6] transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="flex-1 bg-amber-500 hover:bg-[#D97706] text-black text-sm font-semibold py-2 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      {saving ? 'Guardando…' : 'Confirmar'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
               <p className="text-xs text-[#737B86]">
-                Este conductor puede iniciar sesión en el portal con su email y contraseña.
+                Usa "Cambiar contraseña" si el conductor olvidó su clave.
               </p>
+
+              {/* Eliminar acceso */}
               <button
                 onClick={handleEliminar}
                 disabled={saving}

@@ -162,6 +162,14 @@ export function useCrearDocumento() {
 }
 
 // ——— Reporte mensual (admin) ————————————————————————————————
-export function useReporteMensual(anio) {
-  return useQuery(`/flota/reportes/mensual?anio=${anio}`, [anio])
+export function useReporteMensual(anio, vehiculoId) {
+  const qs = vehiculoId
+    ? `/flota/reportes/mensual?anio=${anio}&vehiculoId=${vehiculoId}`
+    : `/flota/reportes/mensual?anio=${anio}`
+  return useQuery(qs, [anio, vehiculoId])
+}
+
+// ——— Lista de vehículos para selector de reportes ————————————
+export function useVehiculosLista() {
+  return useQuery('/flota/reportes/vehiculos-lista', [])
 }

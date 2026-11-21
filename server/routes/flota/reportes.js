@@ -11,19 +11,49 @@ const MESES_ES = [
   'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE',
 ]
 
+// ——— GET /api/flota/reportes/vehiculos-lista ——————————————————
+// Devuelve lista de vehículos activos para el selector del reporte
+router.get('/vehiculos-lista', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const vehiculos = await prisma.flotaVehiculo.findMany({
+      where:   { tenantId, activo: true },
+      select:  { id: true, patente: true, marca: true, modelo: true },
+      orderBy: { patente: 'asc' },
+    })
+    res.json(vehiculos)
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener vehículos' })
+  }
+})
+
 // ——— GET /api/flota/reportes/mensual ————————————————————————————
 // ?anio=2026   (default: año actual)
-// Retorna resumen mensual de TODA la flota: km / combustible / peajes / N° actividades
+// ?vehiculoId= (opcional, filtra por vehículo)
+// Retorna resumen mensual de TODA la flota (o de un vehículo): km / combustible / peajes / N° actividades
 router.get('/mensual', async (req, res) => {
   try {
     const { tenantId } = req.user
-    const anio = req.query.anio ? Number(req.query.anio) : new Date().getFullYear()
+    const anio       = req.query.anio       ? Number(req.query.anio) : new Date().getFullYear()
+    const vehiculoId = req.query.vehiculoId || null
+
+    // Si se pasa vehiculoId, verificar que pertenece al tenant
+    if (vehiculoId) {
+      const veh = await prisma.flotaVehiculo.findFirst({ where: { id: vehiculoId, tenantId } })
+      if (!veh) return res.status(404).json({ error: 'Vehículo no encontrado' })
+    }
 
     const desde = new Date(`${anio}-01-01T00:00:00.000Z`)
-    const hasta = new Date(`${anio + 1}-01-01T00:00:00.000Z`)
+    const hasta  = new Date(`${anio + 1}-01-01T00:00:00.000Z`)
+
+    const whereClause = {
+      tenantId,
+      fecha: { gte: desde, lt: hasta },
+      ...(vehiculoId ? { vehiculoId } : {}),
+    }
 
     const actividades = await prisma.flotaActividad.findMany({
-      where: { tenantId, fecha: { gte: desde, lt: hasta } },
+      where:   whereClause,
       include: {
         kmRegistro:          true,
         combustibleRegistro: true,

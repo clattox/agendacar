@@ -191,4 +191,34 @@ router.delete('/:id/acceso', async (req, res) => {
   }
 })
 
+// ——— PATCH /api/flota/conductores/:id/password ————————————
+// El admin resetea la contraseña de un conductor (sin conocer la actual)
+router.patch('/:id/password', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { password } = req.body
+
+    if (!password) return res.status(400).json({ error: 'La nueva contraseña es obligatoria' })
+    if (password.length < 6) return res.status(400).json({ error: 'Debe tener al menos 6 caracteres' })
+
+    // Verificar que el conductor pertenece al tenant
+    const conductor = await prisma.conductor.findFirst({
+      where: { id: req.params.id, tenantId },
+    })
+    if (!conductor) return res.status(404).json({ error: 'Conductor no encontrado' })
+    if (!conductor.usuarioId) return res.status(400).json({ error: 'Este conductor no tiene cuenta de acceso' })
+
+    const hash = await bcrypt.hash(password, 10)
+    await prisma.usuario.update({
+      where: { id: conductor.usuarioId },
+      data:  { password: hash },
+    })
+
+    res.json({ message: 'Contraseña actualizada' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al cambiar la contraseña' })
+  }
+})
+
 module.exports = router
