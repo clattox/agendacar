@@ -37,7 +37,7 @@ export default function FlotaDashboard() {
       color: 'border-[#FCA5A5] bg-[#FEE2E2] text-[#DC2626]', icon: '📄' })
 
   return (
-    <div className="p-7">
+    <div className="p-4 md:p-7">
       <h1 className="text-xl font-bold text-[#252A31] mb-6">Dashboard</h1>
 
       {/* Bloque "Requiere atención" */}

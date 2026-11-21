@@ -24,7 +24,7 @@ export default function FlotaDocumentos() {
   const proximos  = docs.filter(d => d.alerta === 'PROXIMO')
 
   return (
-    <div className="p-7">
+    <div className="p-4 md:p-7">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-[#252A31]">Documentos legales</h1>
         <p className="text-sm text-[#737B86] mt-1">Vencimientos en los próximos 60 días</p>
