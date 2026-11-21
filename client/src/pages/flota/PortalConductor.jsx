@@ -129,7 +129,7 @@ export default function PortalConductor() {
   const [reporteData,   setReporteData]   = useState(null)
   const [loadingRep,    setLoadingRep]    = useState(false)
   const [verAnioPortal, setVerAnioPortal] = useState(false)  // false = mensual (default), true = anual
-  const mesMostrado = new Date().getMonth() + 1  // mes actual (1-indexed)
+  const [mesMostrado,   setMesMostrado]   = useState(new Date().getMonth() + 1) // 1-indexed
 
   // Form actividad
   const [form,    setForm]    = useState({
@@ -159,7 +159,7 @@ export default function PortalConductor() {
   const [enviando,   setEnviando]   = useState(false)
   const [exito,      setExito]      = useState('')
   const [errorForm,  setErrorForm]  = useState('')
-  const [pdfModal,   setPdfModal]   = useState(null) // { dataUrl, nombre }
+  // pdfModal eliminado — documentos se abren en nueva pestaña
 
   useEffect(() => {
     if (!estaAutenticado()) {
@@ -431,14 +431,16 @@ export default function PortalConductor() {
                               {doc.archivoBase64 && (
                                 <button
                                   onClick={() => {
-                                    // Blob URL evita bloqueo de data: URLs en Chrome/Android
+                                    // Abrir en nueva pestaña para no afectar historial de navegación
                                     const b64 = doc.archivoBase64.startsWith('data:')
                                       ? doc.archivoBase64.split(',')[1]
                                       : doc.archivoBase64
                                     const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
                                     const blob = new Blob([bytes], { type: 'application/pdf' })
                                     const url = URL.createObjectURL(blob)
-                                    setPdfModal({ dataUrl: url, nombre: doc.archivoNombre || TIPO_DOC[doc.tipo] || 'Documento' })
+                                    window.open(url, '_blank')
+                                    // Liberar el object URL después de un momento
+                                    setTimeout(() => URL.revokeObjectURL(url), 10000)
                                   }}
                                   className="flex-shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
                                   title="Ver PDF"
@@ -832,6 +834,18 @@ export default function PortalConductor() {
                       {verAnioPortal ? 'Ver mes' : 'Ver año'}
                     </button>
                   )}
+                  {/* Selector mes (solo vista mensual) */}
+                  {reporteData && !verAnioPortal && (
+                    <select
+                      value={mesMostrado}
+                      onChange={e => setMesMostrado(Number(e.target.value))}
+                      className="bg-[#1C1F26] border border-[#2d3039] text-xs text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
+                    >
+                      {MESES_NOMBRE.map((m, i) => (
+                        <option key={i + 1} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                  )}
                   {/* Exportar PDF */}
                   {reporteData && reporteData.totales.nActividades > 0 && (
                     <button
@@ -968,28 +982,7 @@ export default function PortalConductor() {
         )}
       </main>
 
-      {/* Modal visor PDF */}
-      {pdfModal && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col bg-black/90"
-          onClick={() => { URL.revokeObjectURL(pdfModal.dataUrl); setPdfModal(null) }}
-        >
-          <div className="flex items-center justify-between px-4 py-3 bg-[#1C1F26] border-b border-[#2d3039] flex-shrink-0" onClick={e => e.stopPropagation()}>
-            <span className="text-sm font-semibold text-white truncate">{pdfModal.nombre}</span>
-            <button onClick={() => { URL.revokeObjectURL(pdfModal.dataUrl); setPdfModal(null) }} className="text-zinc-400 hover:text-white p-1 ml-3 flex-shrink-0">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <iframe
-            src={pdfModal.dataUrl}
-            className="flex-1 w-full"
-            title={pdfModal.nombre}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
-      )}
+      {/* Documentos se abren en nueva pestaña — sin modal */}
     </div>
   )
 }
