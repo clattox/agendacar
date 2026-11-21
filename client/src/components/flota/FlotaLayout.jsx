@@ -139,7 +139,7 @@ export default function FlotaLayout({ children }) {
   }, [drawerOpen])
 
   return (
-    <div className="flex h-screen bg-[#F4F5F6] overflow-hidden">
+    <div className="flex h-screen bg-[#EDEEF0] overflow-hidden">
 
       {/* ——— Sidebar desktop (md+) ——— */}
       <aside className="hidden md:flex w-56 flex-shrink-0 flex-col bg-[#30343B] border-r border-[#272B31]">

@@ -60,4 +60,4 @@ server/
 - Bordes sidebar: `#272B31`
 - Texto secundario sidebar: `#8B9299`, `#D1D5DB`
 - Acento activo: `amber-400` / `amber-500`
-- Fondo app: `#F4F5F6`
+- Fondo app: `#EDEEF0`
