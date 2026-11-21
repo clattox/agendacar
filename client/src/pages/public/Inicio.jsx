@@ -170,6 +170,23 @@ export default function Inicio({ slugOverride = null }) {
     )
   }
 
+  // soloFlota: este tenant no ofrece portal de reservas público
+  if (tenant.soloFlota) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
+        <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-8 shadow-card text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-graphite-100">
+            <Building2 className="h-7 w-7 text-ink-soft" />
+          </div>
+          <h1 className="text-lg font-bold text-ink">Portal no disponible</h1>
+          <p className="mt-2 text-sm text-ink-muted">
+            Este servicio no dispone de portal de reservas en línea.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const horariosOrdenados = [...horarios].sort((a, b) => a.diaSemana - b.diaSemana)
 
   // Personalización visual del taller
