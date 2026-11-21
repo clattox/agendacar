@@ -130,7 +130,7 @@ export default function FlotaDashboard() {
             <h2 className="text-sm font-bold text-[#252A31]">Estado operacional</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[600px]">
               <thead>
                 <tr className="bg-[#F4F5F6] border-b border-[#E5E7EB]">
                   <th className="text-left text-xs text-[#737B86] font-semibold px-5 py-3 uppercase tracking-wide">Vehículo</th>
@@ -170,8 +170,8 @@ function VehiculoFila({ v, onDetalle }) {
   return (
     <tr className="border-b border-[#E5E7EB] last:border-0 hover:bg-[#F4F5F6] transition-colors">
       <td className="px-5 py-3">
-        <div className="font-semibold text-[#252A31]">{v.patente}</div>
-        <div className="text-xs text-[#737B86]">{v.marca} {v.modelo}</div>
+        <div className="font-semibold text-[#252A31] whitespace-nowrap">{v.patente}</div>
+        <div className="text-xs text-[#737B86] whitespace-nowrap">{v.marca} {v.modelo}</div>
       </td>
       <td className="px-3 py-3">
         <span className={`text-xs font-semibold ${estadoVeh}`}>{estadoVehLabel}</span>
@@ -179,7 +179,7 @@ function VehiculoFila({ v, onDetalle }) {
       <td className="px-3 py-3 text-[#252A31]">
         {v.conductor?.nombre ?? <span className="text-[#A0A6AE]">Sin asignar</span>}
       </td>
-      <td className="px-3 py-3 text-right text-[#737B86] font-mono text-xs">
+      <td className="px-3 py-3 text-right text-[#737B86] font-mono text-xs whitespace-nowrap">
         {fmtKm(v.odometroActual)}
       </td>
       <td className="px-3 py-3">
