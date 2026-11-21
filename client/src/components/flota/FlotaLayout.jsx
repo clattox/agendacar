@@ -53,6 +53,15 @@ const NAV = [
       </svg>
     ),
   },
+  {
+    to: '/flota/reportes',
+    label: 'Reportes',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+        <path d="M18 20V10M12 20V4M6 20v-6" />
+      </svg>
+    ),
+  },
 ]
 
 function SidebarContent({ onNavigate, navigate }) {

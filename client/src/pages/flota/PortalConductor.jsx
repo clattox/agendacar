@@ -35,6 +35,12 @@ export default function PortalConductor() {
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState('')
 
+  // Reportes
+  const [verReportes,   setVerReportes]   = useState(false)
+  const [anioReporte,   setAnioReporte]   = useState(new Date().getFullYear())
+  const [reporteData,   setReporteData]   = useState(null)
+  const [loadingRep,    setLoadingRep]    = useState(false)
+
   // Form actividad
   const [form,    setForm]    = useState({
     tipo:            'KILOMETRAJE',
@@ -128,6 +134,28 @@ export default function PortalConductor() {
     } finally {
       setEnviando(false)
     }
+  }
+
+  async function cargarReportes(anio) {
+    setLoadingRep(true)
+    try {
+      const res = await api.get(`/flota/portal/mis-reportes?anio=${anio}`)
+      setReporteData(res.data)
+    } catch (e) {
+      setReporteData(null)
+    } finally {
+      setLoadingRep(false)
+    }
+  }
+
+  function toggleReportes() {
+    if (!verReportes && !reporteData) cargarReportes(anioReporte)
+    setVerReportes(v => !v)
+  }
+
+  function cambiarAnio(a) {
+    setAnioReporte(a)
+    cargarReportes(a)
   }
 
   function handleSalir() {
@@ -521,6 +549,104 @@ export default function PortalConductor() {
                 </form>
               </section>
             )}
+
+            {/* ——— Mis Reportes ——————————————————————— */}
+          <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
+            <button
+              onClick={toggleReportes}
+              className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-[#2b2d35] transition-colors"
+            >
+              <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path d="M18 20V10M12 20V4M6 20v-6" />
+              </svg>
+              <span className="text-sm font-semibold flex-1">Mis Reportes</span>
+              <svg className={`w-4 h-4 text-zinc-500 transition-transform ${verReportes ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {verReportes && (
+              <div className="border-t border-[#2d3039]">
+                {/* Selector de año */}
+                <div className="px-4 py-3 flex items-center gap-2 border-b border-[#2d3039]">
+                  <span className="text-xs text-zinc-500 flex-1">Año</span>
+                  <div className="flex gap-1">
+                    {[new Date().getFullYear() - 1, new Date().getFullYear()].map(a => (
+                      <button
+                        key={a}
+                        onClick={() => cambiarAnio(a)}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all
+                          ${anioReporte === a
+                            ? 'bg-amber-500 text-black'
+                            : 'text-zinc-400 hover:text-white bg-[#1C1F26]'}`}
+                      >
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {loadingRep && (
+                  <div className="px-4 py-6 text-center text-xs text-zinc-500">Cargando…</div>
+                )}
+
+                {!loadingRep && reporteData && (
+                  <>
+                    {/* Chips resumen */}
+                    <div className="grid grid-cols-2 gap-2 px-4 py-3 border-b border-[#2d3039]">
+                      {[
+                        { label: 'Km recorridos', value: `${reporteData.totales.kmRecorridos.toLocaleString('es-CL')} km` },
+                        { label: 'Combustible', value: `$${reporteData.totales.montoCombustible.toLocaleString('es-CL')}` },
+                        { label: 'Peajes', value: `$${reporteData.totales.montoPeajes.toLocaleString('es-CL')}` },
+                        { label: 'Actividades', value: reporteData.totales.nActividades },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="bg-[#1C1F26] rounded-xl px-3 py-2.5">
+                          <div className="text-[11px] text-zinc-500">{label}</div>
+                          <div className="text-sm font-bold text-white mt-0.5">{value}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Tabla mensual compacta */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[380px] text-xs">
+                        <thead>
+                          <tr className="border-b border-[#2d3039]">
+                            <th className="text-left px-4 py-2 text-zinc-500 font-semibold">Mes</th>
+                            <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Km</th>
+                            <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Comb.</th>
+                            <th className="text-right px-3 py-2 text-zinc-500 font-semibold whitespace-nowrap">Peajes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#1C1F26]">
+                          {reporteData.meses.map(m => (
+                            <tr key={m.mesNum} className={m.nActividades === 0 ? 'opacity-30' : ''}>
+                              <td className="px-4 py-2 font-semibold text-zinc-300">{m.mes}</td>
+                              <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
+                                {m.kmRecorridos > 0 ? `${m.kmRecorridos.toLocaleString('es-CL')}` : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
+                                {m.montoCombustible > 0 ? `$${m.montoCombustible.toLocaleString('es-CL')}` : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
+                                {m.montoPeajes > 0 ? `$${m.montoPeajes.toLocaleString('es-CL')}` : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+
+                {!loadingRep && !reporteData && (
+                  <div className="px-4 py-6 text-center text-xs text-zinc-500">
+                    No hay datos disponibles
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
           </>
         )}
       </main>

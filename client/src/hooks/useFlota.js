@@ -160,3 +160,8 @@ export function useCrearDocumento() {
 
   return { loading, error, execute }
 }
+
+// ——— Reporte mensual (admin) ————————————————————————————————
+export function useReporteMensual(anio) {
+  return useQuery(`/flota/reportes/mensual?anio=${anio}`, [anio])
+}

@@ -154,4 +154,85 @@ router.post('/actividad', async (req, res) => {
   }
 })
 
+// ——— GET /api/flota/portal/mis-reportes ————————————————————
+// El conductor ve su propio resumen mensual (todos sus vehículos)
+router.get('/mis-reportes', async (req, res) => {
+  try {
+    const { id: usuarioId, tenantId } = req.user
+    const anio = req.query.anio ? Number(req.query.anio) : new Date().getFullYear()
+
+    const conductor = await prisma.conductor.findFirst({
+      where: { usuarioId, tenantId },
+    })
+    if (!conductor) return res.status(404).json({ error: 'Sin perfil de conductor' })
+
+    // Vehículos del conductor
+    const vehiculos = await prisma.flotaVehiculo.findMany({
+      where: { conductorId: conductor.id, tenantId },
+      select: { id: true },
+    })
+    const vehiculoIds = vehiculos.map(v => v.id)
+
+    const desde = new Date(`${anio}-01-01T00:00:00.000Z`)
+    const hasta = new Date(`${anio + 1}-01-01T00:00:00.000Z`)
+
+    const actividades = await prisma.flotaActividad.findMany({
+      where: {
+        tenantId,
+        vehiculoId: { in: vehiculoIds },
+        fecha: { gte: desde, lt: hasta },
+      },
+      include: {
+        kmRegistro:          true,
+        combustibleRegistro: true,
+        peajeRegistro:       true,
+      },
+      orderBy: { fecha: 'asc' },
+    })
+
+    const MESES_ES = [
+      'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN',
+      'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC',
+    ]
+
+    const mesesData = Array.from({ length: 12 }, (_, i) => ({
+      mesNum:          i + 1,
+      mes:             MESES_ES[i],
+      kmRecorridos:    0,
+      litros:          0,
+      montoCombustible: 0,
+      montoPeajes:     0,
+      nActividades:    0,
+    }))
+
+    for (const act of actividades) {
+      const idx = new Date(act.fecha).getMonth()
+      const m = mesesData[idx]
+      m.nActividades++
+      if (act.kmRegistro)          m.kmRecorridos      += act.kmRegistro.kmRecorridos || 0
+      if (act.combustibleRegistro) {
+        m.litros              += act.combustibleRegistro.litros || 0
+        m.montoCombustible    += act.combustibleRegistro.monto  || 0
+      }
+      if (act.peajeRegistro)       m.montoPeajes       += act.peajeRegistro.monto || 0
+    }
+
+    const mesActual = new Date().getFullYear() === anio ? new Date().getMonth() : 11
+    const mesesFiltrados = mesesData.filter((_, i) => i <= mesActual)
+
+    const totales = mesesFiltrados.reduce((acc, m) => ({
+      kmRecorridos:     acc.kmRecorridos     + m.kmRecorridos,
+      litros:           acc.litros           + m.litros,
+      montoCombustible: acc.montoCombustible + m.montoCombustible,
+      montoPeajes:      acc.montoPeajes      + m.montoPeajes,
+      nActividades:     acc.nActividades     + m.nActividades,
+    }), { kmRecorridos: 0, litros: 0, montoCombustible: 0, montoPeajes: 0, nActividades: 0 })
+
+    res.json({ anio, meses: mesesFiltrados, totales })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener reportes' })
+  }
+})
+
 module.exports = router
