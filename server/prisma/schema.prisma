@@ -271,6 +271,7 @@ enum TipoActividad {
   PEAJE
   MANTENCION
   CAMBIO_ESTADO
+  TRASLADO
 }
 
 enum TipoCombustible {
@@ -416,6 +417,7 @@ model FlotaActividad {
   peajeRegistro          PeajeRegistro?
   mantencionRegistro     MantencionRegistro?
   estadoCambio           EstadoCambioFlota?
+  trasladoRegistro       TrasladoRegistro?
 
   createdAt       DateTime      @default(now())
 
@@ -474,6 +476,19 @@ model MantencionRegistro {
 
   proxFecha    DateTime?
   proxKm       Int?
+}
+
+model TrasladoRegistro {
+  id          String         @id @default(cuid())
+  actividadId String         @unique
+  actividad   FlotaActividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  destino     String
+  motivo      String?
+  kmSalida    Int?
+  kmLlegada   Int?
+
+  @@index([actividadId])
 }
 
 model EstadoCambioFlota {

@@ -28,7 +28,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'vehiculoId y tipo son obligatorios' })
     }
 
-    const TIPOS = ['KILOMETRAJE', 'COMBUSTIBLE', 'PEAJE', 'MANTENCION', 'CAMBIO_ESTADO']
+    const TIPOS = ['KILOMETRAJE', 'COMBUSTIBLE', 'PEAJE', 'MANTENCION', 'CAMBIO_ESTADO', 'TRASLADO']
     if (!TIPOS.includes(tipo)) {
       return res.status(400).json({ error: `tipo inválido. Valores permitidos: ${TIPOS.join(', ')}` })
     }
@@ -177,6 +177,31 @@ router.post('/', async (req, res) => {
                 proveedor:       taller || null,
                 activo:          true,
               },
+            })
+          }
+          break
+        }
+
+        // —— TRASLADO ——
+        case 'TRASLADO': {
+          const { destino, motivo, kmSalida, kmLlegada } = detalleRaw
+          if (!destino) throw new Error('destino es obligatorio para TRASLADO')
+
+          await tx.trasladoRegistro.create({
+            data: {
+              actividadId: actividad.id,
+              destino,
+              motivo:    motivo    || null,
+              kmSalida:  kmSalida  || null,
+              kmLlegada: kmLlegada || null,
+            },
+          })
+
+          // Si viene kmLlegada y es mayor al odómetro actual, actualizar
+          if (kmLlegada && kmLlegada > vehiculo.odometroActual) {
+            await tx.flotaVehiculo.update({
+              where: { id: vehiculoId },
+              data:  { odometroActual: kmLlegada },
             })
           }
           break

@@ -3,10 +3,11 @@ import { useState } from 'react'
 import { useRegistrarActividad } from '../../hooks/useFlota'
 
 const TIPOS = [
-  { id: 'KILOMETRAJE',   label: 'Kilometraje',   desc: 'Lectura de odómetro'      },
-  { id: 'COMBUSTIBLE',   label: 'Combustible',   desc: 'Litros, monto, estación'  },
-  { id: 'PEAJE',         label: 'Peaje',          desc: 'Autopista, sentido, monto' },
-  { id: 'MANTENCION',    label: 'Mantención',    desc: 'Tipo, taller, costo'      },
+  { id: 'TRASLADO',      label: 'Traslado',      desc: 'Viaje o comisión'          },
+  { id: 'KILOMETRAJE',   label: 'Kilometraje',   desc: 'Lectura de odómetro'       },
+  { id: 'COMBUSTIBLE',   label: 'Combustible',   desc: 'Litros, monto, estación'   },
+  { id: 'PEAJE',         label: 'Peaje',         desc: 'Autopista, sentido, monto' },
+  { id: 'MANTENCION',    label: 'Mantención',    desc: 'Tipo, taller, costo'       },
   { id: 'CAMBIO_ESTADO', label: 'Cambiar estado', desc: 'Operativo / Taller / FS'  },
 ]
 
@@ -26,7 +27,7 @@ const TIPOS_MANTENCION = [
 ]
 
 export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
-  const [tipo,          setTipo]          = useState('KILOMETRAJE')
+  const [tipo,          setTipo]          = useState('TRASLADO')
   const [form,          setForm]          = useState({})
   const [submitted,     setSubmitted]     = useState(false)
   const [validationErr, setValidationErr] = useState('')
@@ -43,6 +44,7 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
     e.preventDefault()
     setValidationErr('')
 
+    if (tipo === 'TRASLADO'      && !form.destino)                              return setValidationErr('Ingresa el destino del traslado')
     if (tipo === 'KILOMETRAJE'   && !form.odometroActual)                       return setValidationErr('Ingresa el odómetro actual')
     if (tipo === 'COMBUSTIBLE'   && (!form.tipoCombustible || !form.monto))                 return setValidationErr('Completa tipo y monto')
     if (tipo === 'PEAJE'         && !form.esTag && !form.monto)                 return setValidationErr('Ingresa el monto del peaje o marca que es con tag')
@@ -107,7 +109,7 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
       <form onSubmit={handleSubmit} className="flex flex-col overflow-y-auto max-h-[70vh]">
         {/* Selector de tipo */}
         <div className="p-5 border-b border-[#E1E4E8]">
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {TIPOS.map(t => (
               <button
                 key={t.id}
@@ -133,6 +135,7 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
 
         {/* Formularios por tipo */}
         <div className="px-5 py-4 flex flex-col gap-4">
+          {tipo === 'TRASLADO'      && <FormTraslado form={form} set={set} odometroActual={vehiculo.odometroActual ?? 0} />}
           {tipo === 'KILOMETRAJE'   && <FormKm    form={form} set={set} odometroActual={vehiculo.odometroActual ?? 0} />}
           {tipo === 'COMBUSTIBLE'   && <FormComb  form={form} set={set} />}
           {tipo === 'PEAJE'         && <FormPeaje form={form} set={set} tieneTag={!!vehiculo.tieneTag} />}
@@ -161,6 +164,60 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
 }
 
 // ——— Formularios por tipo ——————————————————————————————————————
+
+function FormTraslado({ form, set, odometroActual }) {
+  const kmRecorridos = form.kmSalida && form.kmLlegada
+    ? form.kmLlegada - form.kmSalida
+    : null
+
+  return (
+    <>
+      <Field label="Destino *">
+        <input
+          type="text"
+          className="input"
+          placeholder="Concepción, Los Ángeles…"
+          value={form.destino ?? ''}
+          onChange={e => set('destino', e.target.value)}
+        />
+      </Field>
+
+      <Field label="Motivo / comisión">
+        <input
+          type="text"
+          className="input"
+          placeholder="Audiencia Tribunal de Familia, reunión regional…"
+          value={form.motivo ?? ''}
+          onChange={e => set('motivo', e.target.value)}
+        />
+      </Field>
+
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Km salida" hint={`actual: ${odometroActual.toLocaleString('es-CL')}`}>
+          <div className="relative">
+            <input type="number" className="input pr-8" placeholder={String(odometroActual)}
+              value={form.kmSalida ?? ''}
+              onChange={e => set('kmSalida', e.target.value ? Number(e.target.value) : '')} />
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
+          </div>
+        </Field>
+        <Field label="Km llegada">
+          <div className="relative">
+            <input type="number" className="input pr-8"
+              value={form.kmLlegada ?? ''}
+              onChange={e => set('kmLlegada', e.target.value ? Number(e.target.value) : '')} />
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
+          </div>
+        </Field>
+        <Field label="Km recorridos" hint="calculado">
+          <input readOnly
+            value={kmRecorridos != null ? `${kmRecorridos.toLocaleString('es-CL')} km` : '—'}
+            className="input bg-amber-50 text-amber-600 border-transparent cursor-default" />
+        </Field>
+      </div>
+    </>
+  )
+}
 
 function FormKm({ form, set, odometroActual }) {
   const nuevo   = form.odometroActual ? Number(form.odometroActual) : null
@@ -450,6 +507,13 @@ function Field({ label, hint, children }) {
 
 function buildDetalle(tipo, form) {
   switch (tipo) {
+    case 'TRASLADO':
+      return {
+        destino:   form.destino,
+        motivo:    form.motivo    || undefined,
+        kmSalida:  form.kmSalida  || undefined,
+        kmLlegada: form.kmLlegada || undefined,
+      }
     case 'KILOMETRAJE':
       return { odometroActual: form.odometroActual }
     case 'COMBUSTIBLE':
