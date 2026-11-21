@@ -1,6 +1,6 @@
 // pages/flota/PortalConductor.jsx
 // Vista exclusiva del conductor: su vehículo, documentos y registro de actividad
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { clearSession, estaAutenticado, getUsuario } from '../../lib/auth'
 import api from '../../lib/api'
@@ -50,6 +50,7 @@ export default function PortalConductor() {
   const [enviando,   setEnviando]   = useState(false)
   const [exito,      setExito]      = useState('')
   const [errorForm,  setErrorForm]  = useState('')
+  const [pdfModal,   setPdfModal]   = useState(null) // { dataUrl, nombre }
 
   useEffect(() => {
     if (!estaAutenticado()) {
@@ -213,19 +214,10 @@ export default function PortalConductor() {
                               {doc.archivoBase64 && (
                                 <button
                                   onClick={() => {
-                                    const bytes = atob(doc.archivoBase64)
-                                    const arr = new Uint8Array(bytes.length)
-                                    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
-                                    const blob = new Blob([arr], { type: 'application/pdf' })
-                                    const url = URL.createObjectURL(blob)
-                                    const a = document.createElement('a')
-                                    a.href = url
-                                    a.target = '_blank'
-                                    a.rel = 'noopener noreferrer'
-                                    document.body.appendChild(a)
-                                    a.click()
-                                    document.body.removeChild(a)
-                                    setTimeout(() => URL.revokeObjectURL(url), 10000)
+                                    const b64 = doc.archivoBase64.startsWith('data:')
+                                      ? doc.archivoBase64
+                                      : `data:application/pdf;base64,${doc.archivoBase64}`
+                                    setPdfModal({ dataUrl: b64, nombre: doc.archivoNombre || TIPO_DOC[doc.tipo] || 'Documento' })
                                   }}
                                   className="flex-shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
                                   title="Ver PDF"
@@ -444,6 +436,29 @@ export default function PortalConductor() {
           </>
         )}
       </main>
+
+      {/* Modal visor PDF */}
+      {pdfModal && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col bg-black/90"
+          onClick={() => setPdfModal(null)}
+        >
+          <div className="flex items-center justify-between px-4 py-3 bg-[#1C1F26] border-b border-[#2d3039] flex-shrink-0" onClick={e => e.stopPropagation()}>
+            <span className="text-sm font-semibold text-white truncate">{pdfModal.nombre}</span>
+            <button onClick={() => setPdfModal(null)} className="text-zinc-400 hover:text-white p-1 ml-3 flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <iframe
+            src={pdfModal.dataUrl}
+            className="flex-1 w-full"
+            title={pdfModal.nombre}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }
