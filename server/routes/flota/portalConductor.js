@@ -78,7 +78,19 @@ router.post('/actividad', async (req, res) => {
     })
     if (!conductor) return res.status(403).json({ error: 'Sin perfil de conductor' })
 
-    const { tipo, fecha, notas, odometroActual, tipoCombustible, litros, monto, estacion, autopista, sentido, vehiculoId } = req.body
+    const {
+      tipo, fecha, notas, vehiculoId,
+      // KILOMETRAJE
+      odometroActual,
+      // COMBUSTIBLE
+      tipoCombustible, litros, monto, estacion,
+      // PEAJE
+      autopista, sentido,
+      // TRASLADO
+      destino, motivo, kmSalida, kmLlegada,
+      // MANTENCION
+      tipoMantencion, taller, costo, numeroFolio, proxFecha, proxKm,
+    } = req.body
 
     // Si el conductor tiene múltiples vehículos, el frontend envía vehiculoId
     let vehiculo
@@ -143,6 +155,41 @@ router.post('/actividad', async (req, res) => {
           monto,
           autopista:   autopista || null,
           sentido:     sentido || 'IDA',
+        },
+      })
+    }
+
+    if (tipo === 'TRASLADO') {
+      if (!destino) return res.status(400).json({ error: 'destino es obligatorio para TRASLADO' })
+      await prisma.trasladoRegistro.create({
+        data: {
+          actividadId: actividad.id,
+          destino,
+          motivo:    motivo    || null,
+          kmSalida:  kmSalida  ? Number(kmSalida)  : null,
+          kmLlegada: kmLlegada ? Number(kmLlegada) : null,
+        },
+      })
+      // Actualizar odómetro si kmLlegada es mayor al actual
+      if (kmLlegada && Number(kmLlegada) > vehiculo.odometroActual) {
+        await prisma.flotaVehiculo.update({
+          where: { id: vehiculo.id },
+          data:  { odometroActual: Number(kmLlegada) },
+        })
+      }
+    }
+
+    if (tipo === 'MANTENCION') {
+      if (!tipoMantencion) return res.status(400).json({ error: 'tipoMantencion es obligatorio' })
+      await prisma.mantencionRegistro.create({
+        data: {
+          actividadId:  actividad.id,
+          tipo:         tipoMantencion,
+          taller:       taller      || null,
+          costo:        costo       ? Number(costo)  : null,
+          numeroFolio:  numeroFolio || null,
+          proxFecha:    proxFecha   ? new Date(proxFecha) : null,
+          proxKm:       proxKm      ? Number(proxKm) : null,
         },
       })
     }

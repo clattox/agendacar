@@ -43,7 +43,7 @@ export default function PortalConductor() {
 
   // Form actividad
   const [form,    setForm]    = useState({
-    tipo:            'KILOMETRAJE',
+    tipo:            'TRASLADO',
     fecha:           new Date().toISOString().slice(0, 10),
     notas:           '',
     odometroActual:  '',
@@ -53,6 +53,18 @@ export default function PortalConductor() {
     estacion:        '',
     autopista:       '',
     sentido:         'IDA',
+    // TRASLADO
+    destino:         '',
+    motivo:          '',
+    kmSalida:        '',
+    kmLlegada:       '',
+    // MANTENCION
+    tipoMantencion:  '',
+    taller:          '',
+    costo:           '',
+    numeroFolio:     '',
+    proxFecha:       '',
+    proxKm:          '',
   })
   const [enviando,   setEnviando]   = useState(false)
   const [exito,      setExito]      = useState('')
@@ -78,6 +90,8 @@ export default function PortalConductor() {
       ...prev,
       odometroActual: '',
       litros: '', monto: '', estacion: '', autopista: '',
+      destino: '', motivo: '', kmSalida: '', kmLlegada: '',
+      tipoMantencion: '', taller: '', costo: '', numeroFolio: '', proxFecha: '', proxKm: '',
       notas: '',
       fecha: new Date().toISOString().slice(0, 10),
     }))
@@ -121,11 +135,17 @@ export default function PortalConductor() {
         odometroActual: form.odometroActual ? Number(form.odometroActual) : undefined,
         litros:         form.litros         ? Number(form.litros)         : undefined,
         monto:          form.monto          ? Number(form.monto)          : undefined,
+        kmSalida:       form.kmSalida       ? Number(form.kmSalida)       : undefined,
+        kmLlegada:      form.kmLlegada      ? Number(form.kmLlegada)      : undefined,
+        costo:          form.costo          ? Number(form.costo)          : undefined,
+        proxKm:         form.proxKm         ? Number(form.proxKm)         : undefined,
       })
       setExito('Actividad registrada exitosamente')
       setForm(prev => ({
         ...prev,
         notas: '', odometroActual: '', litros: '', monto: '', estacion: '', autopista: '',
+        destino: '', motivo: '', kmSalida: '', kmLlegada: '',
+        tipoMantencion: '', taller: '', costo: '', numeroFolio: '', proxFecha: '', proxKm: '',
         fecha: new Date().toISOString().slice(0, 10),
       }))
       cargar(true) // refresca odómetro, mantiene el vehículo seleccionado
@@ -391,9 +411,11 @@ export default function PortalConductor() {
                     <label className="block text-xs font-medium text-zinc-400 mb-1.5">Tipo de actividad</label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {[
-                        { v: 'KILOMETRAJE', label: 'Kilometraje' },
-                        { v: 'COMBUSTIBLE', label: 'Combustible' },
-                        { v: 'PEAJE',       label: 'Peaje' },
+                        { v: 'TRASLADO',    label: 'Traslado'   },
+                        { v: 'KILOMETRAJE', label: 'Kilometraje'},
+                        { v: 'COMBUSTIBLE', label: 'Combustible'},
+                        { v: 'PEAJE',       label: 'Peaje'      },
+                        { v: 'MANTENCION',  label: 'Mantención' },
                       ].map(({ v, label }) => (
                         <button
                           key={v}
@@ -525,6 +547,128 @@ export default function PortalConductor() {
                           <option value="IDA_Y_VUELTA">Ida y Vuelta</option>
                         </select>
                       </Field>
+                    </>
+                  )}
+
+                  {form.tipo === 'TRASLADO' && (
+                    <>
+                      <Field label="Destino *">
+                        <input
+                          type="text"
+                          required
+                          value={form.destino}
+                          onChange={e => setForm(p => ({ ...p, destino: e.target.value }))}
+                          placeholder="Concepción, Tribunal de Lebu…"
+                          className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                        />
+                      </Field>
+                      <Field label="Motivo / comisión (opcional)">
+                        <input
+                          type="text"
+                          value={form.motivo}
+                          onChange={e => setForm(p => ({ ...p, motivo: e.target.value }))}
+                          placeholder="Audiencia, diligencia…"
+                          className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                        />
+                      </Field>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Field label={`Km salida`}>
+                          <input
+                            type="number"
+                            min="0"
+                            value={form.kmSalida}
+                            onChange={e => setForm(p => ({ ...p, kmSalida: e.target.value }))}
+                            placeholder={vehiculoActivo.odometroActual.toLocaleString('es-CL')}
+                            className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                          />
+                        </Field>
+                        <Field label="Km llegada">
+                          <input
+                            type="number"
+                            min="0"
+                            value={form.kmLlegada}
+                            onChange={e => setForm(p => ({ ...p, kmLlegada: e.target.value }))}
+                            placeholder="—"
+                            className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                          />
+                        </Field>
+                        <Field label="Recorridos">
+                          <input
+                            readOnly
+                            value={
+                              form.kmSalida && form.kmLlegada
+                                ? `${(Number(form.kmLlegada) - Number(form.kmSalida)).toLocaleString('es-CL')} km`
+                                : '—'
+                            }
+                            className="w-full bg-amber-500/10 border border-transparent rounded-lg px-3 py-2 text-sm text-amber-400 cursor-default"
+                          />
+                        </Field>
+                      </div>
+                    </>
+                  )}
+
+                  {form.tipo === 'MANTENCION' && (
+                    <>
+                      <Field label="Tipo de mantención *">
+                        <input
+                          type="text"
+                          required
+                          value={form.tipoMantencion}
+                          onChange={e => setForm(p => ({ ...p, tipoMantencion: e.target.value }))}
+                          placeholder="Aceite, frenos, revisión general…"
+                          className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                        />
+                      </Field>
+                      <Field label="Taller (opcional)">
+                        <input
+                          type="text"
+                          value={form.taller}
+                          onChange={e => setForm(p => ({ ...p, taller: e.target.value }))}
+                          placeholder="Nombre o dirección"
+                          className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                        />
+                      </Field>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Costo ($)">
+                          <input
+                            type="number"
+                            min="0"
+                            value={form.costo}
+                            onChange={e => setForm(p => ({ ...p, costo: e.target.value }))}
+                            placeholder="0"
+                            className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                          />
+                        </Field>
+                        <Field label="N° folio (opcional)">
+                          <input
+                            type="text"
+                            value={form.numeroFolio}
+                            onChange={e => setForm(p => ({ ...p, numeroFolio: e.target.value }))}
+                            placeholder="Boleta o factura"
+                            className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                          />
+                        </Field>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Próx. mantención (fecha)">
+                          <input
+                            type="date"
+                            value={form.proxFecha}
+                            onChange={e => setForm(p => ({ ...p, proxFecha: e.target.value }))}
+                            className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                          />
+                        </Field>
+                        <Field label="Próx. mantención (km)">
+                          <input
+                            type="number"
+                            min="0"
+                            value={form.proxKm}
+                            onChange={e => setForm(p => ({ ...p, proxKm: e.target.value }))}
+                            placeholder="Ej: 55000"
+                            className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                          />
+                        </Field>
+                      </div>
                     </>
                   )}
 
