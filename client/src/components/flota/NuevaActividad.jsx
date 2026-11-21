@@ -67,13 +67,13 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
     return (
       <Overlay onClose={onClose}>
         <div className="flex flex-col items-center gap-4 py-10 text-center px-6">
-          <div className="w-14 h-14 rounded-full bg-green-400/10 border-2 border-green-400 flex items-center justify-center">
-            <svg className="w-7 h-7 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div className="w-14 h-14 rounded-full bg-[#DCFCE7] border-2 border-[#86EFAC] flex items-center justify-center">
+            <svg className="w-7 h-7 text-[#16A34A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-white">Registro guardado</h3>
-          <p className="text-sm text-zinc-400">
+          <h3 className="text-lg font-bold text-[#252A31]">Registro guardado</h3>
+          <p className="text-sm text-[#737B86]">
             {TIPOS.find(t => t.id === tipo)?.label} registrado para {vehiculo.marca}
           </p>
           <div className="flex gap-3 mt-2">
@@ -92,12 +92,12 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
   return (
     <Overlay onClose={onClose}>
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#363636]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[#E1E4E8]">
         <div>
-          <h2 className="font-bold text-white text-base">Nueva actividad</h2>
-          <p className="text-xs text-zinc-400 mt-0.5 font-mono">{vehiculo.marca} · {vehiculo.patente}</p>
+          <h2 className="font-bold text-[#252A31] text-base">Nueva actividad</h2>
+          <p className="text-xs text-[#737B86] mt-0.5 font-mono">{vehiculo.marca} · {vehiculo.patente}</p>
         </div>
-        <button type="button" onClick={onClose} className="text-zinc-400 hover:text-white p-1">
+        <button type="button" onClick={onClose} className="text-[#737B86] hover:text-[#252A31] p-1">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -106,7 +106,7 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
 
       <form onSubmit={handleSubmit} className="flex flex-col overflow-y-auto max-h-[70vh]">
         {/* Selector de tipo */}
-        <div className="p-5 border-b border-[#363636]">
+        <div className="p-5 border-b border-[#E1E4E8]">
           <div className="grid grid-cols-5 gap-2">
             {TIPOS.map(t => (
               <button
@@ -115,8 +115,8 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
                 onClick={() => { setTipo(t.id); setForm({}) }}
                 className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border text-center transition-all
                   ${tipo === t.id
-                    ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                    : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}
+                    ? 'border-amber-500 bg-amber-50 text-amber-600'
+                    : 'border-[#E1E4E8] bg-[#F4F5F6] text-[#737B86] hover:border-[#C6CAD0]'}`}
               >
                 <span className="text-xs font-semibold leading-tight">{t.label}</span>
               </button>
@@ -146,8 +146,8 @@ export default function NuevaActividad({ vehiculo, onClose, onSuccess }) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-[#363636] flex items-center justify-between gap-3">
-          <div className="text-xs text-red-400">{validationErr || (error && `Error: ${error}`)}</div>
+        <div className="px-5 py-4 border-t border-[#E1E4E8] flex items-center justify-between gap-3">
+          <div className="text-xs text-red-500">{validationErr || (error && `Error: ${error}`)}</div>
           <div className="flex gap-2 ml-auto">
             <button type="button" onClick={onClose} className="btn-ghost">Cancelar</button>
             <button type="submit" disabled={loading} className="btn-primary disabled:opacity-50">
@@ -175,7 +175,7 @@ function FormKm({ form, set, odometroActual }) {
       <Field label="Km recorridos" hint="calculado">
         <input readOnly
           value={kmDiff != null ? `+${kmDiff.toLocaleString('es-CL')} km` : '—'}
-          className="input bg-amber-500/10 text-amber-400 border-transparent cursor-default" />
+          className="input bg-amber-50 text-amber-600 border-transparent cursor-default" />
       </Field>
     </div>
   )
@@ -195,8 +195,8 @@ function FormComb({ form, set }) {
             <button key={v} type="button" onClick={() => set('tipoCombustible', v)}
               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all
                 ${form.tipoCombustible === v
-                  ? 'border-green-400/40 bg-green-400/10 text-green-400'
-                  : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}>
+                  ? 'border-[#86EFAC] bg-[#DCFCE7] text-[#16A34A]'
+                  : 'border-[#E1E4E8] bg-[#F4F5F6] text-[#737B86] hover:border-[#C6CAD0]'}`}>
               {l}
             </button>
           ))}
@@ -208,23 +208,23 @@ function FormComb({ form, set }) {
             <input type="number" className="input pr-7" placeholder="42"
               value={form.litros ?? ''}
               onChange={e => set('litros', e.target.value ? Number(e.target.value) : '')} />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">L</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">L</span>
           </div>
         </Field>
         <Field label="Monto total *">
           <div className="relative">
             <input type="number" className="input pr-5" placeholder="74000"
               onChange={e => set('monto', Number(e.target.value))} />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">$</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">$</span>
           </div>
         </Field>
         <Field label="Precio/L" hint="calculado">
           <input readOnly value={precioLitro ? `$${precioLitro.toLocaleString('es-CL')}/L` : '—'}
-            className="input bg-amber-500/10 text-amber-400 border-transparent cursor-default" />
+            className="input bg-amber-50 text-amber-600 border-transparent cursor-default" />
         </Field>
       </div>
       {!form.litros && (
-        <p className="text-xs text-zinc-600 -mt-2">
+        <p className="text-xs text-[#A0A6AE] -mt-2">
           💡 Agrega los litros para ver el consumo del vehículo
         </p>
       )}
@@ -238,7 +238,7 @@ function FormComb({ form, set }) {
           <div className="relative">
             <input type="number" className="input pr-8" placeholder="87420"
               onChange={e => set('odometroAlCargar', Number(e.target.value))} />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">km</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
           </div>
         </Field>
       </div>
@@ -261,24 +261,24 @@ function FormPeaje({ form, set, tieneTag }) {
         onClick={() => { set('esTag', !esTag); if (!esTag) set('monto', '') }}
         className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
           ${esTag
-            ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
-            : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}
+            ? 'border-blue-200 bg-blue-50 text-blue-600'
+            : 'border-[#E1E4E8] bg-[#F4F5F6] text-[#737B86] hover:border-[#C6CAD0]'}`}
       >
         {/* Icono tag (chip/transponder) */}
-        <svg className={`w-5 h-5 flex-shrink-0 ${esTag ? 'text-blue-400' : 'text-zinc-500'}`}
+        <svg className={`w-5 h-5 flex-shrink-0 ${esTag ? 'text-blue-600' : 'text-[#737B86]'}`}
           viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
           <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
         </svg>
         <div className="flex-1 min-w-0">
           <div className="text-xs font-semibold">Pagado con Tag electrónico</div>
-          <div className={`text-xs mt-0.5 ${esTag ? 'text-blue-400/70' : 'text-zinc-600'}`}>
+          <div className={`text-xs mt-0.5 ${esTag ? 'text-blue-500' : 'text-[#A0A6AE]'}`}>
             {esTag
               ? 'El administrador cargará el monto desde el estado de cuenta'
               : 'Activar si el peaje fue cobrado por telepeaje / Tag'}
           </div>
         </div>
-        <div className={`w-9 h-5 rounded-full flex-shrink-0 relative transition-colors ${esTag ? 'bg-blue-500' : 'bg-zinc-700'}`}>
+        <div className={`w-9 h-5 rounded-full flex-shrink-0 relative transition-colors ${esTag ? 'bg-blue-500' : 'bg-[#D1D5DB]'}`}>
           <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${esTag ? 'left-4' : 'left-0.5'}`} />
         </div>
       </button>
@@ -290,7 +290,7 @@ function FormPeaje({ form, set, tieneTag }) {
             <div className="relative">
               <input type="number" className="input pr-5" placeholder="16000"
                 onChange={e => set('monto', Number(e.target.value))} />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">$</span>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">$</span>
             </div>
           </Field>
           <Field label="Autopista / ruta">
@@ -315,8 +315,8 @@ function FormPeaje({ form, set, tieneTag }) {
             <button key={v} type="button" onClick={() => set('sentido', v)}
               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all
                 ${form.sentido === v
-                  ? 'border-zinc-400/40 bg-zinc-400/10 text-zinc-200'
-                  : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}>
+                  ? 'border-amber-500 bg-amber-50 text-amber-600'
+                  : 'border-[#E1E4E8] bg-[#F4F5F6] text-[#737B86] hover:border-[#C6CAD0]'}`}>
               {l}
             </button>
           ))}
@@ -346,7 +346,7 @@ function FormMant({ form, set }) {
           <div className="relative">
             <input type="number" className="input pr-5" placeholder="18000"
               onChange={e => set('costo', Number(e.target.value))} />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">$</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">$</span>
           </div>
         </Field>
         <Field label="N° folio / boleta">
@@ -357,7 +357,7 @@ function FormMant({ form, set }) {
           <div className="relative">
             <input type="number" className="input pr-8" placeholder="87420"
               onChange={e => set('odometro', Number(e.target.value))} />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">km</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
           </div>
         </Field>
         <Field label="Próxima fecha">
@@ -367,7 +367,7 @@ function FormMant({ form, set }) {
           <div className="relative">
             <input type="number" className="input pr-8" placeholder="92420"
               onChange={e => set('proxKm', Number(e.target.value))} />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">km</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
           </div>
         </Field>
       </div>
@@ -383,13 +383,13 @@ function FormEstado({ form, set }) {
         <label className="field-label">Nuevo estado *</label>
         <div className="flex gap-2 mt-1.5">
           {[
-            ['OPERATIVO',         'Operativo',         'text-green-400 bg-green-400/10 border-green-400/40'],
-            ['EN_TALLER',         'En taller',          'text-amber-400 bg-amber-400/10 border-amber-400/40'],
-            ['FUERA_DE_SERVICIO', 'Fuera de servicio',  'text-red-400   bg-red-400/10   border-red-400/40'  ],
+            ['OPERATIVO',         'Operativo',         'text-[#16A34A] bg-[#DCFCE7] border-[#86EFAC]'],
+            ['EN_TALLER',         'En taller',          'text-[#D97706] bg-[#FEF3C7] border-[#FCD34D]'],
+            ['FUERA_DE_SERVICIO', 'Fuera de servicio',  'text-[#DC2626] bg-[#FEE2E2] border-[#FCA5A5]'],
           ].map(([v, l, cls]) => (
             <button key={v} type="button" onClick={() => set('estadoNuevo', v)}
               className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all
-                ${form.estadoNuevo === v ? cls : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}>
+                ${form.estadoNuevo === v ? cls : 'border-[#E1E4E8] bg-[#F4F5F6] text-[#737B86] hover:border-[#C6CAD0]'}`}>
               {l}
             </button>
           ))}
@@ -425,7 +425,7 @@ function Overlay({ onClose, children }) {
       onClick={onClose}
     >
       <div
-        className="bg-[#222] border border-[#363636] rounded-2xl w-full max-w-xl shadow-2xl"
+        className="bg-white border border-[#E1E4E8] rounded-2xl w-full max-w-xl shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {children}
@@ -437,9 +437,9 @@ function Overlay({ onClose, children }) {
 function Field({ label, hint, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="flex items-center text-xs font-semibold text-zinc-400">
+      <label className="flex items-center text-xs font-semibold text-[#737B86]">
         {label}
-        {hint && <span className="ml-auto font-normal text-zinc-600">{hint}</span>}
+        {hint && <span className="ml-auto font-normal text-[#A0A6AE]">{hint}</span>}
       </label>
       {children}
     </div>

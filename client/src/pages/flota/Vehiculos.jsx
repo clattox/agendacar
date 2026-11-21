@@ -148,14 +148,14 @@ function ModalExcel({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl w-full max-w-sm shadow-2xl">
+      <div className="bg-white border border-[#E1E4E8] rounded-2xl w-full max-w-sm shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2d3039]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E1E4E8]">
           <div>
-            <div className="text-sm font-semibold text-white">Reporte Excel</div>
-            <div className="text-xs text-zinc-400">Control de Flota — Base de datos y transparencia</div>
+            <div className="text-sm font-semibold text-[#252A31]">Reporte Excel</div>
+            <div className="text-xs text-[#737B86]">Control de Flota — Base de datos y transparencia</div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-[#737B86] hover:text-[#252A31] transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -164,28 +164,28 @@ function ModalExcel({ onClose }) {
 
         <div className="px-5 py-5 space-y-5">
           {/* Info */}
-          <div className="bg-[#1C1F26] border border-[#2d3039] rounded-xl px-4 py-3 space-y-1.5 text-xs text-zinc-400">
+          <div className="bg-[#F4F5F6] border border-[#E1E4E8] rounded-xl px-4 py-3 space-y-1.5 text-xs text-[#737B86]">
             <div className="flex items-center gap-2">
-              <svg className="w-3.5 h-3.5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
+              <svg className="w-3.5 h-3.5 text-[#16A34A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
               Hoja BASE_DATOS con km, combustible y peajes por vehículo
             </div>
             <div className="flex items-center gap-2">
-              <svg className="w-3.5 h-3.5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
+              <svg className="w-3.5 h-3.5 text-[#16A34A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
               Hoja Reporte_Transparencia con resumen mensual
             </div>
             <div className="flex items-center gap-2">
-              <svg className="w-3.5 h-3.5 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
+              <svg className="w-3.5 h-3.5 text-[#16A34A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="10" /></svg>
               Hoja LISTAS_VALIDACION con años, meses y combustibles
             </div>
           </div>
 
           {/* Selector año */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Año del reporte</label>
+            <label className="block text-xs font-semibold text-[#737B86] uppercase tracking-wide mb-2">Año del reporte</label>
             <select
               value={anio}
               onChange={e => setAnio(Number(e.target.value))}
-              className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500/50"
+              className="w-full bg-white border border-[#E1E4E8] rounded-lg px-3 py-2.5 text-sm text-[#252A31] focus:outline-none focus:border-amber-500"
             >
               {[anioActual - 1, anioActual, anioActual + 1].filter(a => a >= 2024).map(a => (
                 <option key={a} value={a}>{a}</option>
@@ -194,11 +194,11 @@ function ModalExcel({ onClose }) {
           </div>
 
           {err && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-400">{err}</div>
+            <div className="bg-[#FEE2E2] border border-[#FCA5A5] rounded-lg px-3 py-2 text-sm text-[#DC2626]">{err}</div>
           )}
 
           <div className="flex justify-end gap-3 pt-1">
-            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-[#737B86] hover:text-[#252A31] transition-colors">
               Cancelar
             </button>
             <button
@@ -259,14 +259,14 @@ function ModalAsignarConductor({ vehiculo, onClose, onDone }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl w-full max-w-sm shadow-2xl">
+      <div className="bg-white border border-[#E1E4E8] rounded-2xl w-full max-w-sm shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2d3039]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E1E4E8]">
           <div>
-            <div className="text-sm font-semibold text-white">Asignar conductor</div>
-            <div className="text-xs text-zinc-400 font-mono">{vehiculo.patente} · {vehiculo.marca} {vehiculo.modelo}</div>
+            <div className="text-sm font-semibold text-[#252A31]">Asignar conductor</div>
+            <div className="text-xs text-[#737B86] font-mono">{vehiculo.patente} · {vehiculo.marca} {vehiculo.modelo}</div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-[#737B86] hover:text-[#252A31] transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -275,17 +275,17 @@ function ModalAsignarConductor({ vehiculo, onClose, onDone }) {
 
         <div className="px-5 py-5 space-y-4">
           {err && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-400">
+            <div className="bg-[#FEE2E2] border border-[#FCA5A5] rounded-lg px-3 py-2 text-sm text-[#DC2626]">
               {err}
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-2">Conductor asignado</label>
+            <label className="block text-xs font-medium text-[#737B86] mb-2">Conductor asignado</label>
             <select
               value={selected}
               onChange={e => setSelected(e.target.value)}
-              className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500/50"
+              className="w-full bg-white border border-[#E1E4E8] rounded-lg px-3 py-2.5 text-sm text-[#252A31] focus:outline-none focus:border-amber-500"
             >
               <option value="">— Sin conductor —</option>
               {conductores.map(c => (
@@ -295,7 +295,7 @@ function ModalAsignarConductor({ vehiculo, onClose, onDone }) {
           </div>
 
           {selected && vehiculo.conductorId && selected !== vehiculo.conductorId && (
-            <p className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-2">
+            <p className="text-xs text-[#D97706] bg-[#FEF3C7] border border-[#FCD34D] rounded-lg px-3 py-2">
               Se reemplazará el conductor actual.
             </p>
           )}
@@ -303,7 +303,7 @@ function ModalAsignarConductor({ vehiculo, onClose, onDone }) {
           <div className="flex justify-end gap-3 pt-1">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-[#737B86] hover:text-[#252A31] transition-colors"
             >
               Cancelar
             </button>
@@ -322,9 +322,9 @@ function ModalAsignarConductor({ vehiculo, onClose, onDone }) {
 }
 
 const ESTADOS = {
-  OPERATIVO:         { label: 'Operativo',          color: 'text-green-400  bg-green-400/10  border-green-400/30'  },
-  EN_TALLER:         { label: 'En taller',           color: 'text-amber-400  bg-amber-400/10  border-amber-400/30'  },
-  FUERA_DE_SERVICIO: { label: 'Fuera de servicio',   color: 'text-red-400    bg-red-400/10    border-red-400/30'    },
+  OPERATIVO:         { label: 'Operativo',          color: 'text-[#16A34A] bg-[#DCFCE7] border-[#86EFAC]'  },
+  EN_TALLER:         { label: 'En taller',           color: 'text-[#D97706] bg-[#FEF3C7] border-[#FCD34D]'  },
+  FUERA_DE_SERVICIO: { label: 'Fuera de servicio',   color: 'text-[#DC2626] bg-[#FEE2E2] border-[#FCA5A5]'  },
 }
 
 export default function FlotaVehiculos() {
@@ -346,7 +346,7 @@ export default function FlotaVehiculos() {
   }
 
   if (error) return (
-    <div className="p-8 text-red-400 text-sm">Error al cargar vehículos: {error}</div>
+    <div className="p-8 text-red-500 text-sm">Error al cargar vehículos: {error}</div>
   )
 
   return (
@@ -356,10 +356,10 @@ export default function FlotaVehiculos() {
       {dash && (
         <div className="flex gap-3 mb-6 flex-wrap">
           <Chip label="Total"              value={dash.vehiculos.total}           />
-          <Chip label="Operativos"         value={dash.vehiculos.operativos}      color="text-green-400" />
-          <Chip label="En taller"          value={dash.vehiculos.enTaller}        color="text-amber-400" />
-          <Chip label="Fuera de servicio"  value={dash.vehiculos.fueraDeServicio} color="text-red-400"   />
-          <Chip label="Sin conductor"      value={dash.vehiculos.sinConductor}    color="text-zinc-400"  />
+          <Chip label="Operativos"         value={dash.vehiculos.operativos}      color="text-[#16A34A]" />
+          <Chip label="En taller"          value={dash.vehiculos.enTaller}        color="text-[#D97706]" />
+          <Chip label="Fuera de servicio"  value={dash.vehiculos.fueraDeServicio} color="text-[#DC2626]" />
+          <Chip label="Sin conductor"      value={dash.vehiculos.sinConductor}    color="text-[#737B86]"  />
         </div>
       )}
 
@@ -370,12 +370,12 @@ export default function FlotaVehiculos() {
           placeholder="Buscar patente, marca…"
           value={filters.search}
           onChange={e => handleFilter('search', e.target.value)}
-          className="bg-[#222] border border-[#363636] rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-500 outline-none focus:border-amber-500 w-56"
+          className="bg-white border border-[#E1E4E8] rounded-lg px-3 py-2 text-sm text-[#252A31] placeholder-[#A0A6AE] outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 w-56"
         />
         <select
           value={filters.estado}
           onChange={e => handleFilter('estado', e.target.value)}
-          className="bg-[#222] border border-[#363636] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-amber-500"
+          className="bg-white border border-[#E1E4E8] rounded-lg px-3 py-2 text-sm text-[#252A31] outline-none focus:border-amber-500"
         >
           <option value="">Todos los estados</option>
           <option value="OPERATIVO">Operativo</option>
@@ -386,7 +386,7 @@ export default function FlotaVehiculos() {
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => setModalTag(true)}
-            className="inline-flex items-center gap-2 bg-blue-900/60 hover:bg-blue-800/70 text-blue-300 border border-blue-700/40 font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-[#DBEAFE] hover:bg-blue-100 text-[#2563EB] border border-blue-200 font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
               <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
@@ -413,10 +413,10 @@ export default function FlotaVehiculos() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
+      <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#363636] text-xs text-zinc-500 font-semibold uppercase tracking-wide">
+            <tr className="bg-[#F4F5F6] border-b border-[#E5E7EB] text-xs text-[#737B86] font-semibold uppercase tracking-wide">
               <th className="text-left px-5 py-3">Vehículo</th>
               <th className="text-left px-4 py-3">Estado</th>
               <th className="text-left px-4 py-3">Conductor</th>
@@ -427,10 +427,10 @@ export default function FlotaVehiculos() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={6} className="text-center py-12 text-zinc-500">Cargando…</td></tr>
+              <tr><td colSpan={6} className="text-center py-12 text-[#737B86]">Cargando…</td></tr>
             )}
             {!loading && vehiculos.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-12 text-zinc-500">No se encontraron vehículos</td></tr>
+              <tr><td colSpan={6} className="text-center py-12 text-[#737B86]">No se encontraron vehículos</td></tr>
             )}
             {vehiculos.map(v => (
               <VehiculoRow
@@ -452,7 +452,7 @@ export default function FlotaVehiculos() {
       </div>
 
       {data?.total > 0 && (
-        <p className="text-xs text-zinc-500 mt-3">{data.total} vehículos</p>
+        <p className="text-xs text-[#737B86] mt-3">{data.total} vehículos</p>
       )}
 
       {modalVehiculo && (
@@ -516,13 +516,13 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
 
   return (
     <tr
-      className="border-b border-[#363636] last:border-0 hover:bg-[#2b2b2b] transition-colors cursor-pointer"
+      className="border-b border-[#E5E7EB] last:border-0 hover:bg-[#F4F5F6] transition-colors cursor-pointer"
       onClick={onVerFicha}
     >
       <td className="px-5 py-3">
-        <div className="font-semibold text-white">{v.marca} {v.modelo}</div>
-        <div className="text-xs text-zinc-400 mt-0.5 font-mono tracking-wider">{v.patente} · {v.anio}</div>
-        {v.categoria && <div className="text-xs text-zinc-500">{v.categoria}</div>}
+        <div className="font-semibold text-[#252A31]">{v.marca} {v.modelo}</div>
+        <div className="text-xs text-[#737B86] mt-0.5 font-mono tracking-wider">{v.patente} · {v.anio}</div>
+        {v.categoria && <div className="text-xs text-[#A0A6AE]">{v.categoria}</div>}
       </td>
       <td className="px-4 py-3">
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${estado.color}`}>
@@ -531,7 +531,7 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
       </td>
       <td className="px-4 py-3" onClick={e => { e.stopPropagation(); onAsignar() }}>
         <button className={`inline-flex items-center gap-1.5 text-sm transition-colors group
-          ${v.conductor ? 'text-zinc-200 hover:text-amber-400' : 'text-zinc-500 italic hover:text-amber-400'}`}>
+          ${v.conductor ? 'text-[#252A31] hover:text-amber-500' : 'text-[#A0A6AE] italic hover:text-amber-500'}`}>
           {v.conductor ? (
             <>
               <svg className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -550,18 +550,18 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
           )}
         </button>
       </td>
-      <td className="px-4 py-3 text-right font-mono text-zinc-300">
+      <td className="px-4 py-3 text-right font-mono text-[#737B86]">
         {v.odometroActual.toLocaleString('es-CL')} km
       </td>
       {/* Próxima mantención */}
       <td className="px-4 py-3">
         {!v.proxMantencionFecha && !v.proxMantencionKm ? (
-          <span className="text-zinc-600 text-xs">—</span>
+          <span className="text-[#A0A6AE] text-xs">—</span>
         ) : (
           <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-md
-            ${estadoMant === 'VENCIDA' ? 'bg-red-500/10 text-red-400'
-            : estadoMant === 'PROXIMA' ? 'bg-amber-500/10 text-amber-400'
-            : 'bg-green-500/10 text-green-400'}`}
+            ${estadoMant === 'VENCIDA' ? 'bg-[#FEE2E2] text-[#DC2626]'
+            : estadoMant === 'PROXIMA' ? 'bg-[#FEF3C7] text-[#D97706]'
+            : 'bg-[#DCFCE7] text-[#16A34A]'}`}
           >
             {v.proxMantencionFecha
               ? new Date(v.proxMantencionFecha).toLocaleDateString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit' })
@@ -574,7 +574,7 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
         <div className="relative flex justify-end">
           <button
             onClick={() => setMenuOpen(o => !o)}
-            className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700/60 transition-colors"
+            className="p-1.5 rounded-lg text-[#737B86] hover:text-[#252A31] hover:bg-[#ECEEF1] transition-colors"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
@@ -583,7 +583,7 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-8 z-20 w-44 bg-[#22252e] border border-[#2d3039] rounded-xl shadow-2xl py-1 overflow-hidden">
+              <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-[#E1E4E8] rounded-xl shadow-lg py-1 overflow-hidden">
                 <MenuItem label="Ver ficha" onClick={() => { setMenuOpen(false); onVerFicha() }} />
                 <MenuItem label="+ Actividad" onClick={() => { setMenuOpen(false); onNuevaActividad() }} />
                 <MenuItem label="Documentos" onClick={() => { setMenuOpen(false); onDocumentos() }} />
@@ -601,17 +601,17 @@ function MenuItem({ label, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors"
+      className="w-full text-left px-4 py-2 text-sm text-[#252A31] hover:bg-[#F4F5F6] transition-colors"
     >
       {label}
     </button>
   )
 }
 
-function Chip({ label, value, color = 'text-zinc-200' }) {
+function Chip({ label, value, color = 'text-[#252A31]' }) {
   return (
-    <div className="flex items-center gap-2.5 px-4 py-2.5 bg-[#222] border border-[#363636] rounded-xl">
-      <span className="text-xs text-zinc-400">{label}</span>
+    <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-[#E1E4E8] rounded-xl">
+      <span className="text-xs text-[#737B86]">{label}</span>
       <span className={`text-lg font-bold leading-none ${color}`}>{value ?? '—'}</span>
     </div>
   )

@@ -54,14 +54,14 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="bg-[#1e2029] border border-[#2d3039] rounded-2xl w-full max-w-md shadow-2xl">
+      <div className="bg-white border border-[#E1E4E8] rounded-2xl w-full max-w-md shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2d3039]">
-          <h2 className="text-base font-bold text-white">Nuevo vehículo</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E1E4E8]">
+          <h2 className="text-base font-bold text-[#252A31]">Nuevo vehículo</h2>
           <button
             onClick={onClose}
-            className="text-zinc-500 hover:text-white transition-colors text-xl leading-none"
+            className="text-[#737B86] hover:text-[#252A31] transition-colors text-xl leading-none"
           >×</button>
         </div>
 
@@ -162,7 +162,7 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/30 rounded-lg px-3 py-2">
+            <p className="text-[#DC2626] text-sm bg-[#FEE2E2] border border-[#FCA5A5] rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -172,7 +172,7 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-[#737B86] hover:text-[#252A31] transition-colors"
             >
               Cancelar
             </button>
@@ -193,10 +193,10 @@ export default function NuevoVehiculo({ onClose, onSuccess }) {
 function Field({ label, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">{label}</label>
+      <label className="text-xs font-semibold text-[#737B86] uppercase tracking-wide">{label}</label>
       {children}
     </div>
   )
 }
 
-const INPUT = 'bg-[#111317] border border-[#363636] rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-amber-500 w-full transition-colors'
+const INPUT = 'bg-white border border-[#E1E4E8] rounded-lg px-3 py-2 text-sm text-[#252A31] placeholder-[#A0A6AE] outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 w-full transition-colors'

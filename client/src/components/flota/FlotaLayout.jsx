@@ -58,14 +58,14 @@ export default function FlotaLayout({ children }) {
   const navigate = useNavigate()
 
   return (
-    <div className="flex h-screen bg-[#1C1F26] text-white overflow-hidden">
+    <div className="flex h-screen bg-[#F4F5F6] overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 flex flex-col border-r border-[#2d3039]">
+      <aside className="w-56 flex-shrink-0 flex flex-col bg-[#30343B] border-r border-[#272B31]">
         {/* Logo / branding */}
-        <div className="px-5 py-5 border-b border-[#2d3039]">
+        <div className="px-5 py-5 border-b border-[#272B31]">
           <button
             onClick={() => { clearSession(); navigate('/admin/login') }}
-            className="flex items-center gap-2.5 text-zinc-400 hover:text-white transition-colors"
+            className="flex items-center gap-2.5 text-[#8B9299] hover:text-[#D1D5DB] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M19 12H5M12 5l-7 7 7 7" />
@@ -94,22 +94,29 @@ export default function FlotaLayout({ children }) {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 text-sm font-medium transition-all
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-all relative
                  ${isActive
-                   ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                   : 'text-zinc-400 hover:bg-[#2b2d35] hover:text-white border border-transparent'
+                   ? 'bg-[#454A52] text-amber-400'
+                   : 'text-[#D1D5DB] hover:bg-[#3B4048] hover:text-white'
                  }`
               }
             >
-              {item.icon}
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-amber-400 rounded-r-full" />
+                  )}
+                  {item.icon}
+                  {item.label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
         {/* Footer — versión */}
-        <div className="px-5 py-4 border-t border-[#2d3039]">
-          <span className="text-[11px] text-zinc-600">Flota v1.0</span>
+        <div className="px-5 py-4 border-t border-[#272B31]">
+          <span className="text-[11px] text-[#737B86]">Flota v1.0</span>
         </div>
       </aside>
 

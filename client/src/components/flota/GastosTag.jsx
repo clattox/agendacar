@@ -58,31 +58,31 @@ export default function GastosTag({ onClose }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="bg-[#1e1e1e] border border-[#363636] rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[85vh]"
+        className="bg-white border border-[#E1E4E8] rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[85vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-[#363636] flex-shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center">
-            <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-[#E1E4E8] flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center">
+            <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
               <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
               <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
             </svg>
           </div>
           <div className="flex-1">
-            <h2 className="font-bold text-white text-sm">Gastos Tag electrónico</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">Peajes cobrados por telepeaje pendientes de monto</p>
+            <h2 className="font-bold text-[#252A31] text-sm">Gastos Tag electrónico</h2>
+            <p className="text-xs text-[#737B86] mt-0.5">Peajes cobrados por telepeaje pendientes de monto</p>
           </div>
           {pendientes > 0 && (
-            <span className="text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-bold bg-[#FEF3C7] text-[#D97706] border border-[#FCD34D] px-2 py-0.5 rounded-full">
               {pendientes} sin monto
             </span>
           )}
-          <button type="button" onClick={onClose} className="text-zinc-400 hover:text-white p-1 ml-1">
+          <button type="button" onClick={onClose} className="text-[#737B86] hover:text-[#252A31] p-1 ml-1 transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -90,12 +90,12 @@ export default function GastosTag({ onClose }) {
         </div>
 
         {/* Filtro */}
-        <div className="px-6 py-3 border-b border-[#2a2a2a] flex items-center gap-3 flex-shrink-0">
+        <div className="px-6 py-3 border-b border-[#E1E4E8] flex items-center gap-3 flex-shrink-0">
           <button
             type="button"
             onClick={() => setFiltroPend(false)}
             className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all
-              ${!filtroPend ? 'border-zinc-500 bg-zinc-700 text-white' : 'border-[#363636] text-zinc-500 hover:text-zinc-300'}`}
+              ${!filtroPend ? 'border-[#C6CAD0] bg-[#E5E7EB] text-[#252A31]' : 'border-[#E1E4E8] text-[#737B86] hover:border-[#C6CAD0]'}`}
           >
             Todos
           </button>
@@ -103,11 +103,11 @@ export default function GastosTag({ onClose }) {
             type="button"
             onClick={() => setFiltroPend(true)}
             className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all
-              ${filtroPend ? 'border-amber-500/40 bg-amber-500/10 text-amber-400' : 'border-[#363636] text-zinc-500 hover:text-zinc-300'}`}
+              ${filtroPend ? 'border-[#FCD34D] bg-[#FEF3C7] text-[#D97706]' : 'border-[#E1E4E8] text-[#737B86] hover:border-[#C6CAD0]'}`}
           >
             Solo pendientes
           </button>
-          <button type="button" onClick={cargar} className="ml-auto text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1">
+          <button type="button" onClick={cargar} className="ml-auto text-xs text-[#737B86] hover:text-[#252A31] flex items-center gap-1 transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -118,23 +118,23 @@ export default function GastosTag({ onClose }) {
         {/* Lista */}
         <div className="overflow-y-auto flex-1">
           {loading && (
-            <div className="flex items-center justify-center py-16 text-zinc-500 text-sm">
+            <div className="flex items-center justify-center py-16 text-[#737B86] text-sm">
               Cargando…
             </div>
           )}
           {error && (
-            <div className="text-red-400 text-sm text-center py-10">{error}</div>
+            <div className="text-red-500 text-sm text-center py-10">{error}</div>
           )}
           {!loading && !error && peajes.length === 0 && (
             <div className="flex flex-col items-center justify-center py-14 text-center px-6">
-              <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-3">
-                <svg className="w-6 h-6 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+              <div className="w-12 h-12 rounded-full bg-[#F4F5F6] border border-[#E1E4E8] flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-[#A0A6AE]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
                   <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
                 </svg>
               </div>
-              <p className="text-zinc-400 text-sm font-medium">Sin peajes tag</p>
-              <p className="text-zinc-600 text-xs mt-1">
+              <p className="text-[#737B86] text-sm font-medium">Sin peajes tag</p>
+              <p className="text-[#A0A6AE] text-xs mt-1">
                 {filtroPend ? 'Todos los peajes tag tienen monto registrado' : 'No hay peajes con tag registrados aún'}
               </p>
             </div>
@@ -142,25 +142,25 @@ export default function GastosTag({ onClose }) {
           {!loading && !error && peajes.length > 0 && (
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-[#2a2a2a]">
-                  <th className="text-left text-zinc-500 font-semibold px-5 py-2.5">Fecha</th>
-                  <th className="text-left text-zinc-500 font-semibold px-3 py-2.5">Vehículo</th>
-                  <th className="text-left text-zinc-500 font-semibold px-3 py-2.5">Autopista</th>
-                  <th className="text-left text-zinc-500 font-semibold px-3 py-2.5">Sentido</th>
-                  <th className="text-right text-zinc-500 font-semibold px-5 py-2.5">Monto</th>
+                <tr className="border-b border-[#E5E7EB] bg-[#F4F5F6]">
+                  <th className="text-left text-[#737B86] font-semibold px-5 py-2.5">Fecha</th>
+                  <th className="text-left text-[#737B86] font-semibold px-3 py-2.5">Vehículo</th>
+                  <th className="text-left text-[#737B86] font-semibold px-3 py-2.5">Autopista</th>
+                  <th className="text-left text-[#737B86] font-semibold px-3 py-2.5">Sentido</th>
+                  <th className="text-right text-[#737B86] font-semibold px-5 py-2.5">Monto</th>
                 </tr>
               </thead>
               <tbody>
                 {peajes.map(p => (
-                  <tr key={p.id} className="border-b border-[#242424] hover:bg-[#242424] transition-colors">
-                    <td className="px-5 py-3 text-zinc-300 whitespace-nowrap">{FECHA(p.fecha)}</td>
+                  <tr key={p.id} className="border-b border-[#E5E7EB] last:border-0 hover:bg-[#F4F5F6] transition-colors">
+                    <td className="px-5 py-3 text-[#252A31] whitespace-nowrap">{FECHA(p.fecha)}</td>
                     <td className="px-3 py-3">
-                      <div className="text-zinc-200 font-mono font-semibold">{p.vehiculo.patente}</div>
-                      <div className="text-zinc-500">{p.vehiculo.marca} {p.vehiculo.modelo}</div>
+                      <div className="text-[#252A31] font-mono font-semibold">{p.vehiculo.patente}</div>
+                      <div className="text-[#737B86]">{p.vehiculo.marca} {p.vehiculo.modelo}</div>
                     </td>
-                    <td className="px-3 py-3 text-zinc-400">{p.autopista || <span className="text-zinc-700">—</span>}</td>
+                    <td className="px-3 py-3 text-[#737B86]">{p.autopista || <span className="text-[#A0A6AE]">—</span>}</td>
                     <td className="px-3 py-3">
-                      <span className="text-zinc-500">{
+                      <span className="text-[#737B86]">{
                         p.sentido === 'IDA' ? 'Ida' : p.sentido === 'VUELTA' ? 'Vuelta' : 'Ida y vuelta'
                       }</span>
                     </td>
@@ -177,7 +177,7 @@ export default function GastosTag({ onClose }) {
                               className="input text-xs text-right w-28 py-1.5 pr-5"
                               placeholder="16000"
                             />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">$</span>
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[#737B86] text-xs">$</span>
                           </div>
                           <button
                             type="button"
@@ -190,20 +190,20 @@ export default function GastosTag({ onClose }) {
                           <button
                             type="button"
                             onClick={() => { setEditando(null); setSaveError('') }}
-                            className="text-xs text-zinc-500 hover:text-zinc-300 px-1"
+                            className="text-xs text-[#737B86] hover:text-[#252A31] px-1 transition-colors"
                           >✕</button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 justify-end">
                           {p.pendiente ? (
-                            <span className="text-amber-400 font-semibold">Sin monto</span>
+                            <span className="text-[#D97706] font-semibold">Sin monto</span>
                           ) : (
-                            <span className="text-zinc-200 font-semibold">{FMT(p.monto)}</span>
+                            <span className="text-[#252A31] font-semibold">{FMT(p.monto)}</span>
                           )}
                           <button
                             type="button"
                             onClick={() => { setEditando(p.id); setMontoInput(p.monto > 0 ? String(p.monto) : ''); setSaveError('') }}
-                            className="text-zinc-600 hover:text-blue-400 transition-colors p-0.5"
+                            className="text-[#A0A6AE] hover:text-blue-600 transition-colors p-0.5"
                             title={p.pendiente ? 'Ingresar monto' : 'Editar monto'}
                           >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -219,13 +219,13 @@ export default function GastosTag({ onClose }) {
             </table>
           )}
           {saveError && (
-            <div className="px-5 py-2 text-xs text-red-400">{saveError}</div>
+            <div className="px-5 py-2 text-xs text-red-500">{saveError}</div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-[#363636] flex-shrink-0">
-          <p className="text-xs text-zinc-600">
+        <div className="px-6 py-3 border-t border-[#E1E4E8] flex-shrink-0">
+          <p className="text-xs text-[#A0A6AE]">
             Los montos ingresados aquí quedan registrados en el historial del vehículo y se incluyen en el reporte Excel.
           </p>
         </div>

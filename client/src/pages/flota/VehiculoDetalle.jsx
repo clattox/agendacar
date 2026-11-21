@@ -25,9 +25,9 @@ const HORA = iso => {
 }
 
 const ESTADOS = {
-  OPERATIVO:         { label: 'Operativo',          color: 'text-green-400 bg-green-400/10 border-green-400/30' },
-  EN_TALLER:         { label: 'En taller',           color: 'text-amber-400 bg-amber-400/10 border-amber-400/30' },
-  FUERA_DE_SERVICIO: { label: 'Fuera de servicio',   color: 'text-red-400   bg-red-400/10   border-red-400/30'   },
+  OPERATIVO:         { label: 'Operativo',          color: 'text-[#16A34A] bg-[#DCFCE7] border-[#86EFAC]' },
+  EN_TALLER:         { label: 'En taller',           color: 'text-[#D97706] bg-[#FEF3C7] border-[#FCD34D]' },
+  FUERA_DE_SERVICIO: { label: 'Fuera de servicio',   color: 'text-[#DC2626] bg-[#FEE2E2] border-[#FCA5A5]' },
 }
 
 const TIPO_ICON = {
@@ -61,11 +61,11 @@ const TIPO_ICON = {
 }
 
 const TIPO_COLOR = {
-  KILOMETRAJE:   'text-zinc-400  bg-zinc-800',
-  COMBUSTIBLE:   'text-green-400 bg-green-400/10',
-  PEAJE:         'text-blue-400  bg-blue-400/10',
-  MANTENCION:    'text-amber-400 bg-amber-400/10',
-  CAMBIO_ESTADO: 'text-purple-400 bg-purple-400/10',
+  KILOMETRAJE:   'text-[#737B86]  bg-[#F4F5F6]',
+  COMBUSTIBLE:   'text-[#16A34A] bg-[#DCFCE7]',
+  PEAJE:         'text-blue-500  bg-blue-50',
+  MANTENCION:    'text-[#D97706] bg-[#FEF3C7]',
+  CAMBIO_ESTADO: 'text-purple-600 bg-purple-50',
 }
 
 const TIPO_LABEL = {
@@ -162,7 +162,7 @@ export default function VehiculoDetalle() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-zinc-500 text-sm">
+      <div className="flex items-center justify-center h-64 text-[#737B86] text-sm">
         Cargando…
       </div>
     )
@@ -171,7 +171,7 @@ export default function VehiculoDetalle() {
   if (error || !vehiculo) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
-        <p className="text-red-400 text-sm">{error || 'Vehículo no encontrado'}</p>
+        <p className="text-[#DC2626] text-sm">{error || 'Vehículo no encontrado'}</p>
         <button onClick={() => navigate('/flota/vehiculos')} className="btn-ghost text-xs">
           ← Volver a vehículos
         </button>
@@ -195,9 +195,9 @@ export default function VehiculoDetalle() {
   }
 
   const mantBadgeStyle = {
-    OK:      'bg-green-500/10 text-green-400 border-green-500/20',
-    PROXIMA: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    VENCIDA: 'bg-red-500/10 text-red-400 border-red-500/20',
+    OK:      'bg-[#DCFCE7] text-[#16A34A] border-[#86EFAC]',
+    PROXIMA: 'bg-[#FEF3C7] text-[#D97706] border-[#FCD34D]',
+    VENCIDA: 'bg-[#FEE2E2] text-[#DC2626] border-[#FCA5A5]',
   }[estadoMant]
 
   // ── Render ──────────────────────────────────────────────────
@@ -207,7 +207,7 @@ export default function VehiculoDetalle() {
       {/* ── Breadcrumb ── */}
       <button
         onClick={() => navigate('/flota/vehiculos')}
-        className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors w-fit mb-5"
+        className="flex items-center gap-1.5 text-xs text-[#737B86] hover:text-[#252A31] transition-colors w-fit mb-5"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path d="M15 18l-6-6 6-6" />
@@ -216,12 +216,12 @@ export default function VehiculoDetalle() {
       </button>
 
       {/* ── Header del vehículo ── */}
-      <div className="bg-[#222] border border-[#363636] rounded-2xl p-5 mb-4">
+      <div className="bg-white border border-[#E1E4E8] rounded-2xl p-5 mb-4">
         <div className="flex items-start gap-4 flex-wrap">
 
           {/* Icono */}
-          <div className="w-14 h-14 rounded-xl bg-[#2b2b2b] border border-[#404040] flex items-center justify-center flex-shrink-0">
-            <svg className="w-7 h-7 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="w-14 h-14 rounded-xl bg-[#F4F5F6] border border-[#E1E4E8] flex items-center justify-center flex-shrink-0">
+            <svg className="w-7 h-7 text-[#A0A6AE]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path d="M5 17H3a2 2 0 01-2-2V9a2 2 0 012-2h1l3-4h8l3 4h1a2 2 0 012 2v6a2 2 0 01-2 2h-2" />
               <circle cx="7.5" cy="17.5" r="2.5" /><circle cx="16.5" cy="17.5" r="2.5" />
             </svg>
@@ -230,14 +230,14 @@ export default function VehiculoDetalle() {
           {/* Info principal */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl font-bold text-white">
+              <h1 className="text-xl font-bold text-[#252A31]">
                 {vehiculo.marca} {vehiculo.modelo}
               </h1>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${estado.color}`}>
                 {estado.label}
               </span>
               {vehiculo.tieneTag && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-blue-500/40 bg-blue-500/10 text-blue-300">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-blue-200 bg-blue-50 text-blue-600">
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                     <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
                     <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
@@ -247,11 +247,11 @@ export default function VehiculoDetalle() {
               )}
             </div>
             <div className="flex items-center gap-4 mt-1 flex-wrap">
-              <span className="font-mono text-sm text-zinc-300 tracking-widest">{vehiculo.patente}</span>
-              <span className="text-zinc-500 text-sm">{vehiculo.anio}</span>
-              {vehiculo.categoria && <span className="text-zinc-500 text-sm">{vehiculo.categoria}</span>}
-              {vehiculo.color && <span className="text-zinc-500 text-sm">{vehiculo.color}</span>}
-              {vehiculo.numeroInterno && <span className="text-xs bg-zinc-700 text-zinc-300 px-2 py-0.5 rounded font-mono">#{vehiculo.numeroInterno}</span>}
+              <span className="font-mono text-sm text-[#252A31] tracking-widest">{vehiculo.patente}</span>
+              <span className="text-[#737B86] text-sm">{vehiculo.anio}</span>
+              {vehiculo.categoria && <span className="text-[#737B86] text-sm">{vehiculo.categoria}</span>}
+              {vehiculo.color && <span className="text-[#737B86] text-sm">{vehiculo.color}</span>}
+              {vehiculo.numeroInterno && <span className="text-xs bg-[#F4F5F6] text-[#737B86] px-2 py-0.5 rounded font-mono border border-[#E1E4E8]">#{vehiculo.numeroInterno}</span>}
             </div>
           </div>
 
@@ -260,7 +260,7 @@ export default function VehiculoDetalle() {
             {esAdmin && (
               <button
                 onClick={() => setModalEditar(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-[#E1E4E8] bg-white text-[#737B86] hover:text-[#252A31] hover:border-[#C6CAD0] transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
@@ -282,10 +282,10 @@ export default function VehiculoDetalle() {
         </div>
 
         {/* Segunda fila: conductor + odómetro + próxima mantención */}
-        <div className="mt-4 pt-4 border-t border-[#2d2d2d] grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mt-4 pt-4 border-t border-[#E5E7EB] grid grid-cols-2 md:grid-cols-4 gap-4">
           <InfoItem
             label="Conductor"
-            value={vehiculo.conductor?.nombre || <span className="text-zinc-600 italic">Sin asignar</span>}
+            value={vehiculo.conductor?.nombre || <span className="text-[#A0A6AE] italic">Sin asignar</span>}
           />
           <InfoItem label="Odómetro actual" value={KM(vehiculo.odometroActual)} />
           <InfoItem
@@ -315,8 +315,8 @@ export default function VehiculoDetalle() {
                   key={doc.id}
                   className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border
                     ${vencido
-                      ? 'text-red-400 bg-red-400/10 border-red-400/30'
-                      : 'text-amber-400 bg-amber-400/10 border-amber-400/30'}`}
+                      ? 'text-[#DC2626] bg-[#FEE2E2] border-[#FCA5A5]'
+                      : 'text-[#D97706] bg-[#FEF3C7] border-[#FCD34D]'}`}
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -330,15 +330,15 @@ export default function VehiculoDetalle() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex gap-0 border-b border-[#2a2a2a] mb-5 overflow-x-auto">
+      <div className="flex gap-0 border-b border-[#E5E7EB] mb-5 overflow-x-auto">
         {TABS.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors
               ${tab === t.key
-                ? 'border-amber-400 text-amber-400'
-                : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+                ? 'border-amber-500 text-amber-600'
+                : 'border-transparent text-[#737B86] hover:text-[#252A31]'}`}
           >
             {t.label}
           </button>
@@ -391,32 +391,32 @@ export default function VehiculoDetalle() {
           {/* Actividad reciente */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">
                 Actividad reciente
               </span>
               {total > 10 && (
                 <button
                   onClick={() => setTab('actividad')}
-                  className="text-xs text-amber-400 hover:text-amber-300 font-semibold transition-colors"
+                  className="text-xs text-amber-600 hover:text-amber-700 font-semibold transition-colors"
                 >
                   Ver todo ({total}) →
                 </button>
               )}
             </div>
             {loadingActs && actividades.length === 0 && (
-              <div className="flex items-center justify-center py-10 text-zinc-600 text-sm">Cargando…</div>
+              <div className="flex items-center justify-center py-10 text-[#737B86] text-sm">Cargando…</div>
             )}
             {!loadingActs && actividades.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-10 text-center bg-[#222] border border-[#363636] rounded-xl">
-                <p className="text-zinc-500 text-sm">Sin actividades registradas</p>
-                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold">
+              <div className="flex flex-col items-center justify-center py-10 text-center bg-white border border-[#E1E4E8] rounded-xl">
+                <p className="text-[#737B86] text-sm">Sin actividades registradas</p>
+                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-600 hover:text-amber-700 font-semibold">
                   + Registrar primera actividad
                 </button>
               </div>
             )}
             {actividades.length > 0 && (
-              <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
-                <div className="divide-y divide-[#2a2a2a]">
+              <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
+                <div className="divide-y divide-[#E5E7EB]">
                   {actividades.slice(0, 10).map(act => (
                     <ActividadRow
                       key={act.id}
@@ -427,8 +427,8 @@ export default function VehiculoDetalle() {
                   ))}
                 </div>
                 {total > 10 && (
-                  <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
-                    <button onClick={() => setTab('actividad')} className="text-xs text-zinc-400 hover:text-white font-semibold transition-colors">
+                  <div className="px-5 py-3 border-t border-[#E5E7EB] text-center">
+                    <button onClick={() => setTab('actividad')} className="text-xs text-[#737B86] hover:text-[#252A31] font-semibold transition-colors">
                       Ver todo el historial ({total} registros) →
                     </button>
                   </div>
@@ -443,9 +443,9 @@ export default function VehiculoDetalle() {
       {tab === 'actividad' && (
         <div>
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">
               Historial de actividades
-              {total > 0 && <span className="ml-2 text-zinc-600 normal-case font-normal">{total} registros</span>}
+              {total > 0 && <span className="ml-2 text-[#A0A6AE] normal-case font-normal">{total} registros</span>}
             </span>
             <div className="flex gap-1.5 flex-wrap">
               {['', 'KILOMETRAJE', 'COMBUSTIBLE', 'PEAJE', 'MANTENCION', 'CAMBIO_ESTADO'].map(t => (
@@ -454,8 +454,8 @@ export default function VehiculoDetalle() {
                   onClick={() => setFiltroTipo(t)}
                   className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all
                     ${filtroTipo === t
-                      ? 'border-zinc-500 bg-zinc-700 text-white'
-                      : 'border-[#363636] text-zinc-500 hover:text-zinc-300'}`}
+                      ? 'border-[#252A31] bg-[#252A31] text-white'
+                      : 'border-[#E1E4E8] text-[#737B86] hover:text-[#252A31]'}`}
                 >
                   {t ? TIPO_LABEL[t] : 'Todos'}
                 </button>
@@ -463,19 +463,19 @@ export default function VehiculoDetalle() {
             </div>
           </div>
           {loadingActs && actividades.length === 0 && (
-            <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">Cargando…</div>
+            <div className="flex items-center justify-center py-12 text-[#737B86] text-sm">Cargando…</div>
           )}
           {!loadingActs && actividades.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center bg-[#222] border border-[#363636] rounded-xl">
-              <p className="text-zinc-500 text-sm">Sin actividades registradas</p>
-              <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold">
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-white border border-[#E1E4E8] rounded-xl">
+              <p className="text-[#737B86] text-sm">Sin actividades registradas</p>
+              <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-600 hover:text-amber-700 font-semibold">
                 + Registrar primera actividad
               </button>
             </div>
           )}
           {actividades.length > 0 && (
-            <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
-              <div className="divide-y divide-[#2a2a2a]">
+            <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
+              <div className="divide-y divide-[#E5E7EB]">
                 {actividades.map(act => (
                   <ActividadRow
                     key={act.id}
@@ -486,11 +486,11 @@ export default function VehiculoDetalle() {
                 ))}
               </div>
               {actividades.length < total && (
-                <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
+                <div className="px-5 py-3 border-t border-[#E5E7EB] text-center">
                   <button
                     onClick={() => cargarActividades(page + 1, filtroTipo)}
                     disabled={loadingActs}
-                    className="text-xs text-zinc-400 hover:text-white font-semibold disabled:opacity-50 transition-colors"
+                    className="text-xs text-[#737B86] hover:text-[#252A31] font-semibold disabled:opacity-50 transition-colors"
                   >
                     {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
                   </button>
@@ -556,32 +556,32 @@ export default function VehiculoDetalle() {
 
           {/* Historial de mantenciones */}
           <div>
-            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+            <div className="text-xs font-semibold text-[#737B86] uppercase tracking-wider mb-3">
               Historial de mantenciones
-              {total > 0 && <span className="ml-2 text-zinc-600 normal-case font-normal">{total} registros</span>}
+              {total > 0 && <span className="ml-2 text-[#A0A6AE] normal-case font-normal">{total} registros</span>}
             </div>
             {loadingActs && actividades.length === 0 && (
-              <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">Cargando…</div>
+              <div className="flex items-center justify-center py-12 text-[#737B86] text-sm">Cargando…</div>
             )}
             {!loadingActs && actividades.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-10 text-center bg-[#222] border border-[#363636] rounded-xl">
-                <p className="text-zinc-500 text-sm">Sin mantenciones registradas</p>
-                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold">
+              <div className="flex flex-col items-center justify-center py-10 text-center bg-white border border-[#E1E4E8] rounded-xl">
+                <p className="text-[#737B86] text-sm">Sin mantenciones registradas</p>
+                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-600 hover:text-amber-700 font-semibold">
                   + Registrar mantención
                 </button>
               </div>
             )}
             {actividades.length > 0 && (
-              <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
-                <div className="divide-y divide-[#2a2a2a]">
+              <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
+                <div className="divide-y divide-[#E5E7EB]">
                   {actividades.map(act => (
                     <ActividadRow key={act.id} actividad={act} esAdmin={esAdmin} />
                   ))}
                 </div>
                 {actividades.length < total && (
-                  <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
+                  <div className="px-5 py-3 border-t border-[#E5E7EB] text-center">
                     <button onClick={() => cargarActividades(page + 1, 'MANTENCION')} disabled={loadingActs}
-                      className="text-xs text-zinc-400 hover:text-white font-semibold disabled:opacity-50 transition-colors">
+                      className="text-xs text-[#737B86] hover:text-[#252A31] font-semibold disabled:opacity-50 transition-colors">
                       {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
                     </button>
                   </div>
@@ -612,24 +612,24 @@ export default function VehiculoDetalle() {
 
           {/* Historial cargas */}
           <div>
-            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+            <div className="text-xs font-semibold text-[#737B86] uppercase tracking-wider mb-3">
               Historial de cargas
-              {total > 0 && <span className="ml-2 text-zinc-600 normal-case font-normal">{total} registros</span>}
+              {total > 0 && <span className="ml-2 text-[#A0A6AE] normal-case font-normal">{total} registros</span>}
             </div>
             {loadingActs && actividades.length === 0 && (
-              <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">Cargando…</div>
+              <div className="flex items-center justify-center py-12 text-[#737B86] text-sm">Cargando…</div>
             )}
             {!loadingActs && actividades.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-10 text-center bg-[#222] border border-[#363636] rounded-xl">
-                <p className="text-zinc-500 text-sm">Sin cargas de combustible registradas</p>
-                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-400 hover:text-amber-300 font-semibold">
+              <div className="flex flex-col items-center justify-center py-10 text-center bg-white border border-[#E1E4E8] rounded-xl">
+                <p className="text-[#737B86] text-sm">Sin cargas de combustible registradas</p>
+                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-600 hover:text-amber-700 font-semibold">
                   + Registrar carga
                 </button>
               </div>
             )}
             {actividades.length > 0 && (
-              <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
-                <div className="divide-y divide-[#2a2a2a]">
+              <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
+                <div className="divide-y divide-[#E5E7EB]">
                   {actividades.map(act => (
                     <ActividadRow
                       key={act.id}
@@ -640,9 +640,9 @@ export default function VehiculoDetalle() {
                   ))}
                 </div>
                 {actividades.length < total && (
-                  <div className="px-5 py-3 border-t border-[#2a2a2a] text-center">
+                  <div className="px-5 py-3 border-t border-[#E5E7EB] text-center">
                     <button onClick={() => cargarActividades(page + 1, 'COMBUSTIBLE')} disabled={loadingActs}
-                      className="text-xs text-zinc-400 hover:text-white font-semibold disabled:opacity-50 transition-colors">
+                      className="text-xs text-[#737B86] hover:text-[#252A31] font-semibold disabled:opacity-50 transition-colors">
                       {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
                     </button>
                   </div>
@@ -657,12 +657,12 @@ export default function VehiculoDetalle() {
       {tab === 'documentos' && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">
               Documentos del vehículo
             </span>
             <button
               onClick={() => setModalDocs(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path d="M12 5v14M5 12h14" />
@@ -672,18 +672,18 @@ export default function VehiculoDetalle() {
           </div>
 
           {(!vehiculo.documentos || vehiculo.documentos.length === 0) ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center bg-[#222] border border-[#363636] rounded-xl gap-3">
-              <svg className="w-10 h-10 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-white border border-[#E1E4E8] rounded-xl gap-3">
+              <svg className="w-10 h-10 text-[#C6CAD0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <p className="text-zinc-500 text-sm">Sin documentos registrados</p>
-              <button onClick={() => setModalDocs(true)} className="text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors">
+              <p className="text-[#737B86] text-sm">Sin documentos registrados</p>
+              <button onClick={() => setModalDocs(true)} className="text-xs text-blue-600 hover:text-blue-700 font-semibold transition-colors">
                 + Agregar documentos
               </button>
             </div>
           ) : (
-            <div className="bg-[#222] border border-[#363636] rounded-xl overflow-hidden">
-              <div className="divide-y divide-[#2a2a2a]">
+            <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
+              <div className="divide-y divide-[#E5E7EB]">
                 {vehiculo.documentos.map(doc => {
                   const venc       = doc.fechaVencimiento ? new Date(doc.fechaVencimiento) : null
                   const hoy        = new Date()
@@ -692,23 +692,23 @@ export default function VehiculoDetalle() {
                   const porVencer  = diff !== null && !vencido && diff <= 30
                   const estadoDoc  = vencido ? 'VENCIDO' : porVencer ? 'PRÓXIMO' : 'VIGENTE'
                   const docStyles  = {
-                    VENCIDO: 'text-red-400',
-                    PRÓXIMO: 'text-amber-400',
-                    VIGENTE: 'text-green-400',
+                    VENCIDO: 'text-[#DC2626]',
+                    PRÓXIMO: 'text-[#D97706]',
+                    VIGENTE: 'text-[#16A34A]',
                   }[estadoDoc]
 
                   return (
                     <div key={doc.id} className="flex items-center gap-4 px-5 py-3.5">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-400/10 text-blue-400">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-50 text-blue-600">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                           <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-zinc-200">
+                        <div className="text-sm font-semibold text-[#252A31]">
                           {DOC_LABEL[doc.tipo] || doc.tipo?.replace(/_/g, ' ')}
                         </div>
-                        <div className="text-xs text-zinc-500 mt-0.5">
+                        <div className="text-xs text-[#737B86] mt-0.5">
                           {venc ? `Vence: ${FECHA(doc.fechaVencimiento)}` : 'Sin fecha de vencimiento'}
                         </div>
                       </div>
@@ -726,7 +726,7 @@ export default function VehiculoDetalle() {
                             href={`data:application/pdf;base64,${doc.archivoBase64}`}
                             download={doc.archivoNombre || `${doc.tipo}.pdf`}
                             onClick={e => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-200 transition-colors"
+                            className="inline-flex items-center gap-1 text-xs text-[#737B86] hover:text-[#252A31] transition-colors"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a2 2 0 002 2h14a2 2 0 002-2v-3" />
@@ -747,7 +747,7 @@ export default function VehiculoDetalle() {
       {/* ══ Tab: Costos ══ */}
       {tab === 'costos' && (
         <div className="flex flex-col gap-5">
-          <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+          <div className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">
             Resumen de costos — {new Date().toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}
           </div>
 
@@ -762,12 +762,12 @@ export default function VehiculoDetalle() {
               </div>
 
               {/* Desglose visual */}
-              <div className="bg-[#222] border border-[#363636] rounded-xl p-5">
-                <div className="text-xs font-semibold text-zinc-400 mb-4">Distribución de costos</div>
+              <div className="bg-white border border-[#E1E4E8] rounded-xl p-5">
+                <div className="text-xs font-semibold text-[#737B86] mb-4">Distribución de costos</div>
                 {stats.gastoTotal > 0 ? (
                   <div className="space-y-3">
                     {[
-                      { label: 'Combustible',   value: stats.gastoCombustible || 0,  color: 'bg-green-400'  },
+                      { label: 'Combustible',   value: stats.gastoCombustible || 0,  color: 'bg-[#16A34A]'  },
                       { label: 'Mantenciones',  value: stats.gastoMantencion  || 0,  color: 'bg-amber-400'  },
                       { label: 'Peajes',        value: stats.gastoPeajes      || 0,  color: 'bg-blue-400'   },
                     ].map(item => {
@@ -777,41 +777,41 @@ export default function VehiculoDetalle() {
                           <div className="flex items-center justify-between text-xs mb-1.5">
                             <div className="flex items-center gap-2">
                               <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                              <span className="text-zinc-300">{item.label}</span>
+                              <span className="text-[#252A31]">{item.label}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className="text-zinc-500">{pct}%</span>
-                              <span className="text-zinc-200 font-semibold font-mono w-24 text-right">{FMT(item.value)}</span>
+                              <span className="text-[#737B86]">{pct}%</span>
+                              <span className="text-[#252A31] font-semibold font-mono w-24 text-right">{FMT(item.value)}</span>
                             </div>
                           </div>
-                          <div className="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-[#F4F5F6] rounded-full overflow-hidden">
                             <div className={`h-full ${item.color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       )
                     })}
-                    <div className="pt-3 border-t border-[#363636] flex justify-between">
-                      <span className="text-xs text-zinc-500 font-semibold uppercase tracking-wide">Total</span>
-                      <span className="text-sm font-bold text-white font-mono">{FMT(stats.gastoTotal)}</span>
+                    <div className="pt-3 border-t border-[#E1E4E8] flex justify-between">
+                      <span className="text-xs text-[#737B86] font-semibold uppercase tracking-wide">Total</span>
+                      <span className="text-sm font-bold text-[#252A31] font-mono">{FMT(stats.gastoTotal)}</span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-500">Sin costos registrados este mes</p>
+                  <p className="text-sm text-[#737B86]">Sin costos registrados este mes</p>
                 )}
               </div>
 
               {/* Km del mes */}
               {stats.kmRecorridos > 0 && stats.gastoTotal > 0 && (
-                <div className="bg-[#222] border border-[#363636] rounded-xl p-5">
-                  <div className="text-xs font-semibold text-zinc-400 mb-3">Eficiencia del mes</div>
+                <div className="bg-white border border-[#E1E4E8] rounded-xl p-5">
+                  <div className="text-xs font-semibold text-[#737B86] mb-3">Eficiencia del mes</div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-xs text-zinc-600">Km recorridos</div>
-                      <div className="text-lg font-bold text-white mt-0.5">{KM(stats.kmRecorridos)}</div>
+                      <div className="text-xs text-[#A0A6AE]">Km recorridos</div>
+                      <div className="text-lg font-bold text-[#252A31] mt-0.5">{KM(stats.kmRecorridos)}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-zinc-600">Costo por km</div>
-                      <div className="text-lg font-bold text-white mt-0.5">
+                      <div className="text-xs text-[#A0A6AE]">Costo por km</div>
+                      <div className="text-lg font-bold text-[#252A31] mt-0.5">
                         {stats.kmRecorridos > 0
                           ? `$${Math.round(stats.gastoTotal / stats.kmRecorridos).toLocaleString('es-CL')}/km`
                           : '—'}
@@ -822,7 +822,7 @@ export default function VehiculoDetalle() {
               )}
             </>
           ) : (
-            <div className="flex items-center justify-center py-12 text-zinc-600 text-sm">
+            <div className="flex items-center justify-center py-12 text-[#737B86] text-sm">
               Sin datos de costos disponibles
             </div>
           )}
@@ -869,12 +869,12 @@ export default function VehiculoDetalle() {
 function ActividadRow({ actividad: act, onEditComb }) {
   const [expandido, setExpandido] = useState(false)
 
-  const colorCls = TIPO_COLOR[act.tipo] || 'text-zinc-400 bg-zinc-800'
+  const colorCls = TIPO_COLOR[act.tipo] || 'text-[#737B86] bg-[#F4F5F6]'
   const resumen  = buildResumen(act)
 
   return (
     <div
-      className="px-5 py-3.5 hover:bg-[#252525] transition-colors cursor-pointer"
+      className="px-5 py-3.5 hover:bg-[#F4F5F6] transition-colors cursor-pointer"
       onClick={() => setExpandido(e => !e)}
     >
       <div className="flex items-center gap-3">
@@ -886,7 +886,7 @@ function ActividadRow({ actividad: act, onEditComb }) {
         {/* Resumen */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-zinc-200">{resumen.titulo}</span>
+            <span className="text-sm font-semibold text-[#252A31]">{resumen.titulo}</span>
             {resumen.badge && (
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-current opacity-70">
                 {resumen.badge}
@@ -894,23 +894,23 @@ function ActividadRow({ actividad: act, onEditComb }) {
             )}
           </div>
           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-            <span className="text-xs text-zinc-500">{FECHA_CORTA(act.fecha)} · {HORA(act.fecha)}</span>
+            <span className="text-xs text-[#737B86]">{FECHA_CORTA(act.fecha)} · {HORA(act.fecha)}</span>
             {act.registradoPor && (
-              <span className="text-xs text-zinc-600">por {act.registradoPor.nombre}</span>
+              <span className="text-xs text-[#A0A6AE]">por {act.registradoPor.nombre}</span>
             )}
           </div>
         </div>
 
         {/* Monto / valor */}
         {resumen.valor && (
-          <span className="text-sm font-semibold text-zinc-200 flex-shrink-0 font-mono">
+          <span className="text-sm font-semibold text-[#252A31] flex-shrink-0 font-mono">
             {resumen.valor}
           </span>
         )}
 
         {/* Flecha */}
         <svg
-          className={`w-4 h-4 text-zinc-600 flex-shrink-0 transition-transform ${expandido ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-[#A0A6AE] flex-shrink-0 transition-transform ${expandido ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path d="M19 9l-7 7-7-7" />
@@ -923,21 +923,21 @@ function ActividadRow({ actividad: act, onEditComb }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">
             {buildDetalleExpandido(act).map(({ label, value }) => value ? (
               <div key={label}>
-                <div className="text-xs text-zinc-600">{label}</div>
-                <div className="text-xs text-zinc-300 font-medium mt-0.5">{value}</div>
+                <div className="text-xs text-[#A0A6AE]">{label}</div>
+                <div className="text-xs text-[#252A31] font-medium mt-0.5">{value}</div>
               </div>
             ) : null)}
             {act.notas && (
               <div className="col-span-full mt-1">
-                <div className="text-xs text-zinc-600">Notas</div>
-                <div className="text-xs text-zinc-400 mt-0.5 italic">{act.notas}</div>
+                <div className="text-xs text-[#A0A6AE]">Notas</div>
+                <div className="text-xs text-[#737B86] mt-0.5 italic">{act.notas}</div>
               </div>
             )}
           </div>
           {onEditComb && (
             <button
               onClick={e => { e.stopPropagation(); onEditComb() }}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#E1E4E8] bg-white text-[#737B86] hover:text-[#252A31] hover:border-[#C6CAD0] transition-colors"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
@@ -1056,8 +1056,8 @@ function buildDetalleExpandido(act) {
 function InfoItem({ label, value, alert }) {
   return (
     <div>
-      <div className="text-xs text-zinc-600 mb-0.5">{label}</div>
-      <div className={`text-sm font-medium ${alert ? 'text-amber-400' : 'text-zinc-200'}`}>
+      <div className="text-xs text-[#A0A6AE] mb-0.5">{label}</div>
+      <div className={`text-sm font-medium ${alert ? 'text-amber-600' : 'text-[#252A31]'}`}>
         {alert && <span className="mr-1">⚠️</span>}
         {value}
       </div>
@@ -1067,12 +1067,12 @@ function InfoItem({ label, value, alert }) {
 
 function StatCard({ label, value, sub, icon }) {
   return (
-    <div className="bg-[#222] border border-[#363636] rounded-xl px-4 py-3.5 flex items-center gap-3">
+    <div className="bg-white border border-[#E1E4E8] rounded-xl px-4 py-3.5 flex items-center gap-3">
       <span className="text-xl">{icon}</span>
       <div className="min-w-0">
-        <div className="text-xs text-zinc-500">{label}</div>
-        <div className="text-base font-bold text-white leading-tight mt-0.5">{value}</div>
-        {sub && <div className="text-xs text-zinc-500 mt-0.5">{sub}</div>}
+        <div className="text-xs text-[#737B86]">{label}</div>
+        <div className="text-base font-bold text-[#252A31] leading-tight mt-0.5">{value}</div>
+        {sub && <div className="text-xs text-[#737B86] mt-0.5">{sub}</div>}
       </div>
     </div>
   )
@@ -1166,10 +1166,10 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-lg bg-[#1a1a1a] border border-[#363636] rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-[#1a1a1a] border-b border-[#2d2d2d] px-5 py-4 flex items-center justify-between z-10">
-          <h2 className="text-base font-bold text-white">Editar vehículo</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+      <div className="w-full max-w-lg bg-white border border-[#E1E4E8] rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-[#E1E4E8] px-5 py-4 flex items-center justify-between z-10">
+          <h2 className="text-base font-bold text-[#252A31]">Editar vehículo</h2>
+          <button onClick={onClose} className="text-[#737B86] hover:text-[#252A31] transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1231,7 +1231,7 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
               <div className="relative mt-1">
                 <input type="number" className="input pr-8" value={form.proxMantencionKm}
                   onChange={e => set('proxMantencionKm', e.target.value)} placeholder="90000" />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">km</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
               </div>
             </div>
             <div>
@@ -1246,26 +1246,26 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
             onClick={() => set('tieneTag', !form.tieneTag)}
             className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left
               ${form.tieneTag
-                ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
-                : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}
+                ? 'border-blue-200 bg-blue-50 text-blue-600'
+                : 'border-[#E1E4E8] bg-[#F4F5F6] text-[#737B86] hover:border-[#C6CAD0]'}`}
           >
-            <svg className={`w-5 h-5 flex-shrink-0 ${form.tieneTag ? 'text-blue-400' : 'text-zinc-500'}`}
+            <svg className={`w-5 h-5 flex-shrink-0 ${form.tieneTag ? 'text-blue-500' : 'text-[#A0A6AE]'}`}
               viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
               <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
               <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
             </svg>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-semibold">Tag electrónico</div>
-              <div className={`text-xs mt-0.5 ${form.tieneTag ? 'text-blue-400/70' : 'text-zinc-600'}`}>
+              <div className={`text-xs mt-0.5 ${form.tieneTag ? 'text-blue-500' : 'text-[#A0A6AE]'}`}>
                 {form.tieneTag ? 'Vehículo tiene tag activo' : 'Activar si el vehículo tiene tag de peaje'}
               </div>
             </div>
-            <div className={`w-9 h-5 rounded-full flex-shrink-0 relative transition-colors ${form.tieneTag ? 'bg-blue-500' : 'bg-zinc-700'}`}>
+            <div className={`w-9 h-5 rounded-full flex-shrink-0 relative transition-colors ${form.tieneTag ? 'bg-blue-500' : 'bg-[#D1D5DB]'}`}>
               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${form.tieneTag ? 'left-4' : 'left-0.5'}`} />
             </div>
           </button>
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 btn-ghost">Cancelar</button>
@@ -1319,10 +1319,10 @@ function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md bg-[#1a1a1a] border border-[#363636] rounded-2xl shadow-2xl">
-        <div className="border-b border-[#2d2d2d] px-5 py-4 flex items-center justify-between">
-          <h2 className="text-base font-bold text-white">Editar carga de combustible</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+      <div className="w-full max-w-md bg-white border border-[#E1E4E8] rounded-2xl shadow-2xl">
+        <div className="border-b border-[#E1E4E8] px-5 py-4 flex items-center justify-between">
+          <h2 className="text-base font-bold text-[#252A31]">Editar carga de combustible</h2>
+          <button onClick={onClose} className="text-[#737B86] hover:text-[#252A31] transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1337,8 +1337,8 @@ function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
                 <button key={v} type="button" onClick={() => set('tipoCombustible', v)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all
                     ${form.tipoCombustible === v
-                      ? 'border-green-400/40 bg-green-400/10 text-green-400'
-                      : 'border-[#363636] bg-[#2b2b2b] text-zinc-400 hover:border-zinc-500'}`}>
+                      ? 'border-[#86EFAC] bg-[#DCFCE7] text-[#16A34A]'
+                      : 'border-[#E1E4E8] bg-[#F4F5F6] text-[#737B86] hover:border-[#C6CAD0]'}`}>
                   {l}
                 </button>
               ))}
@@ -1347,12 +1347,12 @@ function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
           {/* Litros / Monto */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="field-label">Litros <span className="text-zinc-600 font-normal">(opcional)</span></label>
+              <label className="field-label">Litros <span className="text-[#A0A6AE] font-normal">(opcional)</span></label>
               <div className="relative mt-1">
                 <input type="number" className="input pr-7" placeholder="42"
                   value={form.litros}
                   onChange={e => set('litros', e.target.value)} />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">L</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">L</span>
               </div>
             </div>
             <div>
@@ -1361,7 +1361,7 @@ function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
                 <input type="number" className="input pr-5" placeholder="74000"
                   value={form.monto}
                   onChange={e => set('monto', e.target.value)} />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">$</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">$</span>
               </div>
             </div>
           </div>
@@ -1379,12 +1379,12 @@ function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
                 <input type="number" className="input pr-8" placeholder="87420"
                   value={form.odometroAlCargar}
                   onChange={e => set('odometroAlCargar', e.target.value)} />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500">km</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
               </div>
             </div>
           </div>
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 btn-ghost">Cancelar</button>
