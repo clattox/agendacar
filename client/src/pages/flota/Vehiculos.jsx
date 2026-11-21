@@ -1,5 +1,5 @@
 // pages/flota/Vehiculos.jsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useVehiculos, useDashboard } from '../../hooks/useFlota'
 import NuevaActividad      from '../../components/flota/NuevaActividad'
@@ -519,6 +519,8 @@ export default function FlotaVehiculos() {
 
 function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, onAsignar, onToggleEstado, toggling }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuPos,  setMenuPos]  = useState({ top: 0, right: 0 })
+  const btnRef = useRef(null)
   const estado = ESTADOS[v.estado] ?? ESTADOS.OPERATIVO
 
   // Estado mantención
@@ -598,7 +600,12 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
       <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
         <div className="relative flex justify-end">
           <button
-            onClick={() => setMenuOpen(o => !o)}
+            ref={btnRef}
+            onClick={() => {
+              const rect = btnRef.current.getBoundingClientRect()
+              setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+              setMenuOpen(o => !o)
+            }}
             className="p-1.5 rounded-lg text-[#737B86] hover:text-[#252A31] hover:bg-[#ECEEF1] transition-colors"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -607,8 +614,11 @@ function VehiculoRow({ vehiculo: v, onVerFicha, onNuevaActividad, onDocumentos, 
           </button>
           {menuOpen && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-[#E1E4E8] rounded-xl shadow-lg py-1 overflow-hidden">
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              <div
+                className="fixed z-50 w-44 bg-white border border-[#E1E4E8] rounded-xl shadow-lg py-1 overflow-hidden"
+                style={{ top: menuPos.top, right: menuPos.right }}
+              >
                 <MenuItem label="Ver ficha" onClick={() => { setMenuOpen(false); onVerFicha() }} />
                 <MenuItem label="+ Actividad" onClick={() => { setMenuOpen(false); onNuevaActividad() }} />
                 <MenuItem label="Documentos" onClick={() => { setMenuOpen(false); onDocumentos() }} />
