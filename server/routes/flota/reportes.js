@@ -17,7 +17,7 @@ router.get('/vehiculos-lista', async (req, res) => {
   try {
     const { tenantId } = req.user
     const vehiculos = await prisma.flotaVehiculo.findMany({
-      where:   { tenantId, activo: true },
+      where:   { tenantId, estado: { not: 'FUERA_DE_SERVICIO' } },
       select:  { id: true, patente: true, marca: true, modelo: true },
       orderBy: { patente: 'asc' },
     })
