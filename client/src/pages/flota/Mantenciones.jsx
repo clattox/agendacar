@@ -21,6 +21,16 @@ function tipoLabel(val) {
   return TIPOS_MANTENCION.find(t => t.value === val)?.label ?? val
 }
 
+// ─── Helpers de formato ──────────────────────────────────────────────────────
+const FECHA = (d) => d ? new Date(d).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'
+const KM    = (n) => n != null ? `${Number(n).toLocaleString('es-CL')} km` : '—'
+
+const TIPO_ACT_LABEL = {
+  MANTENCION:    'Mantención',
+  CAMBIO_ACEITE: 'Cambio aceite',
+  CAMBIO_FILTROS: 'Cambio filtros',
+}
+
 // ─── Modal Plantilla ─────────────────────────────────────────────────────────
 function ModalPlantilla({ plantilla, onClose, onSaved }) {
   const esEdicion = !!plantilla?.id
@@ -523,6 +533,161 @@ function TabPlanFlota({ plantillas }) {
   )
 }
 
+// ─── Tab: Mantenciones Realizadas ────────────────────────────────────────────
+function ActividadMantRow({ act }) {
+  return (
+    <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-gray-800 truncate">
+              {act.tipoMantencion ? tipoLabel(act.tipoMantencion) : 'Mantención'}
+            </span>
+            {act.odometro && (
+              <span className="text-xs text-gray-500 whitespace-nowrap">{KM(act.odometro)}</span>
+            )}
+          </div>
+          {act.descripcion && (
+            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{act.descripcion}</p>
+          )}
+          {act.monto > 0 && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              ${Number(act.monto).toLocaleString('es-CL')}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="text-xs text-gray-400 whitespace-nowrap self-start sm:self-auto sm:pt-0.5">
+        {FECHA(act.fecha)}
+      </div>
+    </div>
+  )
+}
+
+function TabMantencionesRealizadas() {
+  const [vehiculos, setVehiculos]   = useState([])
+  const [selVeh,    setSelVeh]      = useState('')
+  const [acts,      setActs]        = useState([])
+  const [total,     setTotal]       = useState(0)
+  const [page,      setPage]        = useState(1)
+  const [loading,   setLoading]     = useState(false)
+  const [loadingV,  setLoadingV]    = useState(true)
+
+  // Cargar lista de vehículos
+  useEffect(() => {
+    setLoadingV(true)
+    api.get('/flota/reportes/vehiculos-lista')
+      .then(r => {
+        const lista = Array.isArray(r.data) ? r.data : []
+        setVehiculos(lista)
+        if (lista.length > 0) setSelVeh(lista[0].id)
+      })
+      .catch(() => {})
+      .finally(() => setLoadingV(false))
+  }, [])
+
+  const cargar = useCallback(async (vehId, p) => {
+    if (!vehId) return
+    setLoading(true)
+    try {
+      const qs = new URLSearchParams({ page: p, limit: 15, tipo: 'MANTENCION' }).toString()
+      const res = await api.get(`/flota/vehiculos/${vehId}/actividades?${qs}`)
+      const datos = res.data.data || []
+      setActs(prev => p === 1 ? datos : [...prev, ...datos])
+      setTotal(res.data.total || 0)
+      setPage(p)
+    } catch {
+      // silencioso
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Cargar al seleccionar vehículo
+  useEffect(() => {
+    if (selVeh) {
+      setActs([])
+      setTotal(0)
+      setPage(1)
+      cargar(selVeh, 1)
+    }
+  }, [selVeh, cargar])
+
+  const vehActual = vehiculos.find(v => v.id === selVeh)
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Selector de vehículo */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Vehículo</label>
+        {loadingV ? (
+          <div className="text-sm text-gray-400">Cargando vehículos…</div>
+        ) : vehiculos.length === 0 ? (
+          <div className="text-sm text-gray-400">Sin vehículos disponibles</div>
+        ) : (
+          <select
+            value={selVeh}
+            onChange={e => setSelVeh(e.target.value)}
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+          >
+            {vehiculos.map(v => (
+              <option key={v.id} value={v.id}>
+                {v.patente} — {v.marca} {v.modelo}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* Historial */}
+      {selVeh && (
+        <div>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            Mantenciones realizadas
+            {total > 0 && (
+              <span className="ml-2 text-gray-400 normal-case font-normal">{total} registros</span>
+            )}
+          </div>
+
+          {loading && acts.length === 0 && (
+            <div className="flex items-center justify-center py-12 text-gray-400 text-sm">Cargando…</div>
+          )}
+
+          {!loading && acts.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10 text-center bg-white border border-gray-200 rounded-xl">
+              <svg className="w-8 h-8 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+              </svg>
+              <p className="text-gray-400 text-sm">Sin mantenciones registradas para este vehículo</p>
+            </div>
+          )}
+
+          {acts.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="divide-y divide-gray-100">
+                {acts.map(act => (
+                  <ActividadMantRow key={act.id} act={act} />
+                ))}
+              </div>
+              {acts.length < total && (
+                <div className="px-5 py-3 border-t border-gray-100 text-center">
+                  <button
+                    onClick={() => cargar(selVeh, page + 1)}
+                    disabled={loading}
+                    className="text-xs text-gray-500 hover:text-gray-800 font-semibold disabled:opacity-50 transition-colors"
+                  >
+                    {loading ? 'Cargando…' : `Cargar más (${total - acts.length} restantes)`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function Mantenciones() {
   const [tab, setTab] = useState('plantillas')
@@ -538,15 +703,16 @@ export default function Mantenciones() {
   const tabs = [
     { id: 'plantillas', label: 'Plantillas' },
     { id: 'plan',       label: 'Plan de flota' },
+    { id: 'realizadas', label: 'Realizadas' },
   ]
 
   return (
     <div className="p-4 md:p-7 max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Mantenciones programadas</h1>
+        <h1 className="text-xl font-bold text-gray-900">Mantenciones</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Configura intervalos y hace seguimiento de las mantenciones de tu flota
+          Programa intervalos, gestiona planes y revisa el historial de mantenciones
         </p>
       </div>
 
@@ -573,6 +739,9 @@ export default function Mantenciones() {
       )}
       {tab === 'plan' && (
         <TabPlanFlota plantillas={plantillas} />
+      )}
+      {tab === 'realizadas' && (
+        <TabMantencionesRealizadas />
       )}
     </div>
   )

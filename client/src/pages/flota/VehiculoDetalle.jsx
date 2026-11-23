@@ -96,12 +96,11 @@ const SENTIDO_LABEL = { IDA: 'Ida', VUELTA: 'Vuelta', IDA_Y_VUELTA: 'Ida y vuelt
 
 // ——— Tabs ————————————————————————————————————————————————————
 const TABS = [
-  { key: 'resumen',      label: 'Resumen'      },
-  { key: 'mantenciones', label: 'Mantenciones' },
-  { key: 'combustible',  label: 'Combustible'  },
-  { key: 'traslados',    label: 'Traslados'    },
-  { key: 'documentos',   label: 'Documentos'   },
-  { key: 'costos',       label: 'Costos'       },
+  { key: 'resumen',     label: 'Resumen'     },
+  { key: 'combustible', label: 'Combustible' },
+  { key: 'traslados',   label: 'Traslados'   },
+  { key: 'documentos',  label: 'Documentos'  },
+  { key: 'costos',      label: 'Costos'      },
 ]
 
 // ——— Componente principal ——————————————————————————————————————
@@ -188,8 +187,7 @@ export default function VehiculoDetalle() {
 
   // Sincronizar filtro al cambiar de tab
   useEffect(() => {
-    if (tab === 'mantenciones') setFiltroTipo('MANTENCION')
-    else if (tab === 'combustible') setFiltroTipo('COMBUSTIBLE')
+    if (tab === 'combustible') setFiltroTipo('COMBUSTIBLE')
     else if (tab === 'traslados') setFiltroTipo('TRASLADO')
     else if (['resumen', 'costos'].includes(tab)) setFiltroTipo('')
   }, [tab])
@@ -454,97 +452,6 @@ export default function VehiculoDetalle() {
                     />
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══ Tab: Mantenciones ══ */}
-      {tab === 'mantenciones' && (
-        <div className="flex flex-col gap-5">
-          {/* Próxima mantención */}
-          <div className={`flex items-start gap-4 p-4 rounded-xl border ${mantBadgeStyle}`}>
-            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-            </svg>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-bold uppercase tracking-wider">Próxima mantención</span>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded border ${mantBadgeStyle}`}>
-                  {estadoMant === 'OK' ? 'Al día' : estadoMant === 'PROXIMA' ? 'Próxima' : 'Vencida'}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs mt-2">
-                {vehiculo.proxMantencionFecha && (
-                  <div>
-                    <span className="text-current opacity-60">Fecha</span>
-                    <div className="font-semibold">{FECHA(vehiculo.proxMantencionFecha)}</div>
-                  </div>
-                )}
-                {vehiculo.proxMantencionKm && (
-                  <div>
-                    <span className="text-current opacity-60">Km programado</span>
-                    <div className="font-semibold">{KM(vehiculo.proxMantencionKm)}</div>
-                  </div>
-                )}
-                {vehiculo.proxMantencionKm && vehiculo.odometroActual != null && (
-                  <div>
-                    <span className="text-current opacity-60">Km restantes</span>
-                    <div className="font-semibold">
-                      {vehiculo.proxMantencionKm - vehiculo.odometroActual > 0
-                        ? `${(vehiculo.proxMantencionKm - vehiculo.odometroActual).toLocaleString('es-CL')} km`
-                        : `Excedido ${(vehiculo.odometroActual - vehiculo.proxMantencionKm).toLocaleString('es-CL')} km`}
-                    </div>
-                  </div>
-                )}
-                {!vehiculo.proxMantencionFecha && !vehiculo.proxMantencionKm && (
-                  <div className="col-span-2 opacity-60">Sin mantención programada</div>
-                )}
-              </div>
-            </div>
-            {esAdmin && (
-              <button
-                onClick={() => setModalEditar(true)}
-                className="text-xs opacity-60 hover:opacity-100 transition-opacity flex-shrink-0"
-              >
-                Editar →
-              </button>
-            )}
-          </div>
-
-          {/* Historial de mantenciones */}
-          <div>
-            <div className="text-xs font-semibold text-[#737B86] uppercase tracking-wider mb-3">
-              Historial de mantenciones
-              {total > 0 && <span className="ml-2 text-[#A0A6AE] normal-case font-normal">{total} registros</span>}
-            </div>
-            {loadingActs && actividades.length === 0 && (
-              <div className="flex items-center justify-center py-12 text-[#737B86] text-sm">Cargando…</div>
-            )}
-            {!loadingActs && actividades.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-10 text-center bg-white border border-[#E1E4E8] rounded-xl">
-                <p className="text-[#737B86] text-sm">Sin mantenciones registradas</p>
-                <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-600 hover:text-amber-700 font-semibold">
-                  + Registrar mantención
-                </button>
-              </div>
-            )}
-            {actividades.length > 0 && (
-              <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
-                <div className="divide-y divide-[#E5E7EB]">
-                  {actividades.map(act => (
-                    <ActividadRow key={act.id} actividad={act} esAdmin={esAdmin} />
-                  ))}
-                </div>
-                {actividades.length < total && (
-                  <div className="px-5 py-3 border-t border-[#E5E7EB] text-center">
-                    <button onClick={() => cargarActividades(page + 1, 'MANTENCION')} disabled={loadingActs}
-                      className="text-xs text-[#737B86] hover:text-[#252A31] font-semibold disabled:opacity-50 transition-colors">
-                      {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>
