@@ -250,4 +250,31 @@ router.post('/', async (req, res) => {
   }
 })
 
+// ——— DELETE /api/flota/actividades/:id ————————————————————————
+router.delete('/:id', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { id } = req.params
+
+    // Verificar que la actividad pertenece al tenant
+    const actividad = await prisma.flotaActividad.findFirst({
+      where: { id, tenantId },
+      select: { id: true, tipo: true }
+    })
+    if (!actividad) return res.status(404).json({ error: 'Actividad no encontrada' })
+
+    // No permitir eliminar CAMBIO_ESTADO (afecta estado del vehículo)
+    if (actividad.tipo === 'CAMBIO_ESTADO') {
+      return res.status(400).json({ error: 'No se puede eliminar un cambio de estado' })
+    }
+
+    await prisma.flotaActividad.delete({ where: { id } })
+
+    res.json({ ok: true })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar actividad' })
+  }
+})
+
 module.exports = router

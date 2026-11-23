@@ -170,6 +170,11 @@ export default function VehiculoDetalle() {
   useEffect(() => { cargarVehiculo() }, [cargarVehiculo])
   useEffect(() => { cargarActividades(1, filtroTipo) }, [cargarActividades, filtroTipo])
 
+  const eliminarActividad = useCallback(async (actId) => {
+    await api.delete(`/flota/actividades/${actId}`)
+    await cargarActividades(1, filtroTipo)
+  }, [cargarActividades, filtroTipo])
+
   // Abrir modal de documentos automáticamente si viene con ?docs=1
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -589,6 +594,7 @@ export default function VehiculoDetalle() {
                       actividad={act}
                       esAdmin={esAdmin}
                       onEditComb={esAdmin ? () => setModalEditComb(act) : null}
+                      onDelete={esAdmin ? () => eliminarActividad(act.id) : null}
                     />
                   ))}
                 </div>
@@ -891,8 +897,9 @@ export default function VehiculoDetalle() {
 }
 
 // ——— Fila de actividad ———————————————————————————————————————
-function ActividadRow({ actividad: act, onEditComb }) {
+function ActividadRow({ actividad: act, onEditComb, onDelete }) {
   const [expandido, setExpandido] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
 
   const colorCls = TIPO_COLOR[act.tipo] || 'text-[#737B86] bg-[#F4F5F6]'
   const resumen  = buildResumen(act)
@@ -961,17 +968,42 @@ function ActividadRow({ actividad: act, onEditComb }) {
               </div>
             )}
           </div>
-          {onEditComb && (
-            <button
-              onClick={e => { e.stopPropagation(); onEditComb() }}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#E1E4E8] bg-white text-[#737B86] hover:text-[#252A31] hover:border-[#C6CAD0] transition-colors"
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              Editar carga
-            </button>
+          {(onEditComb || onDelete) && (
+            <div className="mt-3 flex items-center gap-2">
+              {onEditComb && (
+                <button
+                  onClick={e => { e.stopPropagation(); onEditComb() }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#E1E4E8] bg-white text-[#737B86] hover:text-[#252A31] hover:border-[#C6CAD0] transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Editar carga
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  disabled={eliminando}
+                  onClick={async e => {
+                    e.stopPropagation()
+                    if (!confirm('¿Eliminar este registro?')) return
+                    setEliminando(true)
+                    try {
+                      await onDelete()
+                    } finally {
+                      setEliminando(false)
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-red-100 bg-white text-red-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  {eliminando ? 'Eliminando…' : 'Eliminar'}
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
