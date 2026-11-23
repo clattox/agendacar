@@ -388,6 +388,13 @@ async function main () {
     ADD COLUMN IF NOT EXISTS "segundaCuotaFecha" DATE
   `)
 
+  // ── Migración: saldo cupón electrónico por vehículo ─────────────────────────
+  console.log('[migrate] saldo_cupon_vehiculo...')
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "FlotaVehiculo"
+    ADD COLUMN IF NOT EXISTS "saldoCupon" INTEGER NOT NULL DEFAULT 0
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }
