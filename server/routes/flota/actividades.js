@@ -97,12 +97,17 @@ router.post('/', async (req, res) => {
               ciudadEstacion:   ciudadEstacion || null,
             },
           })
-          // Si viene odómetro al cargar y es mayor al actual, actualizar
+          // Actualizar odómetro si corresponde
+          const updateVeh = {}
           if (odometroAlCargar && odometroAlCargar > vehiculo.odometroActual) {
-            await tx.flotaVehiculo.update({
-              where: { id: vehiculoId },
-              data:  { odometroActual: odometroAlCargar },
-            })
+            updateVeh.odometroActual = odometroAlCargar
+          }
+          // Descontar saldo cupón si tiene saldo
+          if (vehiculo.saldoCupon > 0) {
+            updateVeh.saldoCupon = Math.max(0, vehiculo.saldoCupon - monto)
+          }
+          if (Object.keys(updateVeh).length > 0) {
+            await tx.flotaVehiculo.update({ where: { id: vehiculoId }, data: updateVeh })
           }
           break
         }

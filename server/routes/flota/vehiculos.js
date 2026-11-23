@@ -320,4 +320,34 @@ router.put('/:id/actividades/:actId/combustible', async (req, res) => {
   }
 })
 
+// ——— POST /:id/recargar-cupon ————————————————————————————————
+// Suma monto al saldo de cupón electrónico del vehículo
+router.post('/:id/recargar-cupon', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { id } = req.params
+    const { monto } = req.body
+
+    if (!monto || isNaN(monto) || Number(monto) <= 0) {
+      return res.status(400).json({ error: 'monto debe ser un número positivo' })
+    }
+
+    const vehiculo = await prisma.flotaVehiculo.findFirst({
+      where: { id, tenantId },
+      select: { id: true, saldoCupon: true }
+    })
+    if (!vehiculo) return res.status(404).json({ error: 'Vehículo no encontrado' })
+
+    const updated = await prisma.flotaVehiculo.update({
+      where: { id },
+      data: { saldoCupon: vehiculo.saldoCupon + Number(monto) }
+    })
+
+    res.json({ saldoCupon: updated.saldoCupon })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al recargar cupón' })
+  }
+})
+
 module.exports = router

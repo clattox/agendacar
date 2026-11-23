@@ -363,6 +363,7 @@ model FlotaVehiculo {
   proxMantencionFecha DateTime?
 
   tieneTag            Boolean             @default(false)
+  saldoCupon          Int                 @default(0)
 
   documentos          VehiculoDocumento[]
   actividades         FlotaActividad[]

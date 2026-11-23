@@ -125,6 +125,7 @@ export default function VehiculoDetalle() {
   const [modalDocs,       setModalDocs]       = useState(false)
   const [modalEditar,     setModalEditar]     = useState(false)
   const [modalEditComb,   setModalEditComb]   = useState(null)
+  const [modalRecarga,    setModalRecarga]    = useState(false)
 
   const usuario = getUsuario()
   const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin'
@@ -553,6 +554,44 @@ export default function VehiculoDetalle() {
       {/* ══ Tab: Combustible ══ */}
       {tab === 'combustible' && (
         <div className="flex flex-col gap-5">
+          {/* Saldo cupón electrónico */}
+          {vehiculo.saldoCupon > 0 || esAdmin ? (
+            <div className={`flex items-center justify-between gap-4 rounded-xl border px-5 py-4 ${
+              vehiculo.saldoCupon <= 0
+                ? 'bg-[#F9FAFB] border-[#E1E4E8]'
+                : vehiculo.saldoCupon < 20000
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-green-50 border-green-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🎫</span>
+                <div>
+                  <div className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">Saldo cupón electrónico</div>
+                  <div className={`text-lg font-bold mt-0.5 font-mono ${
+                    vehiculo.saldoCupon <= 0
+                      ? 'text-[#A0A6AE]'
+                      : vehiculo.saldoCupon < 20000
+                        ? 'text-red-600'
+                        : 'text-green-700'
+                  }`}>
+                    {FMT(vehiculo.saldoCupon)}
+                  </div>
+                  {vehiculo.saldoCupon > 0 && vehiculo.saldoCupon < 20000 && (
+                    <div className="text-xs text-red-500 mt-0.5">Saldo bajo</div>
+                  )}
+                </div>
+              </div>
+              {esAdmin && (
+                <button
+                  onClick={() => setModalRecarga(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-green-200 bg-white text-green-700 hover:bg-green-50 transition-colors whitespace-nowrap"
+                >
+                  + Recargar
+                </button>
+              )}
+            </div>
+          ) : null}
+
           {/* Resumen del mes */}
           {stats && (
             <div className="grid grid-cols-3 gap-3">
@@ -890,6 +929,13 @@ export default function VehiculoDetalle() {
           vehiculoId={id}
           onClose={() => setModalEditComb(null)}
           onSuccess={() => { setModalEditComb(null); cargarActividades(1, filtroTipo) }}
+        />
+      )}
+      {modalRecarga && (
+        <RecargaCupon
+          vehiculo={vehiculo}
+          onClose={() => setModalRecarga(false)}
+          onSuccess={v => { setVehiculo(v); setModalRecarga(false) }}
         />
       )}
     </div>
@@ -1506,6 +1552,63 @@ function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
             <button type="submit" disabled={loading}
               className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors disabled:opacity-50">
               {loading ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ——— Modal recarga cupón ——————————————————————————————————————
+function RecargaCupon({ vehiculo, onClose, onSuccess }) {
+  const [monto,   setMonto]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState('')
+
+  const handleSubmit = async e => {
+    e.preventDefault()
+    if (!monto || Number(monto) <= 0) { setError('Ingresa un monto válido'); return }
+    setLoading(true); setError('')
+    try {
+      const res = await api.post(`/flota/vehiculos/${vehiculo.id}/recargar-cupon`, { monto: Number(monto) })
+      onSuccess({ ...vehiculo, saldoCupon: res.data.saldoCupon })
+    } catch {
+      setError('Error al recargar saldo')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-[#252A31] mb-1">Recargar cupón electrónico</h3>
+        <p className="text-xs text-[#737B86] mb-4">
+          Saldo actual: <span className="font-semibold text-[#252A31]">{`$${Number(vehiculo.saldoCupon).toLocaleString('es-CL')}`}</span>
+        </p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="field-label">Monto a recargar</label>
+            <div className="relative mt-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#737B86]">$</span>
+              <input
+                type="number"
+                className="input pl-7"
+                value={monto}
+                onChange={e => setMonto(e.target.value)}
+                placeholder="50000"
+                min={1}
+                autoFocus
+              />
+            </div>
+          </div>
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 btn-ghost">Cancelar</button>
+            <button type="submit" disabled={loading}
+              className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-bold transition-colors disabled:opacity-50">
+              {loading ? 'Recargando…' : 'Recargar saldo'}
             </button>
           </div>
         </form>
