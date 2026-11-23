@@ -387,7 +387,7 @@ function GraficoBarras({ datos, mesSeleccionado }) {
     <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${totalW} ${H + BOTTOM + 4}`}
-        style={{ width: '100%', maxWidth: '100%', height: 'auto', display: 'block' }}
+        style={{ width: '100%', maxWidth: '100%', height: 'auto', maxHeight: 180, display: 'block' }}
         aria-label="Gráfico de gastos históricos"
       >
         {/* Líneas guía */}
