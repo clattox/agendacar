@@ -197,7 +197,7 @@ export default function FlotaDashboard() {
           {/* Gráfico histórico */}
           {historico && historico.length > 0 && (
             <div className="mt-5 pt-4 border-t border-[#E5E7EB]">
-              <p className="text-xs text-[#737B86] font-semibold uppercase tracking-wide mb-3">Últimos 6 meses</p>
+              <p className="text-xs text-[#737B86] font-semibold uppercase tracking-wide mb-3">Histórico de gastos</p>
               <GraficoBarras datos={historico} mesSeleccionado={mesSel} />
             </div>
           )}
@@ -367,11 +367,11 @@ function GraficoBarras({ datos, mesSeleccionado }) {
   if (!datos || datos.length === 0) return null
 
   const maxTotal = Math.max(...datos.map(d => d.total ?? 0), 1)
-  const H = 64    // altura útil en px del área de barras
-  const BAR_W = 22
-  const GAP    = 6
-  const LEFT   = 32  // espacio para etiqueta del eje Y
-  const BOTTOM = 24  // espacio para etiquetas del eje X
+  const H = 90    // altura útil en px del área de barras
+  const BAR_W = 26
+  const GAP    = 8
+  const LEFT   = 34  // espacio para etiqueta del eje Y
+  const BOTTOM = 26  // espacio para etiquetas del eje X
   const totalW = LEFT + datos.length * (BAR_W + GAP) - GAP + 4
 
   // Líneas guía del eje Y (0, 50%, 100%)
@@ -387,7 +387,7 @@ function GraficoBarras({ datos, mesSeleccionado }) {
     <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${totalW} ${H + BOTTOM + 4}`}
-        style={{ width: '100%', maxWidth: '100%', height: 'auto', maxHeight: 120, display: 'block' }}
+        style={{ width: '100%', maxWidth: '100%', height: 'auto', display: 'block' }}
         aria-label="Gráfico de gastos históricos"
       >
         {/* Líneas guía */}
