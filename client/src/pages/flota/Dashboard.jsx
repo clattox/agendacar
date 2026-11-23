@@ -347,11 +347,11 @@ function GraficoBarras({ datos, mesSeleccionado }) {
   if (!datos || datos.length === 0) return null
 
   const maxTotal = Math.max(...datos.map(d => d.total ?? 0), 1)
-  const H = 100   // altura útil en px del área de barras
-  const BAR_W = 28
-  const GAP    = 8
-  const LEFT   = 36  // espacio para etiqueta del eje Y
-  const BOTTOM = 28  // espacio para etiquetas del eje X
+  const H = 64    // altura útil en px del área de barras
+  const BAR_W = 22
+  const GAP    = 6
+  const LEFT   = 32  // espacio para etiqueta del eje Y
+  const BOTTOM = 24  // espacio para etiquetas del eje X
   const totalW = LEFT + datos.length * (BAR_W + GAP) - GAP + 4
 
   // Líneas guía del eje Y (0, 50%, 100%)
