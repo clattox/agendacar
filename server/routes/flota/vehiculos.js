@@ -291,7 +291,7 @@ router.put('/:id/actividades/:actId/combustible', async (req, res) => {
   try {
     const { tenantId } = req.user
     const { actId }    = req.params
-    const { litros, monto, tipoCombustible, estacion, odometroAlCargar } = req.body
+    const { litros, monto, tipoCombustible, estacion, odometroAlCargar, fecha } = req.body
 
     if (!monto || isNaN(Number(monto)) || Number(monto) <= 0) {
       return res.status(400).json({ error: 'monto es obligatorio' })
@@ -302,6 +302,14 @@ router.put('/:id/actividades/:actId/combustible', async (req, res) => {
       where: { id: actId, tenantId, tipo: 'COMBUSTIBLE' },
     })
     if (!actividad) return res.status(404).json({ error: 'Actividad no encontrada' })
+
+    // Actualizar fecha en flotaActividad si se proporcionó
+    if (fecha) {
+      await prisma.flotaActividad.update({
+        where: { id: actId },
+        data: { fecha: new Date(fecha) },
+      })
+    }
 
     const updated = await prisma.combustibleRegistro.update({
       where: { actividadId: actId },

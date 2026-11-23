@@ -1444,12 +1444,19 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
 // ——— Modal: Editar carga de combustible ————————————————————————
 function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
   const c = actividad.combustibleRegistro
+  // Parsear fecha/hora de la actividad para el form
+  const fechaAct = actividad.fecha ? new Date(actividad.fecha) : new Date()
+  const fechaLocal = `${fechaAct.getFullYear()}-${String(fechaAct.getMonth()+1).padStart(2,'0')}-${String(fechaAct.getDate()).padStart(2,'0')}`
+  const horaLocal  = `${String(fechaAct.getHours()).padStart(2,'0')}:${String(fechaAct.getMinutes()).padStart(2,'0')}`
+
   const [form,    setForm]    = useState({
     tipoCombustible: c?.tipoCombustible || '',
     litros:          c?.litros ? String(Number(c.litros)) : '',
     monto:           c?.monto || '',
     estacion:        c?.estacion || '',
     odometroAlCargar: c?.odometroAlCargar || '',
+    fecha:           fechaLocal,
+    hora:            horaLocal,
   })
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
@@ -1463,12 +1470,18 @@ function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
     if (!form.monto || Number(form.monto) <= 0) return setError('El monto es obligatorio')
     setLoading(true)
     try {
+      // Combinar fecha + hora local → ISO string con timezone correcto
+      const [anio, mes, dia] = form.fecha.split('-').map(Number)
+      const [hh, mm] = form.hora.split(':').map(Number)
+      const fechaFinal = new Date(anio, mes - 1, dia, hh, mm, 0).toISOString()
+
       await api.put(`/flota/vehiculos/${vehiculoId}/actividades/${actividad.id}/combustible`, {
         tipoCombustible:  form.tipoCombustible,
         litros:           form.litros ? Number(form.litros) : null,
         monto:            Number(form.monto),
         estacion:         form.estacion || null,
         odometroAlCargar: form.odometroAlCargar ? Number(form.odometroAlCargar) : null,
+        fecha:            fechaFinal,
       })
       onSuccess()
     } catch (err) {
@@ -1542,6 +1555,22 @@ function EditarCombustible({ actividad, vehiculoId, onClose, onSuccess }) {
                   onChange={e => set('odometroAlCargar', e.target.value)} />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
               </div>
+            </div>
+          </div>
+
+          {/* Fecha / Hora */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">Fecha</label>
+              <input type="date" className="input mt-1"
+                value={form.fecha}
+                onChange={e => set('fecha', e.target.value)} />
+            </div>
+            <div>
+              <label className="field-label">Hora</label>
+              <input type="time" className="input mt-1"
+                value={form.hora}
+                onChange={e => set('hora', e.target.value)} />
             </div>
           </div>
 
