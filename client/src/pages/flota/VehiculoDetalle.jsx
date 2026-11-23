@@ -65,6 +65,13 @@ const TIPO_ICON = {
       <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
     </svg>
   ),
+  TRASLADO: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </svg>
+  ),
 }
 
 const TIPO_COLOR = {
@@ -73,6 +80,7 @@ const TIPO_COLOR = {
   PEAJE:         'text-blue-500  bg-blue-50',
   MANTENCION:    'text-[#D97706] bg-[#FEF3C7]',
   CAMBIO_ESTADO: 'text-purple-600 bg-purple-50',
+  TRASLADO:      'text-sky-600    bg-sky-50',
 }
 
 const TIPO_LABEL = {
@@ -81,6 +89,7 @@ const TIPO_LABEL = {
   PEAJE:         'Peaje',
   MANTENCION:    'Mantención',
   CAMBIO_ESTADO: 'Estado',
+  TRASLADO:      'Traslado',
 }
 
 const SENTIDO_LABEL = { IDA: 'Ida', VUELTA: 'Vuelta', IDA_Y_VUELTA: 'Ida y vuelta' }
@@ -468,7 +477,7 @@ export default function VehiculoDetalle() {
               {total > 0 && <span className="ml-2 text-[#A0A6AE] normal-case font-normal">{total} registros</span>}
             </span>
             <div className="flex gap-1.5 flex-wrap">
-              {['', 'KILOMETRAJE', 'COMBUSTIBLE', 'PEAJE', 'MANTENCION', 'CAMBIO_ESTADO'].map(t => (
+              {['', 'KILOMETRAJE', 'COMBUSTIBLE', 'PEAJE', 'MANTENCION', 'TRASLADO', 'CAMBIO_ESTADO'].map(t => (
                 <button
                   key={t}
                   onClick={() => setFiltroTipo(t)}
@@ -1012,6 +1021,14 @@ function buildResumen(act) {
         titulo: `Estado → ${ESTADOS[e?.estadoNuevo]?.label || e?.estadoNuevo}`,
       }
     }
+    case 'TRASLADO': {
+      const t = act.trasladoRegistro
+      const kmRec = t?.kmSalida && t?.kmLlegada ? t.kmLlegada - t.kmSalida : null
+      return {
+        titulo: t?.destino ? `Traslado → ${t.destino}` : 'Traslado',
+        valor:  kmRec ? `${kmRec.toLocaleString('es-CL')} km` : null,
+      }
+    }
     default:
       return { titulo: act.tipo }
   }
@@ -1067,6 +1084,17 @@ function buildDetalleExpandido(act) {
         { label: 'Motivo',          value: e?.motivo },
         { label: 'Taller',          value: e?.tallerNombre },
         { label: 'Retorno estimado',value: e?.fechaRetornoEstimada ? FECHA(e.fechaRetornoEstimada) : null },
+      ]
+    }
+    case 'TRASLADO': {
+      const t = act.trasladoRegistro
+      const kmRec = t?.kmSalida && t?.kmLlegada ? t.kmLlegada - t.kmSalida : null
+      return [
+        { label: 'Destino',         value: t?.destino },
+        { label: 'Motivo / comisión', value: t?.motivo },
+        { label: 'Km salida',       value: t?.kmSalida ? KM(t.kmSalida) : null },
+        { label: 'Km llegada',      value: t?.kmLlegada ? KM(t.kmLlegada) : null },
+        { label: 'Km recorridos',   value: kmRec ? `${kmRec.toLocaleString('es-CL')} km` : null },
       ]
     }
     default:

@@ -194,6 +194,7 @@ router.get('/:id/actividades', async (req, res) => {
           combustibleRegistro: true,
           peajeRegistro:       true,
           mantencionRegistro:  true,
+          trasladoRegistro:    true,
           estadoCambio:        { include: { conductorAsignado: { select: { id: true, nombre: true } } } },
           registradoPor:       { select: { id: true, nombre: true } },
         },
