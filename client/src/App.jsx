@@ -31,8 +31,9 @@ const FlotaDashboard    = lazy(() => import('./pages/flota/Dashboard'))
 const FlotaVehiculos    = lazy(() => import('./pages/flota/Vehiculos'))
 const FlotaConductores  = lazy(() => import('./pages/flota/Conductores'))
 const FlotaDocumentos   = lazy(() => import('./pages/flota/Documentos'))
-const FlotaReportes       = lazy(() => import('./pages/flota/Reportes'))
-const FlotaConfiguracion  = lazy(() => import('./pages/flota/Configuracion'))
+const FlotaReportes        = lazy(() => import('./pages/flota/Reportes'))
+const FlotaMantenciones    = lazy(() => import('./pages/flota/Mantenciones'))
+const FlotaConfiguracion   = lazy(() => import('./pages/flota/Configuracion'))
 const PortalConductor      = lazy(() => import('./pages/flota/PortalConductor'))
 const FlotaVehiculoDetalle = lazy(() => import('./pages/flota/VehiculoDetalle'))
 
@@ -104,6 +105,7 @@ export default function App() {
                   <Route path="vehiculos/:id" element={<FlotaVehiculoDetalle />} />
                   <Route path="conductores"   element={<FlotaConductores />} />
                   <Route path="documentos"    element={<FlotaDocumentos />} />
+                  <Route path="mantenciones"  element={<FlotaMantenciones />} />
                   <Route path="reportes"       element={<FlotaReportes />} />
                   <Route path="configuracion" element={<FlotaConfiguracion />} />
                 </Routes>

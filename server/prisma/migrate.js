@@ -395,6 +395,67 @@ async function main () {
     ADD COLUMN IF NOT EXISTS "saldoCupon" INTEGER NOT NULL DEFAULT 0
   `)
 
+// ── Plantillas y planes de mantención programada ─────────────────────────────
+  console.log('[migrate] plantilla_mantencion...')
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "PlantillaMantencion" (
+      "id"           TEXT NOT NULL,
+      "tenantId"     INTEGER NOT NULL,
+      "nombre"       TEXT NOT NULL,
+      "tipoRef"      TEXT,
+      "intervalKm"   INTEGER,
+      "intervalDias" INTEGER,
+      "activa"       BOOLEAN NOT NULL DEFAULT true,
+      "createdAt"    TIMESTAMPTZ NOT NULL DEFAULT now(),
+      CONSTRAINT "PlantillaMantencion_pkey" PRIMARY KEY ("id")
+    )
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "PlantillaMantencion_tenantId_idx"
+      ON "PlantillaMantencion"("tenantId")
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "PlantillaMantencion_tenantId_activa_idx"
+      ON "PlantillaMantencion"("tenantId", "activa")
+  `)
+
+  console.log('[migrate] plan_mantencion_vehiculo...')
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "PlanMantencionVehiculo" (
+      "id"            TEXT NOT NULL,
+      "tenantId"      INTEGER NOT NULL,
+      "vehiculoId"    TEXT NOT NULL,
+      "plantillaId"   TEXT NOT NULL,
+      "kmBase"        INTEGER,
+      "fechaBase"     TIMESTAMPTZ,
+      "kmProximo"     INTEGER,
+      "fechaProxima"  TIMESTAMPTZ,
+      "activo"        BOOLEAN NOT NULL DEFAULT true,
+      "notas"         TEXT,
+      "createdAt"     TIMESTAMPTZ NOT NULL DEFAULT now(),
+      "updatedAt"     TIMESTAMPTZ NOT NULL DEFAULT now(),
+      CONSTRAINT "PlanMantencionVehiculo_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "PlanMantencionVehiculo_vehiculoId_fkey"
+        FOREIGN KEY ("vehiculoId") REFERENCES "FlotaVehiculo"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "PlanMantencionVehiculo_plantillaId_fkey"
+        FOREIGN KEY ("plantillaId") REFERENCES "PlantillaMantencion"("id")
+        ON DELETE RESTRICT ON UPDATE CASCADE
+    )
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "PlanMantencionVehiculo_tenantId_idx"
+      ON "PlanMantencionVehiculo"("tenantId")
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS "PlanMantencionVehiculo_vehiculoId_idx"
+      ON "PlanMantencionVehiculo"("vehiculoId")
+  `)
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "PlanMantencionVehiculo_vehiculoId_plantillaId_key"
+      ON "PlanMantencionVehiculo"("vehiculoId", "plantillaId")
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }

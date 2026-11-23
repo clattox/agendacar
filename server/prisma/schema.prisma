@@ -368,6 +368,7 @@ model FlotaVehiculo {
   documentos          VehiculoDocumento[]
   actividades         FlotaActividad[]
   estadosCambios      EstadoCambioFlota[]
+  planesMantencion    PlanMantencionVehiculo[]
 
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
@@ -530,5 +531,44 @@ model EstadoCambioFlota {
   conductorAsignadoId  String?
   conductorAsignado    Conductor?     @relation(fields: [conductorAsignadoId], references: [id])
 
+  @@index([vehiculoId])
+}
+
+model PlantillaMantencion {
+  id           String   @id @default(cuid())
+  tenantId     Int
+  nombre       String
+  tipoRef      TipoMantencion?
+  intervalKm   Int?
+  intervalDias Int?
+  activa       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  planes       PlanMantencionVehiculo[]
+
+  @@index([tenantId])
+  @@index([tenantId, activa])
+}
+
+model PlanMantencionVehiculo {
+  id           String   @id @default(cuid())
+  tenantId     Int
+  vehiculoId   String
+  vehiculo     FlotaVehiculo       @relation(fields: [vehiculoId], references: [id], onDelete: Cascade)
+  plantillaId  String
+  plantilla    PlantillaMantencion @relation(fields: [plantillaId], references: [id])
+
+  kmBase       Int?
+  fechaBase    DateTime?
+  kmProximo    Int?
+  fechaProxima DateTime?
+
+  activo       Boolean  @default(true)
+  notas        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([vehiculoId, plantillaId])
+  @@index([tenantId])
   @@index([vehiculoId])
 }

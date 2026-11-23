@@ -161,6 +161,38 @@ router.post('/', async (req, res) => {
             })
           }
 
+          // Auto-actualizar plan programado si existe y coincide con tipoMantencion
+          // Buscar planes activos del vehículo cuya plantilla tenga el mismo tipoRef
+          try {
+            const planesCoinciden = await tx.planMantencionVehiculo.findMany({
+              where: { vehiculoId, tenantId, activo: true },
+              include: { plantilla: true },
+            })
+            const odometroActualVeh = odometro || vehiculo.odometroActual
+            for (const plan of planesCoinciden) {
+              if (plan.plantilla.tipoRef === tipoMantencion) {
+                // Recalcular próximos a partir de la fecha/km real de esta mantención
+                const nuevoKmBase    = odometroActualVeh || plan.kmBase
+                const nuevaFechaBase = fecha ? new Date(fecha) : new Date()
+                await tx.planMantencionVehiculo.update({
+                  where: { id: plan.id },
+                  data: {
+                    kmBase:       nuevoKmBase,
+                    fechaBase:    nuevaFechaBase,
+                    kmProximo:    (nuevoKmBase && plan.plantilla.intervalKm)
+                      ? nuevoKmBase + plan.plantilla.intervalKm : plan.kmProximo,
+                    fechaProxima: plan.plantilla.intervalDias
+                      ? new Date(nuevaFechaBase.getTime() + plan.plantilla.intervalDias * 86400000)
+                      : plan.fechaProxima,
+                    updatedAt: new Date(),
+                  },
+                })
+              }
+            }
+          } catch (_e) {
+            // No bloquear la transacción si falla el update de planes
+          }
+
           // Si es un documento legal (RT, SOAP, etc.), registrar también en VehiculoDocumento
           const TIPOS_DOCUMENTO = ['REVISION_TECNICA', 'PERMISO_CIRCULACION', 'SOAP', 'SEGURO_VOLUNTARIO']
           if (TIPOS_DOCUMENTO.includes(tipoMantencion) && proxFecha) {
