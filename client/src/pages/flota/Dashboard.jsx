@@ -32,16 +32,25 @@ function generarMeses(cantidad = 24) {
   return lista
 }
 
+const MESES_LABEL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                     'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+
 export default function FlotaDashboard() {
-  const ahora     = new Date()
-  const mesActual = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`
-  const [mesSel, setMesSel]       = useState(mesActual)
+  const ahora = new Date()
+  const [mesNum, setMesNum] = useState(ahora.getMonth() + 1)   // 1-12
+  const [anioNum, setAnioNum] = useState(ahora.getFullYear())
+
+  const mesSel = `${anioNum}-${String(mesNum).padStart(2, '0')}`
+
+  // Años disponibles: desde 2024 hasta el año actual
+  const anios = []
+  for (let y = ahora.getFullYear(); y >= 2024; y--) anios.push(y)
+
   const { data, loading, error }  = useDashboard(mesSel)
   const { data: historico }       = useGastosHistorico(6)
   const { data: tenant }          = useTenantInfo()
-  const navigate                  = useNavigate()
-  const usuario                   = getUsuario()
-  const mesesOpciones             = generarMeses(24)
+  const navigate = useNavigate()
+  const usuario  = getUsuario()
 
   if (loading) return <div className="p-8 text-[#737B86] text-sm">Cargando…</div>
   if (error)   return <div className="p-8 text-red-500 text-sm">Error: {error}</div>
@@ -155,15 +164,26 @@ export default function FlotaDashboard() {
         <div className="bg-white border border-[#E1E4E8] rounded-xl p-5">
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
             <h2 className="text-sm font-bold text-[#252A31]">Gastos del mes</h2>
-            <select
-              value={mesSel}
-              onChange={e => setMesSel(e.target.value)}
-              className="text-xs border border-[#E1E4E8] rounded-lg px-2.5 py-1.5 bg-white text-[#252A31] focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer capitalize"
-            >
-              {mesesOpciones.map(m => (
-                <option key={m.val} value={m.val} className="capitalize">{m.label}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={mesNum}
+                onChange={e => setMesNum(Number(e.target.value))}
+                className="text-xs border border-[#E1E4E8] rounded-lg px-2.5 py-1.5 bg-white text-[#252A31] focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+              >
+                {MESES_LABEL.map((label, i) => (
+                  <option key={i + 1} value={i + 1}>{label}</option>
+                ))}
+              </select>
+              <select
+                value={anioNum}
+                onChange={e => setAnioNum(Number(e.target.value))}
+                className="text-xs border border-[#E1E4E8] rounded-lg px-2.5 py-1.5 bg-white text-[#252A31] focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+              >
+                {anios.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="space-y-3">
             <GastoRow label="Combustible"  value={gastosMes.combustible} color="bg-blue-400"  />
