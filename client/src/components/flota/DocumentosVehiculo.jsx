@@ -1,7 +1,7 @@
 // components/flota/DocumentosVehiculo.jsx
 // Modal de documentos legales de un vehículo — subida de PDF + historial
 import { useState, useRef } from 'react'
-import { FileText, Upload, Eye, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
+import { FileText, Upload, Eye, AlertTriangle, CheckCircle, XCircle, Pencil } from 'lucide-react'
 import { useDocumentosVehiculo, useCrearDocumento } from '../../hooks/useFlota'
 import api from '../../lib/api'
 
@@ -80,7 +80,11 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
   const [cuotaGuardando, setCuotaGuardando] = useState(false)
   const [cuotaError, setCuotaError] = useState(null)
 
+  // Estado para indicar qué doc se está editando (resaltar form)
+  const [editingId, setEditingId] = useState(null)
+
   const fileRef = useRef()
+  const formRef = useRef()
 
   const esPermiso = form.tipo === 'PERMISO_CIRCULACION'
 
@@ -172,6 +176,7 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
       })
       setArchivo(null)
       if (fileRef.current) fileRef.current.value = ''
+      setEditingId(null)
       refetch()
     } catch (err) {
       setFormError(err.message)
@@ -198,6 +203,44 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
     } finally {
       setCuotaGuardando(false)
     }
+  }
+
+  function cargarEnForm(doc) {
+    // Calcula anioPermiso desde fechaVencimiento si es PERMISO_CIRCULACION
+    let anioPermiso = new Date().getFullYear()
+    if (doc.tipo === 'PERMISO_CIRCULACION' && doc.fechaVencimiento) {
+      anioPermiso = new Date(doc.fechaVencimiento).getFullYear()
+    }
+    setForm({
+      tipo:            doc.tipo,
+      fechaVencimiento: doc.fechaVencimiento ? doc.fechaVencimiento.slice(0, 10) : '',
+      fechaEmision:    doc.fechaEmision ? doc.fechaEmision.slice(0, 10) : '',
+      numeroDocumento: doc.numeroDocumento ?? '',
+      monto:           doc.monto != null ? String(doc.monto) : '',
+      proveedor:       doc.proveedor ?? '',
+      cuotas:          doc.cuotas ?? 1,
+      anioPermiso,
+    })
+    setArchivo(null)
+    if (fileRef.current) fileRef.current.value = ''
+    setFormError(null)
+    setEditingId(doc.id)
+    // Scroll al formulario
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
+  }
+
+  function limpiarForm() {
+    setForm({
+      tipo: '', fechaVencimiento: '', fechaEmision: '',
+      numeroDocumento: '', monto: '', proveedor: '', cuotas: 1,
+      anioPermiso: new Date().getFullYear(),
+    })
+    setArchivo(null)
+    if (fileRef.current) fileRef.current.value = ''
+    setFormError(null)
+    setEditingId(null)
   }
 
   const activos   = (docs ?? []).filter(d => d.activo)
@@ -260,6 +303,15 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-3">
+                      {/* Botón editar */}
+                      <button
+                        onClick={() => cargarEnForm(doc)}
+                        title="Editar documento"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-[#737B86] bg-white border border-[#E1E4E8] rounded-lg hover:border-amber-400 hover:text-amber-600 transition-colors whitespace-nowrap"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Editar
+                      </button>
                       {/* Botón registrar 2ª cuota */}
                       {doc.tipo === 'PERMISO_CIRCULACION' && doc.cuotas === 2 && !doc.segundaCuotaPagada && (
                         <button
@@ -288,12 +340,25 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
           </section>
 
           {/* ——— Agregar / actualizar documento ——— */}
-          <section>
-            <h3 className="text-xs font-bold text-[#737B86] uppercase tracking-widest mb-3">
-              Agregar / actualizar documento
-            </h3>
+          <section ref={formRef} className={editingId ? 'ring-2 ring-amber-400 rounded-xl p-4 -mx-1' : ''}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold text-[#737B86] uppercase tracking-widest">
+                {editingId ? '✏️ Editando documento' : 'Agregar / actualizar documento'}
+              </h3>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={limpiarForm}
+                  className="text-xs text-[#737B86] hover:text-[#252A31] transition-colors"
+                >
+                  Cancelar edición
+                </button>
+              )}
+            </div>
             <p className="text-xs text-[#A0A6AE] mb-4">
-              Si ya existe un documento del mismo tipo, se reemplazará automáticamente. El anterior queda en el historial.
+              {editingId
+                ? 'Modifica los datos y guarda para actualizar. El documento anterior quedará en el historial.'
+                : 'Si ya existe un documento del mismo tipo, se reemplazará automáticamente. El anterior queda en el historial.'}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -409,7 +474,7 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
                 </button>
                 <button type="submit" disabled={guardando}
                   className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-semibold text-sm px-5 py-2 rounded-lg transition-colors">
-                  {guardando ? 'Guardando…' : 'Guardar documento'}
+                  {guardando ? 'Guardando…' : editingId ? 'Actualizar documento' : 'Guardar documento'}
                 </button>
               </div>
             </form>

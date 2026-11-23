@@ -2,7 +2,7 @@
 // Ficha completa de un vehículo: stats del mes, historial de actividades, documentos.
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import api from '../../lib/api'
 import { getUsuario } from '../../lib/auth'
 import NuevaActividad     from '../../components/flota/NuevaActividad'
@@ -99,6 +99,7 @@ const TABS = [
 export default function VehiculoDetalle() {
   const { id }     = useParams()
   const navigate   = useNavigate()
+  const location   = useLocation()
 
   const [vehiculo,  setVehiculo]  = useState(null)
   const [stats,     setStats]     = useState(null)
@@ -159,6 +160,16 @@ export default function VehiculoDetalle() {
 
   useEffect(() => { cargarVehiculo() }, [cargarVehiculo])
   useEffect(() => { cargarActividades(1, filtroTipo) }, [cargarActividades, filtroTipo])
+
+  // Abrir modal de documentos automáticamente si viene con ?docs=1
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('docs') === '1') {
+      setModalDocs(true)
+      // Limpiar el query param sin recargar
+      navigate(location.pathname, { replace: true })
+    }
+  }, [location.search, location.pathname, navigate])
 
   // Sincronizar filtro al cambiar de tab
   useEffect(() => {
