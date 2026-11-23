@@ -99,6 +99,7 @@ const TABS = [
   { key: 'resumen',      label: 'Resumen'      },
   { key: 'mantenciones', label: 'Mantenciones' },
   { key: 'combustible',  label: 'Combustible'  },
+  { key: 'traslados',    label: 'Traslados'    },
   { key: 'documentos',   label: 'Documentos'   },
   { key: 'costos',       label: 'Costos'       },
 ]
@@ -183,6 +184,7 @@ export default function VehiculoDetalle() {
   useEffect(() => {
     if (tab === 'mantenciones') setFiltroTipo('MANTENCION')
     else if (tab === 'combustible') setFiltroTipo('COMBUSTIBLE')
+    else if (tab === 'traslados') setFiltroTipo('TRASLADO')
     else if (['resumen', 'costos'].includes(tab)) setFiltroTipo('')
   }, [tab])
 
@@ -690,6 +692,78 @@ export default function VehiculoDetalle() {
                   )
                 })}
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══ Tab: Traslados ══ */}
+      {tab === 'traslados' && (
+        <div className="flex flex-col gap-4">
+          <div className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">
+            Historial de traslados
+          </div>
+
+          {actividades.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-[#A0A6AE]">
+              <span className="text-3xl">🚗</span>
+              <span className="text-sm">Sin traslados registrados</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {actividades.map(act => {
+                const t = act.trasladoRegistro
+                if (!t) return null
+                const kmRec = t.kmSalida != null && t.kmLlegada != null
+                  ? t.kmLlegada - t.kmSalida
+                  : null
+                return (
+                  <div key={act.id} className="bg-white rounded-xl border border-[#E1E4E8] p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-[#252A31] truncate">
+                            {t.destino}
+                          </span>
+                          {kmRec != null && (
+                            <span className="text-xs bg-sky-50 text-sky-600 px-2 py-0.5 rounded-full whitespace-nowrap font-medium">
+                              {KM(kmRec)}
+                            </span>
+                          )}
+                        </div>
+                        {t.motivo && (
+                          <span className="text-xs text-[#737B86]">{t.motivo}</span>
+                        )}
+                        <div className="flex items-center gap-3 text-xs text-[#A0A6AE] flex-wrap mt-0.5">
+                          {t.kmSalida != null && (
+                            <span>Salida: {t.kmSalida.toLocaleString('es-CL')} km</span>
+                          )}
+                          {t.kmLlegada != null && (
+                            <span>Llegada: {t.kmLlegada.toLocaleString('es-CL')} km</span>
+                          )}
+                          {act.conductor && (
+                            <span>· {act.conductor.nombre}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-xs text-[#A0A6AE] whitespace-nowrap shrink-0">
+                        {new Date(act.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Cargar más */}
+          {actividades.length < total && (
+            <div className="flex justify-center pt-2">
+              <button onClick={() => cargarActividades(page + 1, 'TRASLADO')}
+                disabled={loadingActs}
+                className="px-4 py-1.5 text-xs rounded-lg border border-[#E1E4E8] bg-white text-[#252A31] hover:bg-[#F5F6F7] disabled:opacity-40">
+                {loadingActs ? 'Cargando…' : 'Cargar más'}
+              </button>
             </div>
           )}
         </div>
