@@ -219,8 +219,14 @@ export default function PortalConductor() {
     }
     setEnviando(true)
     try {
+      // Combinar la fecha elegida con la hora actual local para evitar desfase UTC
+      const ahora = new Date()
+      const [anio, mes, dia] = form.fecha.split('-').map(Number)
+      const fechaConHora = new Date(anio, mes - 1, dia, ahora.getHours(), ahora.getMinutes(), ahora.getSeconds())
+
       await api.post('/flota/portal/actividad', {
         ...form,
+        fecha:          fechaConHora.toISOString(),
         vehiculoId:     vehiculoActivo.id,
         odometroActual: form.odometroActual ? Number(form.odometroActual) : undefined,
         litros:         form.litros         ? Number(form.litros)         : undefined,
