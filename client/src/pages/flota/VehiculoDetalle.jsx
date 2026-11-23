@@ -97,7 +97,6 @@ const SENTIDO_LABEL = { IDA: 'Ida', VUELTA: 'Vuelta', IDA_Y_VUELTA: 'Ida y vuelt
 // ——— Tabs ————————————————————————————————————————————————————
 const TABS = [
   { key: 'resumen',      label: 'Resumen'      },
-  { key: 'actividad',    label: 'Actividad'    },
   { key: 'mantenciones', label: 'Mantenciones' },
   { key: 'combustible',  label: 'Combustible'  },
   { key: 'documentos',   label: 'Documentos'   },
@@ -184,7 +183,7 @@ export default function VehiculoDetalle() {
   useEffect(() => {
     if (tab === 'mantenciones') setFiltroTipo('MANTENCION')
     else if (tab === 'combustible') setFiltroTipo('COMBUSTIBLE')
-    else if (['resumen', 'actividad', 'costos'].includes(tab)) setFiltroTipo('')
+    else if (['resumen', 'costos'].includes(tab)) setFiltroTipo('')
   }, [tab])
 
   if (loading) {
@@ -423,14 +422,6 @@ export default function VehiculoDetalle() {
               <span className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">
                 Actividad reciente
               </span>
-              {total > 10 && (
-                <button
-                  onClick={() => setTab('actividad')}
-                  className="text-xs text-amber-600 hover:text-amber-700 font-semibold transition-colors"
-                >
-                  Ver todo ({total}) →
-                </button>
-              )}
             </div>
             {loadingActs && actividades.length === 0 && (
               <div className="flex items-center justify-center py-10 text-[#737B86] text-sm">Cargando…</div>
@@ -455,78 +446,9 @@ export default function VehiculoDetalle() {
                     />
                   ))}
                 </div>
-                {total > 10 && (
-                  <div className="px-5 py-3 border-t border-[#E5E7EB] text-center">
-                    <button onClick={() => setTab('actividad')} className="text-xs text-[#737B86] hover:text-[#252A31] font-semibold transition-colors">
-                      Ver todo el historial ({total} registros) →
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* ══ Tab: Actividad ══ */}
-      {tab === 'actividad' && (
-        <div>
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <span className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">
-              Historial de actividades
-              {total > 0 && <span className="ml-2 text-[#A0A6AE] normal-case font-normal">{total} registros</span>}
-            </span>
-            <div className="flex gap-1.5 flex-wrap">
-              {['', 'KILOMETRAJE', 'COMBUSTIBLE', 'PEAJE', 'MANTENCION', 'TRASLADO', 'CAMBIO_ESTADO'].map(t => (
-                <button
-                  key={t}
-                  onClick={() => setFiltroTipo(t)}
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all
-                    ${filtroTipo === t
-                      ? 'border-[#252A31] bg-[#252A31] text-white'
-                      : 'border-[#E1E4E8] text-[#737B86] hover:text-[#252A31]'}`}
-                >
-                  {t ? TIPO_LABEL[t] : 'Todos'}
-                </button>
-              ))}
-            </div>
-          </div>
-          {loadingActs && actividades.length === 0 && (
-            <div className="flex items-center justify-center py-12 text-[#737B86] text-sm">Cargando…</div>
-          )}
-          {!loadingActs && actividades.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center bg-white border border-[#E1E4E8] rounded-xl">
-              <p className="text-[#737B86] text-sm">Sin actividades registradas</p>
-              <button onClick={() => setModalActividad(true)} className="mt-3 text-xs text-amber-600 hover:text-amber-700 font-semibold">
-                + Registrar primera actividad
-              </button>
-            </div>
-          )}
-          {actividades.length > 0 && (
-            <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
-              <div className="divide-y divide-[#E5E7EB]">
-                {actividades.map(act => (
-                  <ActividadRow
-                    key={act.id}
-                    actividad={act}
-                    esAdmin={esAdmin}
-                    onEditComb={esAdmin && act.tipo === 'COMBUSTIBLE' ? () => setModalEditComb(act) : null}
-                  />
-                ))}
-              </div>
-              {actividades.length < total && (
-                <div className="px-5 py-3 border-t border-[#E5E7EB] text-center">
-                  <button
-                    onClick={() => cargarActividades(page + 1, filtroTipo)}
-                    disabled={loadingActs}
-                    className="text-xs text-[#737B86] hover:text-[#252A31] font-semibold disabled:opacity-50 transition-colors"
-                  >
-                    {loadingActs ? 'Cargando…' : `Cargar más (${total - actividades.length} restantes)`}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
