@@ -31,8 +31,13 @@ function useQuery(path, deps = []) {
 }
 
 // ——— Dashboard ————————————————————————————————————————————
-export function useDashboard() {
-  return useQuery('/flota/dashboard', [])
+export function useDashboard(mes = '') {
+  const path = mes ? `/flota/dashboard?mes=${mes}` : '/flota/dashboard'
+  return useQuery(path, [mes])
+}
+
+export function useGastosHistorico(meses = 6) {
+  return useQuery(`/flota/dashboard/gastos-historico?meses=${meses}`, [meses])
 }
 
 // ——— Vehículos ————————————————————————————————————————————

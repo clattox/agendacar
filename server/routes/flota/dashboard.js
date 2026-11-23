@@ -4,15 +4,73 @@ const router = require('express').Router()
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+// ——— GET /api/flota/dashboard/gastos-historico ———————————————
+// Devuelve gastos agrupados por mes para el gráfico histórico
+// ?meses=6  (default 6 meses hacia atrás)
+router.get('/gastos-historico', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const meses = Math.min(parseInt(req.query.meses) || 6, 24)
+
+    const ahora = new Date()
+    // Generar rango de meses
+    const resultado = []
+    for (let i = meses - 1; i >= 0; i--) {
+      const fecha = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1)
+      const inicio = new Date(fecha.getFullYear(), fecha.getMonth(), 1)
+      const fin    = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 1)
+
+      const actividades = await prisma.flotaActividad.findMany({
+        where: {
+          tenantId,
+          fecha: { gte: inicio, lt: fin },
+          tipo: { in: ['COMBUSTIBLE', 'PEAJE', 'MANTENCION'] },
+        },
+        include: {
+          combustibleRegistro: true,
+          peajeRegistro:       true,
+          mantencionRegistro:  true,
+        },
+      })
+
+      let combustible = 0, peajes = 0, mantencion = 0
+      for (const a of actividades) {
+        if (a.combustibleRegistro) combustible += a.combustibleRegistro.monto
+        if (a.peajeRegistro)       peajes      += a.peajeRegistro.monto
+        if (a.mantencionRegistro?.costo) mantencion += a.mantencionRegistro.costo
+      }
+
+      resultado.push({
+        mes:        `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`,
+        label:      fecha.toLocaleDateString('es-CL', { month: 'short', year: '2-digit' }),
+        combustible,
+        peajes,
+        mantencion,
+        total:      combustible + peajes + mantencion,
+      })
+    }
+
+    res.json(resultado)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener historial de gastos' })
+  }
+})
+
 // ——— GET /api/flota/dashboard ————————————————————————————————
 router.get('/', async (req, res) => {
   try {
     const { tenantId } = req.user
 
-    // Rango del mes actual
+    // Soporte para ?mes=YYYY-MM (selector de mes en frontend)
     const ahora = new Date()
-    const iniciomes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-    const finmes    = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1)
+    let refMes = ahora
+    if (req.query.mes) {
+      const [y, m] = req.query.mes.split('-').map(Number)
+      if (y && m) refMes = new Date(y, m - 1, 1)
+    }
+    const iniciomes = new Date(refMes.getFullYear(), refMes.getMonth(), 1)
+    const finmes    = new Date(refMes.getFullYear(), refMes.getMonth() + 1, 1)
 
     // Alertas: documentos que vencen en 60 días
     const hasta60 = new Date()
@@ -153,7 +211,7 @@ router.get('/', async (req, res) => {
         combustible:      gastoCombustible,
         peajes:           gastoPeajes,
         mantencion:       gastoMantencion,
-        mes:              `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`,
+        mes:              `${refMes.getFullYear()}-${String(refMes.getMonth() + 1).padStart(2, '0')}`,
       },
       alertas: {
         documentosVencidos: alertasDocumentos.filter(d => d.alerta === 'VENCIDO'),

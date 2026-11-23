@@ -1,6 +1,7 @@
 // pages/flota/Dashboard.jsx
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDashboard, useTenantInfo } from '../../hooks/useFlota'
+import { useDashboard, useTenantInfo, useGastosHistorico } from '../../hooks/useFlota'
 import { getUsuario } from '../../lib/auth'
 
 const fmt   = n => n != null ? `$${Number(n).toLocaleString('es-CL')}` : '—'
@@ -18,11 +19,29 @@ function primerNombre(nombreCompleto) {
   return nombreCompleto.trim().split(/\s+/)[0]
 }
 
+// Genera lista de meses hacia atrás desde hoy
+function generarMeses(cantidad = 24) {
+  const ahora = new Date()
+  const lista = []
+  for (let i = 0; i < cantidad; i++) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1)
+    const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })
+    lista.push({ val, label })
+  }
+  return lista
+}
+
 export default function FlotaDashboard() {
-  const { data, loading, error } = useDashboard()
-  const { data: tenant }         = useTenantInfo()
-  const navigate                 = useNavigate()
-  const usuario                  = getUsuario()
+  const ahora     = new Date()
+  const mesActual = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`
+  const [mesSel, setMesSel]       = useState(mesActual)
+  const { data, loading, error }  = useDashboard(mesSel)
+  const { data: historico }       = useGastosHistorico(6)
+  const { data: tenant }          = useTenantInfo()
+  const navigate                  = useNavigate()
+  const usuario                   = getUsuario()
+  const mesesOpciones             = generarMeses(24)
 
   if (loading) return <div className="p-8 text-[#737B86] text-sm">Cargando…</div>
   if (error)   return <div className="p-8 text-red-500 text-sm">Error: {error}</div>
@@ -134,10 +153,18 @@ export default function FlotaDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
         {/* Gastos del mes */}
         <div className="bg-white border border-[#E1E4E8] rounded-xl p-5">
-          <h2 className="text-sm font-bold text-[#252A31] mb-4">
-            Gastos del mes
-            <span className="ml-2 text-xs font-normal text-[#737B86]">{gastosMes.mes}</span>
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <h2 className="text-sm font-bold text-[#252A31]">Gastos del mes</h2>
+            <select
+              value={mesSel}
+              onChange={e => setMesSel(e.target.value)}
+              className="text-xs border border-[#E1E4E8] rounded-lg px-2.5 py-1.5 bg-white text-[#252A31] focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer capitalize"
+            >
+              {mesesOpciones.map(m => (
+                <option key={m.val} value={m.val} className="capitalize">{m.label}</option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-3">
             <GastoRow label="Combustible"  value={gastosMes.combustible} color="bg-blue-400"  />
             <GastoRow label="Peajes"        value={gastosMes.peajes}       color="bg-[#A0A6AE]" />
@@ -147,6 +174,13 @@ export default function FlotaDashboard() {
               <span className="text-sm font-bold text-[#252A31]">{fmt(gastosMes.total)}</span>
             </div>
           </div>
+          {/* Gráfico histórico */}
+          {historico && historico.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-[#E5E7EB]">
+              <p className="text-xs text-[#737B86] font-semibold uppercase tracking-wide mb-3">Últimos 6 meses</p>
+              <GraficoBarras datos={historico} mesSeleccionado={mesSel} />
+            </div>
+          )}
         </div>
 
         {/* Alertas de documentos */}
@@ -305,6 +339,139 @@ function AlertaDoc({ doc, nivel }) {
       <span className="text-xs flex-1 truncate">
         {doc.vehiculo?.patente} · {doc.tipo?.replace(/_/g, ' ')}
       </span>
+    </div>
+  )
+}
+
+function GraficoBarras({ datos, mesSeleccionado }) {
+  if (!datos || datos.length === 0) return null
+
+  const maxTotal = Math.max(...datos.map(d => d.total ?? 0), 1)
+  const H = 100   // altura útil en px del área de barras
+  const BAR_W = 28
+  const GAP    = 8
+  const LEFT   = 36  // espacio para etiqueta del eje Y
+  const BOTTOM = 28  // espacio para etiquetas del eje X
+  const totalW = LEFT + datos.length * (BAR_W + GAP) - GAP + 4
+
+  // Líneas guía del eje Y (0, 50%, 100%)
+  const guias = [0, 0.5, 1].map(pct => ({
+    pct,
+    y: H - pct * H,
+    label: pct === 0 ? '0' : pct === 1
+      ? `$${Math.round(maxTotal / 1000)}k`
+      : `$${Math.round(maxTotal * 0.5 / 1000)}k`,
+  }))
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <svg
+        viewBox={`0 0 ${totalW} ${H + BOTTOM + 4}`}
+        style={{ width: '100%', minWidth: totalW, height: 'auto', display: 'block' }}
+        aria-label="Gráfico de gastos históricos"
+      >
+        {/* Líneas guía */}
+        {guias.map(g => (
+          <g key={g.pct}>
+            <line
+              x1={LEFT} y1={g.y + 2} x2={totalW} y2={g.y + 2}
+              stroke="#E5E7EB" strokeWidth="1" strokeDasharray={g.pct === 0 ? '0' : '3,3'}
+            />
+            <text
+              x={LEFT - 4} y={g.y + 2}
+              textAnchor="end" dominantBaseline="middle"
+              style={{ fontSize: 8, fill: '#A0A6AE', fontFamily: 'sans-serif' }}
+            >
+              {g.label}
+            </text>
+          </g>
+        ))}
+
+        {/* Barras por mes */}
+        {datos.map((d, i) => {
+          const x     = LEFT + i * (BAR_W + GAP)
+          const total = d.total ?? 0
+
+          // alturas de cada segmento
+          const hComb = total > 0 ? Math.max((d.combustible / maxTotal) * H, 0) : 0
+          const hPeaj = total > 0 ? Math.max((d.peajes      / maxTotal) * H, 0) : 0
+          const hMant = total > 0 ? Math.max((d.mantencion  / maxTotal) * H, 0) : 0
+
+          // posiciones Y (apiladas desde abajo)
+          const yComb = H - hComb
+          const yPeaj = yComb - hPeaj
+          const yMant = yPeaj - hMant
+
+          const esMesAct = d.mes === mesSeleccionado
+          const opacity  = esMesAct ? 1 : 0.65
+
+          return (
+            <g key={d.mes} opacity={opacity}>
+              {/* Mantenciones (arriba) — amber */}
+              {hMant > 0 && (
+                <rect x={x} y={yMant + 2} width={BAR_W} height={hMant}
+                  rx={hComb <= 0 && hPeaj <= 0 ? 3 : 0}
+                  fill="#F59E0B"
+                />
+              )}
+              {/* Peajes (medio) — gris */}
+              {hPeaj > 0 && (
+                <rect x={x} y={yPeaj + 2} width={BAR_W} height={hPeaj}
+                  rx={hComb <= 0 ? 3 : 0}
+                  fill="#A0A6AE"
+                />
+              )}
+              {/* Combustible (base) — azul, con bordes redondeados abajo */}
+              {hComb > 0 && (
+                <rect x={x} y={yComb + 2} width={BAR_W} height={hComb}
+                  rx={3}
+                  fill="#60A5FA"
+                />
+              )}
+              {/* Barra vacía si no hay gastos */}
+              {total === 0 && (
+                <rect x={x} y={H - 3 + 2} width={BAR_W} height={3}
+                  rx={1} fill="#E5E7EB"
+                />
+              )}
+              {/* Indicador del mes seleccionado */}
+              {esMesAct && (
+                <rect x={x + BAR_W / 2 - 2} y={H + 7} width={4} height={4}
+                  rx={2} fill="#F59E0B"
+                />
+              )}
+              {/* Etiqueta del eje X */}
+              <text
+                x={x + BAR_W / 2}
+                y={H + BOTTOM}
+                textAnchor="middle"
+                style={{
+                  fontSize: 8,
+                  fill: esMesAct ? '#252A31' : '#A0A6AE',
+                  fontWeight: esMesAct ? 'bold' : 'normal',
+                  fontFamily: 'sans-serif',
+                }}
+              >
+                {d.label}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+
+      {/* Leyenda */}
+      <div className="flex items-center gap-4 mt-2 justify-center">
+        {[
+          { color: 'bg-blue-400',  label: 'Combustible' },
+          { color: 'bg-[#A0A6AE]', label: 'Peajes' },
+          { color: 'bg-amber-400', label: 'Mantenciones' },
+        ].map(item => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${item.color}`} />
+            <span className="text-[10px] text-[#737B86]">{item.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

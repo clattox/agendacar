@@ -1091,6 +1091,7 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
       ? new Date(vehiculo.proxMantencionFecha).toISOString().slice(0, 10)
       : '',
     tieneTag:           vehiculo.tieneTag || false,
+    odometroActual:     vehiculo.odometroActual != null ? String(vehiculo.odometroActual) : '',
   })
   const [conductores, setConductores] = useState([])
   const [loading,     setLoading]     = useState(false)
@@ -1130,6 +1131,7 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
         proxMantencionKm: form.proxMantencionKm ? Number(form.proxMantencionKm) : null,
         proxMantencionFecha: form.proxMantencionFecha || null,
         tieneTag:         form.tieneTag,
+        odometroActual:   form.odometroActual !== '' ? Number(form.odometroActual) : null,
       }
       const res = await api.put(`/flota/vehiculos/${vehiculo.id}`, payload)
       onSuccess(res.data)
@@ -1185,10 +1187,27 @@ function EditarVehiculo({ vehiculo, onClose, onSuccess }) {
               <input className="input mt-1" value={form.categoria} onChange={e => set('categoria', e.target.value)} placeholder="Camioneta, Furgón…" />
             </div>
           </div>
-          {/* N° interno */}
-          <div>
-            <label className="field-label">N° interno</label>
-            <input className="input mt-1" value={form.numeroInterno} onChange={e => set('numeroInterno', e.target.value)} placeholder="01" />
+          {/* N° interno / Odómetro */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="field-label">N° interno</label>
+              <input className="input mt-1" value={form.numeroInterno} onChange={e => set('numeroInterno', e.target.value)} placeholder="01" />
+            </div>
+            <div>
+              <label className="field-label">Odómetro actual</label>
+              <div className="relative mt-1">
+                <input
+                  type="number"
+                  className="input pr-8"
+                  value={form.odometroActual}
+                  onChange={e => set('odometroActual', e.target.value)}
+                  placeholder="85000"
+                  min={0}
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#737B86]">km</span>
+              </div>
+              <p className="text-[10px] text-[#A0A6AE] mt-1">Solo para corrección manual</p>
+            </div>
           </div>
           {/* Región / Unidad operativa */}
           <div className="grid grid-cols-2 gap-3">
