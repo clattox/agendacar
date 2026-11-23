@@ -3,9 +3,8 @@ import api from '../../lib/api'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const TIPOS_MANTENCION = [
-  { value: 'ACEITE',              label: 'Cambio de aceite' },
-  { value: 'FILTRO_AIRE',         label: 'Filtro de aire' },
-  { value: 'FILTRO_COMBUSTIBLE',  label: 'Filtro de combustible' },
+  { value: 'CAMBIO_ACEITE',       label: 'Cambio de aceite' },
+  { value: 'CAMBIO_FILTROS',      label: 'Cambio de filtros' },
   { value: 'FRENOS',              label: 'Frenos' },
   { value: 'CORREA_DISTRIBUCION', label: 'Correa de distribución' },
   { value: 'NEUMATICOS',          label: 'Neumáticos' },
@@ -14,7 +13,8 @@ const TIPOS_MANTENCION = [
   { value: 'PERMISO_CIRCULACION', label: 'Permiso de circulación' },
   { value: 'SOAP',                label: 'SOAP' },
   { value: 'SEGURO_VOLUNTARIO',   label: 'Seguro voluntario' },
-  { value: 'GENERAL',             label: 'Mantención general' },
+  { value: 'MANTENCION_GENERAL',  label: 'Mantención general' },
+  { value: 'OTRO',                label: 'Otro' },
 ]
 
 function tipoLabel(val) {
@@ -393,9 +393,10 @@ function TabPlanFlota({ plantillas }) {
 
   // Cargar lista de vehículos al montar
   useEffect(() => {
-    api.get('/flota/vehiculos').then(r => {
-      setVehiculos(r.data || [])
-      if (r.data?.length) setSelVeh(r.data[0].id)
+    api.get('/flota/reportes/vehiculos-lista').then(r => {
+      const lista = r.data || []
+      setVehiculos(lista)
+      if (lista.length) setSelVeh(lista[0].id)
     }).catch(() => {})
   }, [])
 
@@ -451,11 +452,6 @@ function TabPlanFlota({ plantillas }) {
               </option>
             ))}
           </select>
-          {vehActual?.odometroActual > 0 && (
-            <span className="ml-3 text-sm text-gray-500">
-              Odómetro actual: <strong>{vehActual.odometroActual.toLocaleString('es-CL')} km</strong>
-            </span>
-          )}
         </div>
       )}
 
