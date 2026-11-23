@@ -894,7 +894,7 @@ function ActividadRow({ actividad: act, onEditComb }) {
 
   return (
     <div
-      className="px-5 py-3.5 hover:bg-[#F4F5F6] transition-colors cursor-pointer"
+      className="px-5 py-3.5 hover:bg-[#F4F5F6] transition-colors cursor-pointer group"
       onClick={() => setExpandido(e => !e)}
     >
       <div className="flex items-center gap-3">
@@ -929,12 +929,14 @@ function ActividadRow({ actividad: act, onEditComb }) {
         )}
 
         {/* Flecha */}
-        <svg
-          className={`w-4 h-4 text-[#A0A6AE] flex-shrink-0 transition-transform ${expandido ? 'rotate-180' : ''}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-        >
-          <path d="M19 9l-7 7-7-7" />
-        </svg>
+        <div className={`flex items-center gap-1 flex-shrink-0 transition-colors ${expandido ? 'text-amber-500' : 'text-[#C6CAD0] group-hover:text-[#8B9299]'}`}>
+          <svg
+            className={`w-4 h-4 transition-transform ${expandido ? 'rotate-180' : ''}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+          >
+            <path d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
       </div>
 
       {/* Detalle expandido */}
