@@ -4,7 +4,7 @@ const express = require('express')
 const router  = express.Router()
 const { PrismaClient } = require('@prisma/client')
 const prisma  = new PrismaClient()
-const { v4: uuidv4 } = require('uuid')
+const { randomUUID } = require('crypto')
 
 // Helper: calcular kmProximo y fechaProxima a partir de base + intervalo
 function calcularProximos(plantilla, kmBase, fechaBase) {
@@ -65,7 +65,7 @@ router.post('/plantillas', async (req, res) => {
 
     const plantilla = await prisma.plantillaMantencion.create({
       data: {
-        id:          uuidv4(),
+        id:          randomUUID(),
         tenantId,
         nombre,
         tipoRef:      tipoRef    || null,
@@ -188,7 +188,7 @@ router.post('/planes', async (req, res) => {
 
     const plan = await prisma.planMantencionVehiculo.create({
       data: {
-        id:          uuidv4(),
+        id:          randomUUID(),
         tenantId,
         vehiculoId,
         plantillaId,
