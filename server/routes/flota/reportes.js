@@ -18,7 +18,7 @@ router.get('/vehiculos-lista', async (req, res) => {
     const { tenantId } = req.user
     const vehiculos = await prisma.flotaVehiculo.findMany({
       where:   { tenantId, estado: { not: 'FUERA_DE_SERVICIO' } },
-      select:  { id: true, patente: true, marca: true, modelo: true },
+      select:  { id: true, patente: true, marca: true, modelo: true, saldoCupon: true },
       orderBy: { patente: 'asc' },
     })
     res.json(vehiculos)
@@ -37,10 +37,15 @@ router.get('/mensual', async (req, res) => {
     const anio       = req.query.anio       ? Number(req.query.anio) : new Date().getFullYear()
     const vehiculoId = req.query.vehiculoId || null
 
-    // Si se pasa vehiculoId, verificar que pertenece al tenant
+    // Si se pasa vehiculoId, verificar que pertenece al tenant y obtener saldo cupón
+    let saldoCupon = null
     if (vehiculoId) {
-      const veh = await prisma.flotaVehiculo.findFirst({ where: { id: vehiculoId, tenantId } })
+      const veh = await prisma.flotaVehiculo.findFirst({
+        where: { id: vehiculoId, tenantId },
+        select: { id: true, saldoCupon: true },
+      })
       if (!veh) return res.status(404).json({ error: 'Vehículo no encontrado' })
+      saldoCupon = veh.saldoCupon ?? null
     }
 
     const desde = new Date(`${anio}-01-01T00:00:00.000Z`)
@@ -74,6 +79,7 @@ router.get('/mensual', async (req, res) => {
       montoCombustible: 0,
       montoPeajes:   0,
       nActividades:  0,
+      cargas:        [],   // detalle de cada carga de combustible
     }))
 
     for (const act of actividades) {
@@ -88,8 +94,17 @@ router.get('/mensual', async (req, res) => {
       if (act.trasladoRegistro?.kmLlegada)        m.kmOdometros.push(act.trasladoRegistro.kmLlegada)
 
       if (act.combustibleRegistro) {
-        m.litros           += act.combustibleRegistro.litros || 0
-        m.montoCombustible += act.combustibleRegistro.monto  || 0
+        const cr = act.combustibleRegistro
+        m.litros           += cr.litros || 0
+        m.montoCombustible += cr.monto  || 0
+        m.cargas.push({
+          fecha:  act.fecha,
+          litros: cr.litros,
+          monto:  cr.monto,
+          tipo:   cr.tipoCombustible,
+          odometro: cr.odometroAlCargar,
+          estacion: cr.estacion || null,
+        })
       }
       if (act.peajeRegistro) m.montoPeajes += act.peajeRegistro.monto || 0
     }
@@ -104,8 +119,12 @@ router.get('/mensual', async (req, res) => {
       return { ...rest, kmRecorridos }
     })
 
-    // Totales anuales
-    const totales = mesesConKm.reduce((acc, m) => ({
+    // Solo meses hasta el actual si es el año en curso
+    const mesActual = new Date().getFullYear() === anio ? new Date().getMonth() : 11 // 0-indexed
+    const mesesFiltrados = mesesConKm.filter((_, i) => i <= mesActual)
+
+    // Totales: solo sobre los meses visibles (no sobre los 12)
+    const totales = mesesFiltrados.reduce((acc, m) => ({
       kmRecorridos:     acc.kmRecorridos     + m.kmRecorridos,
       litros:           acc.litros           + m.litros,
       montoCombustible: acc.montoCombustible + m.montoCombustible,
@@ -113,11 +132,7 @@ router.get('/mensual', async (req, res) => {
       nActividades:     acc.nActividades     + m.nActividades,
     }), { kmRecorridos: 0, litros: 0, montoCombustible: 0, montoPeajes: 0, nActividades: 0 })
 
-    // Solo meses hasta el actual si es el año en curso
-    const mesActual = new Date().getFullYear() === anio ? new Date().getMonth() : 11 // 0-indexed
-    const mesesFiltrados = mesesConKm.filter((_, i) => i <= mesActual)
-
-    res.json({ anio, meses: mesesFiltrados, totales })
+    res.json({ anio, meses: mesesFiltrados, totales, saldoCupon })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al generar reporte mensual' })

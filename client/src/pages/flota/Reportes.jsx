@@ -15,12 +15,23 @@ const MESES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 
-function StatChip({ label, value, sub }) {
+const CHIP_COLORS = {
+  km:          'bg-sky-50    border-sky-200    text-sky-700',
+  combustible: 'bg-orange-50 border-orange-200 text-orange-700',
+  rendimiento: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+  peajes:      'bg-purple-50  border-purple-200  text-purple-700',
+  total:       'bg-amber-50   border-amber-200   text-amber-700',
+  actividades: 'bg-gray-50    border-gray-200    text-gray-700',
+  cupon:       'bg-teal-50    border-teal-200    text-teal-700',
+}
+
+function StatChip({ label, value, sub, color = 'actividades' }) {
+  const cls = CHIP_COLORS[color] || CHIP_COLORS.actividades
   return (
-    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex flex-col gap-0.5">
-      <span className="text-xs text-gray-500 font-medium">{label}</span>
-      <span className="text-xl font-bold text-gray-900 leading-tight">{value}</span>
-      {sub && <span className="text-[11px] text-gray-400">{sub}</span>}
+    <div className={`rounded-xl border px-4 py-3 flex flex-col gap-0.5 ${cls}`}>
+      <span className="text-xs font-semibold opacity-70 uppercase tracking-wide">{label}</span>
+      <span className="text-xl font-bold leading-tight">{value}</span>
+      {sub && <span className="text-[11px] opacity-60">{sub}</span>}
     </div>
   )
 }
@@ -209,10 +220,11 @@ export default function Reportes() {
   const anioActual = hoy.getFullYear()
   const mesActual  = hoy.getMonth() // 0-indexed
 
-  const [anio,       setAnio]       = useState(anioActual)
-  const [mes,        setMes]        = useState(mesActual)   // 0-indexed
-  const [vehiculoId, setVehiculoId] = useState('')
-  const [verAnio,    setVerAnio]    = useState(false)       // toggle tabla anual
+  const [anio,          setAnio]          = useState(anioActual)
+  const [mes,           setMes]           = useState(mesActual)   // 0-indexed
+  const [vehiculoId,    setVehiculoId]    = useState('')
+  const [verAnio,       setVerAnio]       = useState(false)       // toggle tabla anual
+  const [acordeonComb,  setAcordeonComb]  = useState(false)       // acordeón cargas combustible
 
   const { data, loading, error }                   = useReporteMensual(anio, vehiculoId || null)
   const { data: vehiculos, error: vehiculosError } = useVehiculosLista()
@@ -235,6 +247,7 @@ export default function Reportes() {
   function handleAnioChange(nuevoAnio) {
     setAnio(nuevoAnio)
     if (nuevoAnio === anioActual && mes > mesActual) setMes(mesActual)
+    setAcordeonComb(false)
   }
 
   return (
@@ -268,7 +281,7 @@ export default function Reportes() {
           <span className="text-xs font-medium text-gray-500">Mes</span>
           <select
             value={mes}
-            onChange={e => { setMes(Number(e.target.value)); setVerAnio(false) }}
+            onChange={e => { setMes(Number(e.target.value)); setVerAnio(false); setAcordeonComb(false) }}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400"
           >
             {mesesDisponibles.map(({ idx, nombre }) => (
@@ -282,7 +295,7 @@ export default function Reportes() {
           <span className="text-xs font-medium text-gray-500">Vehículo</span>
           <select
             value={vehiculoId}
-            onChange={e => setVehiculoId(e.target.value)}
+            onChange={e => { setVehiculoId(e.target.value); setAcordeonComb(false) }}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 min-w-[180px]"
           >
             <option value="">Toda la flota</option>
@@ -360,19 +373,19 @@ export default function Reportes() {
 
               {/* Stats del mes */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                <StatChip
+                <StatChip color="km"
                   label="Km recorridos"
                   value={mesSeleccionado ? `${NUM(mesSeleccionado.kmRecorridos)} km` : '—'}
                   sub="En el mes"
                 />
-                <StatChip
+                <StatChip color="combustible"
                   label="Combustible"
                   value={mesSeleccionado ? CLP(mesSeleccionado.montoCombustible) : '—'}
                   sub={mesSeleccionado?.litros > 0
                     ? `${NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L cargados`
                     : 'Sin registros'}
                 />
-                <StatChip
+                <StatChip color="rendimiento"
                   label="Rendimiento"
                   value={mesSeleccionado?.kmRecorridos > 0 && mesSeleccionado?.litros > 0
                     ? `${(mesSeleccionado.kmRecorridos / mesSeleccionado.litros).toFixed(1)} km/L`
@@ -381,12 +394,12 @@ export default function Reportes() {
                     ? `${NUM(mesSeleccionado.kmRecorridos)} km · ${NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L`
                     : 'Sin datos'}
                 />
-                <StatChip
+                <StatChip color="peajes"
                   label="Peajes"
                   value={mesSeleccionado ? CLP(mesSeleccionado.montoPeajes) : '—'}
                   sub="En el mes"
                 />
-                <StatChip
+                <StatChip color="total"
                   label="Total gastos"
                   value={mesSeleccionado
                     ? CLP(mesSeleccionado.montoCombustible + mesSeleccionado.montoPeajes)
@@ -396,6 +409,97 @@ export default function Reportes() {
                     : 'Sin actividades'}
                 />
               </div>
+
+              {/* Saldo cupón electrónico (solo si hay vehículo seleccionado y tiene saldo) */}
+              {vehiculoId && data?.saldoCupon != null && data.saldoCupon >= 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <StatChip color="cupon"
+                    label="Saldo cupón electrónico"
+                    value={CLP(data.saldoCupon)}
+                    sub="Saldo actual del vehículo"
+                  />
+                </div>
+              )}
+
+              {/* Acordeón: cargas de combustible del mes */}
+              {mesSeleccionado && mesSeleccionado.cargas?.length > 0 && (
+                <div className="bg-white border border-orange-200 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setAcordeonComb(v => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-orange-50/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span className="text-sm font-semibold text-orange-700">
+                        Cargas de combustible — {mesSeleccionado.cargas.length} {mesSeleccionado.cargas.length === 1 ? 'carga' : 'cargas'}
+                      </span>
+                      <span className="text-xs text-orange-500 font-medium">
+                        {NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L · {CLP(mesSeleccionado.montoCombustible)}
+                      </span>
+                    </div>
+                    <svg className={`w-4 h-4 text-orange-400 transition-transform flex-shrink-0 ${acordeonComb ? 'rotate-180' : ''}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {acordeonComb && (
+                    <div className="border-t border-orange-100">
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[420px] text-sm">
+                          <thead>
+                            <tr className="bg-orange-50 border-b border-orange-100">
+                              <th className="text-left px-4 py-2 text-xs font-semibold text-orange-600 uppercase tracking-wide">Fecha</th>
+                              <th className="text-right px-4 py-2 text-xs font-semibold text-orange-600 uppercase tracking-wide">Litros</th>
+                              <th className="text-right px-4 py-2 text-xs font-semibold text-orange-600 uppercase tracking-wide">Monto</th>
+                              <th className="text-right px-4 py-2 text-xs font-semibold text-orange-600 uppercase tracking-wide whitespace-nowrap">Odómetro</th>
+                              <th className="text-left  px-4 py-2 text-xs font-semibold text-orange-600 uppercase tracking-wide">Tipo</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-orange-50">
+                            {mesSeleccionado.cargas.map((c, i) => (
+                              <tr key={i} className="hover:bg-orange-50/40 transition-colors">
+                                <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">
+                                  {new Date(c.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}
+                                </td>
+                                <td className="px-4 py-2.5 text-right tabular-nums text-gray-700">
+                                  {c.litros != null ? `${NUM(Math.round(c.litros * 10) / 10)} L` : '—'}
+                                </td>
+                                <td className="px-4 py-2.5 text-right tabular-nums font-medium text-gray-800">
+                                  {c.monto > 0 ? CLP(c.monto) : '—'}
+                                </td>
+                                <td className="px-4 py-2.5 text-right tabular-nums text-gray-500">
+                                  {c.odometro > 0 ? `${NUM(c.odometro)} km` : '—'}
+                                </td>
+                                <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap">
+                                  {c.tipo === 'DIESEL' ? 'Diesel'
+                                    : c.tipo?.startsWith('BENCINA') ? 'Bencina'
+                                    : c.tipo || '—'}
+                                  {c.estacion && <span className="ml-1 text-gray-400">· {c.estacion}</span>}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="border-t-2 border-orange-200 bg-orange-50">
+                              <td className="px-4 py-2 text-xs font-bold text-orange-600 uppercase tracking-wide">Total</td>
+                              <td className="px-4 py-2 text-right tabular-nums font-bold text-orange-700">
+                                {NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L
+                              </td>
+                              <td className="px-4 py-2 text-right tabular-nums font-bold text-orange-700">
+                                {CLP(mesSeleccionado.montoCombustible)}
+                              </td>
+                              <td colSpan={2} />
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Tabla del mes seleccionado (fila única) */}
               {mesSeleccionado && (
@@ -454,17 +558,17 @@ export default function Reportes() {
               </div>
               {/* Stats anuales */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                <StatChip
+                <StatChip color="km"
                   label="Km totales"
                   value={`${NUM(data.totales.kmRecorridos)} km`}
                   sub={`Año ${anio}`}
                 />
-                <StatChip
+                <StatChip color="combustible"
                   label="Combustible"
                   value={CLP(data.totales.montoCombustible)}
                   sub={`${NUM(Math.round(data.totales.litros * 10) / 10)} L cargados`}
                 />
-                <StatChip
+                <StatChip color="rendimiento"
                   label="Rendimiento"
                   value={data.totales.kmRecorridos > 0 && data.totales.litros > 0
                     ? `${(data.totales.kmRecorridos / data.totales.litros).toFixed(1)} km/L`
@@ -473,12 +577,12 @@ export default function Reportes() {
                     ? `${NUM(data.totales.kmRecorridos)} km · ${NUM(Math.round(data.totales.litros * 10) / 10)} L`
                     : 'Sin datos'}
                 />
-                <StatChip
+                <StatChip color="peajes"
                   label="Peajes"
                   value={CLP(data.totales.montoPeajes)}
                   sub={`Año ${anio}`}
                 />
-                <StatChip
+                <StatChip color="actividades"
                   label="Actividades"
                   value={NUM(data.totales.nActividades)}
                   sub={`Registros ${anio}`}
