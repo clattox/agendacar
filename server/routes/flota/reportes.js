@@ -58,15 +58,18 @@ router.get('/mensual', async (req, res) => {
         kmRegistro:          true,
         combustibleRegistro: true,
         peajeRegistro:       true,
+        trasladoRegistro:    true,
       },
       orderBy: { fecha: 'asc' },
     })
 
     // Agrupar por mes (0-indexed)
+    // kmOdometros: array de todos los odómetros registrados en el mes
+    // para calcular max - min al final
     const mesesData = Array.from({ length: 12 }, (_, i) => ({
       mesNum:        i + 1,
       mes:           MESES_ES[i],
-      kmRecorridos:  0,
+      kmOdometros:   [],   // todos los odómetros del mes
       litros:        0,
       montoCombustible: 0,
       montoPeajes:   0,
@@ -77,16 +80,32 @@ router.get('/mensual', async (req, res) => {
       const idx = new Date(act.fecha).getMonth() // 0-11
       const m = mesesData[idx]
       m.nActividades++
-      if (act.kmRegistro)          m.kmRecorridos     += act.kmRegistro.kmRecorridos || 0
+
+      // Recolectar todos los odómetros disponibles en cualquier tipo de actividad
+      if (act.kmRegistro?.odometroActual)         m.kmOdometros.push(act.kmRegistro.odometroActual)
+      if (act.combustibleRegistro?.odometroAlCargar) m.kmOdometros.push(act.combustibleRegistro.odometroAlCargar)
+      if (act.trasladoRegistro?.kmSalida)         m.kmOdometros.push(act.trasladoRegistro.kmSalida)
+      if (act.trasladoRegistro?.kmLlegada)        m.kmOdometros.push(act.trasladoRegistro.kmLlegada)
+
       if (act.combustibleRegistro) {
-        m.litros             += act.combustibleRegistro.litros || 0
-        m.montoCombustible   += act.combustibleRegistro.monto  || 0
+        m.litros           += act.combustibleRegistro.litros || 0
+        m.montoCombustible += act.combustibleRegistro.monto  || 0
       }
-      if (act.peajeRegistro)       m.montoPeajes      += act.peajeRegistro.monto || 0
+      if (act.peajeRegistro) m.montoPeajes += act.peajeRegistro.monto || 0
     }
 
+    // Calcular km recorridos como max - min de odómetros del mes
+    const mesesConKm = mesesData.map(m => {
+      const odometros = m.kmOdometros.filter(k => k > 0)
+      const kmRecorridos = odometros.length >= 2
+        ? Math.max(...odometros) - Math.min(...odometros)
+        : 0
+      const { kmOdometros: _, ...rest } = m
+      return { ...rest, kmRecorridos }
+    })
+
     // Totales anuales
-    const totales = mesesData.reduce((acc, m) => ({
+    const totales = mesesConKm.reduce((acc, m) => ({
       kmRecorridos:     acc.kmRecorridos     + m.kmRecorridos,
       litros:           acc.litros           + m.litros,
       montoCombustible: acc.montoCombustible + m.montoCombustible,
@@ -96,7 +115,7 @@ router.get('/mensual', async (req, res) => {
 
     // Solo meses hasta el actual si es el año en curso
     const mesActual = new Date().getFullYear() === anio ? new Date().getMonth() : 11 // 0-indexed
-    const mesesFiltrados = mesesData.filter((_, i) => i <= mesActual)
+    const mesesFiltrados = mesesConKm.filter((_, i) => i <= mesActual)
 
     res.json({ anio, meses: mesesFiltrados, totales })
   } catch (err) {
@@ -131,6 +150,7 @@ router.get('/datos', async (req, res) => {
         fecha: { gte: desde, lt: hasta },
       },
       include: {
+        trasladoRegistro: true,
         vehiculo: {
           select: {
             id: true,
@@ -169,7 +189,6 @@ router.get('/datos', async (req, res) => {
                    || `${v.marca} ${v.modelo}`.trim(),
           kmInicial:        null,
           kmFinal:          null,
-          kmRecorridos:     0,
           tipoCombustible:  null,
           gastoCombustible: 0,
           gastoPeajes:      0,
@@ -179,17 +198,19 @@ router.get('/datos', async (req, res) => {
 
       const g = grupos[key]
 
-      // KM: odometroActual es el odómetro DESPUÉS del viaje
-      if (act.kmRegistro) {
-        const { odometroActual, kmRecorridos } = act.kmRegistro
-        const kmRec = kmRecorridos || 0
-        const inicio = odometroActual - kmRec
+      // KM: recolectar todos los odómetros disponibles (kmRegistro, combustible, traslado)
+      // y calcular min/max para obtener km recorridos reales del mes
+      const odometros = []
+      if (act.kmRegistro?.odometroActual)              odometros.push(act.kmRegistro.odometroActual)
+      if (act.combustibleRegistro?.odometroAlCargar)   odometros.push(act.combustibleRegistro.odometroAlCargar)
+      if (act.trasladoRegistro?.kmSalida)              odometros.push(act.trasladoRegistro.kmSalida)
+      if (act.trasladoRegistro?.kmLlegada)             odometros.push(act.trasladoRegistro.kmLlegada)
 
-        // kmInicial = menor punto de partida del mes
-        if (g.kmInicial === null || inicio < g.kmInicial) g.kmInicial = inicio
-        // kmFinal  = mayor odómetro al cierre
-        if (g.kmFinal === null || odometroActual > g.kmFinal) g.kmFinal = odometroActual
-        g.kmRecorridos += kmRec
+      for (const odo of odometros) {
+        if (odo > 0) {
+          if (g.kmInicial === null || odo < g.kmInicial) g.kmInicial = odo
+          if (g.kmFinal   === null || odo > g.kmFinal)   g.kmFinal   = odo
+        }
       }
 
       // Combustible
@@ -217,7 +238,7 @@ router.get('/datos', async (req, res) => {
       .map(g => {
         const kmInicial  = g.kmInicial ?? 0
         const kmFinal    = g.kmFinal   ?? 0
-        const recorrido  = g.kmRecorridos || (kmFinal - kmInicial)
+        const recorrido  = (kmFinal > kmInicial) ? kmFinal - kmInicial : 0
         const totalGasto = g.gastoCombustible + g.gastoPeajes + g.gastoSeguros
         const costoKm    = recorrido > 0 ? Math.round(totalGasto / recorrido) : 0
 
