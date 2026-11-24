@@ -803,7 +803,7 @@ export default function VehiculoDetalle() {
                             <span>Salida: {t.kmSalida.toLocaleString('es-CL')} km</span>
                           )}
                           {t.kmLlegada != null && (
-                            <span>Llegada: {t.kmLlegada.toLocaleString('es-CL')} km</span>
+                            <span>Llegada: {t.kmLlegada.toLocaleString('es-CL')} km{t.fechaLlegada ? ` · ${new Date(t.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}` : ''}</span>
                           )}
                           {act.conductor && (
                             <span>· {act.conductor.nombre}</span>
