@@ -200,6 +200,22 @@ export default function PortalConductor() {
     if (hayAlerta) setVerDocs(true)
   }, [vehiculoActivo])
 
+  // cargarActRecientes se declara antes de usarse en el useEffect de abajo
+  // (con `const` + useCallback, usarla antes de su declaración lanza
+  // "Cannot access before initialization" en cada render → pantalla en blanco)
+  const cargarActRecientes = useCallback(async (vid) => {
+    if (!vid) return
+    setLoadingActRec(true)
+    try {
+      const res = await api.get(`/flota/portal/actividades-recientes?vehiculoId=${vid}`)
+      setActRecientes(res.data)
+    } catch {
+      setActRecientes([])
+    } finally {
+      setLoadingActRec(false)
+    }
+  }, [])
+
   // Limpiar campos del formulario al cambiar de vehículo
   useEffect(() => {
     if (!vehiculoActivo) return
@@ -279,19 +295,6 @@ export default function PortalConductor() {
       setEnviando(false)
     }
   }
-
-  const cargarActRecientes = useCallback(async (vid) => {
-    if (!vid) return
-    setLoadingActRec(true)
-    try {
-      const res = await api.get(`/flota/portal/actividades-recientes?vehiculoId=${vid}`)
-      setActRecientes(res.data)
-    } catch {
-      setActRecientes([])
-    } finally {
-      setLoadingActRec(false)
-    }
-  }, [])
 
   async function completarLlegada() {
     const km = Number(kmLlegadaInput)
