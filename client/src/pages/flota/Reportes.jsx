@@ -122,7 +122,7 @@ function TablaReporte({ meses, totales, titulo, mostrarTotales = true }) {
   )
 }
 
-function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true, vehiculo = null, tenant = null }) {
+function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true, vehiculo = null, tenant = null, incluirTraslados = false }) {
   const filas = meses.map(m => {
     const totalGasto = m.montoCombustible + m.montoPeajes
     const sinDatos   = m.nActividades === 0
@@ -228,6 +228,12 @@ function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true, veh
   tfoot .total-row td { font-weight: 700; border-top: 2px solid #d1d5db; border-bottom: none; background: #f9fafb; }
   .amber { color: #d97706; }
 
+  /* Tabla traslados */
+  .traslados-section { margin-top: 24px; }
+  .traslados-section h2 { margin-bottom: 8px; }
+  .tag-destino { font-weight: 600; }
+  .tag-motivo { color: #6b7280; font-size: 10px; }
+
   /* Footer */
   .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
   .footer-brand { font-size: 10px; color: #9ca3af; }
@@ -267,6 +273,44 @@ function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true, veh
     ${filaTotales}
   </table>
 
+  ${(() => {
+    if (!incluirTraslados) return ''
+    // Recopilar todos los traslados de todos los meses pasados
+    const todos = meses.flatMap(m => (m.traslados || []))
+    if (todos.length === 0) return ''
+    const CLP2 = v => v != null ? v.toLocaleString('es-CL', { style:'currency', currency:'CLP', maximumFractionDigits:0 }) : '—'
+    const NUM2 = v => v != null ? v.toLocaleString('es-CL') : '—'
+    const filasTr = todos.map(tr => {
+      const hora = (ts) => ts ? new Date(ts).toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' }) : '—'
+      const fecha = new Date(tr.fecha).toLocaleDateString('es-CL', { day:'2-digit', month:'short' })
+      return `<tr>
+        <td>${fecha}</td>
+        <td><span class="tag-destino">${tr.destino}</span>${tr.motivo ? `<br><span class="tag-motivo">${tr.motivo}</span>` : ''}</td>
+        <td class="num">${hora(tr.fechaSalida)}</td>
+        <td class="num">${hora(tr.fechaLlegada)}</td>
+        <td class="num">${tr.kmSalida != null ? NUM2(tr.kmSalida) : '—'}</td>
+        <td class="num">${tr.kmLlegada != null ? NUM2(tr.kmLlegada) : '—'}</td>
+        <td class="num bold">${tr.distancia != null ? `${NUM2(tr.distancia)} km` : '—'}</td>
+      </tr>`
+    }).join('')
+    return `
+  <div class="traslados-section">
+    <h2>Traslados del período</h2>
+    <table>
+      <thead><tr>
+        <th>Fecha</th>
+        <th>Destino / Motivo</th>
+        <th style="text-align:right">Salida</th>
+        <th style="text-align:right">Llegada</th>
+        <th style="text-align:right">Km salida</th>
+        <th style="text-align:right">Km llegada</th>
+        <th style="text-align:right">Distancia</th>
+      </tr></thead>
+      <tbody>${filasTr}</tbody>
+    </table>
+  </div>`
+  })()}
+
   <div class="footer">
     <div class="footer-brand"><strong>${nombreEmpresa}</strong> · Reporte de flota</div>
     <div class="footer-brand">AgendaCar</div>
@@ -290,6 +334,7 @@ export default function Reportes() {
   const [vehiculoId,    setVehiculoId]    = useState('')
   const [verAnio,       setVerAnio]       = useState(false)       // toggle tabla anual
   const [acordeonComb,  setAcordeonComb]  = useState(false)       // acordeón cargas combustible
+  const [inclTraslados, setInclTraslados] = useState(false)       // checkbox "incluir traslados" en PDF mensual
 
   const { data, loading, error }                   = useReporteMensual(anio, vehiculoId || null)
   const { data: vehiculos, error: vehiculosError } = useVehiculosLista()
@@ -412,30 +457,44 @@ export default function Reportes() {
                   )}
                 </h2>
                 {mesSeleccionado && mesSeleccionado.nActividades > 0 && (
-                  <button
-                    onClick={() => {
-                      const veh = vehiculoId && vehiculos ? vehiculos.find(v => v.id === vehiculoId) : null
-                      exportarPDF({
-                        titulo: `Reporte ${MESES[mes]} ${anio}${veh ? ' · ' + veh.patente : ''}`,
-                        chips: [
-                          { label: 'Km recorridos', value: `${NUM(mesSeleccionado.kmRecorridos)} km`, sub: 'En el mes' },
-                          { label: 'Combustible', value: CLP(mesSeleccionado.montoCombustible), sub: mesSeleccionado.litros > 0 ? `${NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L cargados` : 'Sin registros' },
-                          { label: 'Peajes', value: CLP(mesSeleccionado.montoPeajes), sub: 'En el mes' },
-                          { label: 'Total gastos', value: CLP(mesSeleccionado.montoCombustible + mesSeleccionado.montoPeajes), sub: `${mesSeleccionado.nActividades} actividades` },
-                        ],
-                        meses: [mesSeleccionado],
-                        mostrarTotales: false,
-                        vehiculo: veh || null,
-                        tenant,
-                      })
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
-                    </svg>
-                    Exportar PDF
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {mesSeleccionado.traslados?.length > 0 && (
+                      <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-gray-500 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={inclTraslados}
+                          onChange={e => setInclTraslados(e.target.checked)}
+                          className="accent-amber-500 w-3.5 h-3.5"
+                        />
+                        Con traslados
+                      </label>
+                    )}
+                    <button
+                      onClick={() => {
+                        const veh = vehiculoId && vehiculos ? vehiculos.find(v => v.id === vehiculoId) : null
+                        exportarPDF({
+                          titulo: `Reporte ${MESES[mes]} ${anio}${veh ? ' · ' + veh.patente : ''}`,
+                          chips: [
+                            { label: 'Km recorridos', value: `${NUM(mesSeleccionado.kmRecorridos)} km`, sub: 'En el mes' },
+                            { label: 'Combustible', value: CLP(mesSeleccionado.montoCombustible), sub: mesSeleccionado.litros > 0 ? `${NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L cargados` : 'Sin registros' },
+                            { label: 'Peajes', value: CLP(mesSeleccionado.montoPeajes), sub: 'En el mes' },
+                            { label: 'Total gastos', value: CLP(mesSeleccionado.montoCombustible + mesSeleccionado.montoPeajes), sub: `${mesSeleccionado.nActividades} actividades` },
+                          ],
+                          meses: [mesSeleccionado],
+                          mostrarTotales: false,
+                          vehiculo: veh || null,
+                          tenant,
+                          incluirTraslados: inclTraslados,
+                        })
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+                      </svg>
+                      Exportar PDF
+                    </button>
+                  </div>
                 )}
               </div>
 

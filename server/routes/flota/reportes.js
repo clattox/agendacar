@@ -81,6 +81,7 @@ router.get('/mensual', async (req, res) => {
       montoPeajes:   0,
       nActividades:  0,
       cargas:        [],   // detalle de cada carga de combustible
+      traslados:     [],   // detalle de cada traslado completado
     }))
 
     for (const act of actividades) {
@@ -110,6 +111,21 @@ router.get('/mensual', async (req, res) => {
         })
       }
       if (act.peajeRegistro) m.montoPeajes += act.peajeRegistro.monto || 0
+
+      // Traslados completados (con km llegada)
+      if (act.trasladoRegistro?.kmLlegada != null) {
+        const tr = act.trasladoRegistro
+        m.traslados.push({
+          fecha:       act.fecha,
+          destino:     tr.destino,
+          motivo:      tr.motivo    || null,
+          kmSalida:    tr.kmSalida,
+          kmLlegada:   tr.kmLlegada,
+          distancia:   tr.kmSalida != null ? tr.kmLlegada - tr.kmSalida : null,
+          fechaSalida: tr.fechaSalida  || null,
+          fechaLlegada: tr.fechaLlegada || null,
+        })
+      }
     }
 
     // Calcular km recorridos como max - min de odómetros del mes
@@ -119,6 +135,8 @@ router.get('/mensual', async (req, res) => {
         ? Math.max(...odometros) - Math.min(...odometros)
         : 0
       const { kmOdometros: _, ...rest } = m
+      // Ordenar traslados por fecha dentro del mes
+      rest.traslados = rest.traslados.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
       return { ...rest, kmRecorridos }
     })
 
