@@ -228,14 +228,46 @@ router.get('/actividades-recientes', async (req, res) => {
     }
     if (!vId) return res.json([])
 
-    const actividades = await prisma.flotaActividad.findMany({
-      where: { tenantId, vehiculoId: vId },
-      include: { trasladoRegistro: true },
-      orderBy: { fecha: 'desc' },
-      take: 15,
-    })
+    // Traer todas las actividades del mes en curso + mes anterior para los traslados en curso,
+    // y los últimos 30 traslados completados por separado para el historial.
+    const hoy = new Date()
+    const inicioMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
 
-    res.json(actividades)
+    const [actRecientes, trasladosCompletados] = await Promise.all([
+      // Actividades del mes actual + anterior (para traslados en curso)
+      prisma.flotaActividad.findMany({
+        where: {
+          tenantId,
+          vehiculoId: vId,
+          fecha: { gte: inicioMesAnterior },
+          tipo: 'TRASLADO',
+          trasladoRegistro: { kmSalida: { not: null }, kmLlegada: null },
+        },
+        include: { trasladoRegistro: true },
+        orderBy: { fecha: 'desc' },
+      }),
+      // Últimos 30 traslados completados para el historial
+      prisma.flotaActividad.findMany({
+        where: {
+          tenantId,
+          vehiculoId: vId,
+          tipo: 'TRASLADO',
+          trasladoRegistro: { kmLlegada: { not: null } },
+        },
+        include: { trasladoRegistro: true },
+        orderBy: { fecha: 'desc' },
+        take: 30,
+      }),
+    ])
+
+    // Combinar: en curso primero, luego completados (sin duplicados)
+    const idsEnCurso = new Set(actRecientes.map(a => a.id))
+    const combinadas = [
+      ...actRecientes,
+      ...trasladosCompletados.filter(a => !idsEnCurso.has(a.id)),
+    ]
+
+    res.json(combinadas)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Error al obtener actividades' })
