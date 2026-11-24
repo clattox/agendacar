@@ -174,6 +174,9 @@ export default function PortalConductor() {
   const [modalEditTraslado,  setModalEditTraslado]  = useState(null) // { actId, destino, motivo, kmSalida, kmLlegada, fecha }
   const [savingEditTraslado, setSavingEditTraslado] = useState(false)
   const [errorEditTraslado,  setErrorEditTraslado]  = useState('')
+
+  // Documentos colapsables — se expande automáticamente si hay docs críticos/vencidos
+  const [verDocs, setVerDocs] = useState(false)
   // pdfModal eliminado — documentos se abren en nueva pestaña
 
   useEffect(() => {
@@ -187,6 +190,15 @@ export default function PortalConductor() {
     }
     cargar()
   }, [])
+
+  // Auto-expandir documentos si hay alguno VENCIDO o CRITICO
+  useEffect(() => {
+    if (!vehiculoActivo?.documentos?.length) return
+    const hayAlerta = vehiculoActivo.documentos.some(
+      d => d.alerta === 'VENCIDO' || d.alerta === 'CRITICO'
+    )
+    if (hayAlerta) setVerDocs(true)
+  }, [vehiculoActivo])
 
   // Limpiar campos del formulario al cambiar de vehículo
   useEffect(() => {
@@ -354,153 +366,128 @@ export default function PortalConductor() {
   }
 
   // ——— Layout ——————————————————————————————————————————
+  // Hora local para saludo
+  const hora = new Date().getHours()
+  const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches'
+  const nombreCorto = usuario?.nombre?.split(' ')[0] || 'Conductor'
+
   return (
-    <div className="min-h-screen bg-[#1C1F26] text-white">
-      {/* Header */}
-      <header className="border-b border-[#2d3039] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded bg-amber-500 flex items-center justify-center shrink-0">
-            <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
-              <circle cx="7.5" cy="17.5" r="2.5" />
-              <circle cx="16.5" cy="17.5" r="2.5" />
+    <div className="min-h-screen bg-[#14161c] text-white">
+
+      {/* ——— Hero / Header ——————————————————————————————— */}
+      <header className="bg-gradient-to-b from-[#1e2029] to-[#14161c] px-5 pt-5 pb-6">
+        <div className="flex items-start justify-between mb-5">
+          <div className="flex items-center gap-3">
+            {/* Avatar inicial */}
+            <div className="w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+              <span className="text-black font-black text-lg leading-none">
+                {nombreCorto.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <div className="text-[13px] text-zinc-500 leading-none mb-0.5">{saludo}</div>
+              <div className="text-lg font-bold leading-none">{nombreCorto}</div>
+            </div>
+          </div>
+          <button
+            onClick={handleSalir}
+            className="mt-1 p-2 rounded-xl border border-[#2d3039] text-zinc-500 hover:text-white hover:border-zinc-500 transition-colors"
+            title="Cerrar sesión"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-          </div>
-          <div>
-            <div className="text-sm font-bold leading-none">Portal Conductor</div>
-            <div className="text-[11px] text-zinc-500 mt-0.5">{usuario?.nombre}</div>
-          </div>
+          </button>
         </div>
-        <button
-          onClick={handleSalir}
-          className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          Salir
-        </button>
+
+        {/* Tarjeta del vehículo activo — hero visual */}
+        {!loading && !error && vehiculoActivo && (
+          <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl px-4 py-4 shadow-xl">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#2d3039] flex items-center justify-center">
+                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                    <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
+                    <circle cx="7.5" cy="17.5" r="2.5" />
+                    <circle cx="16.5" cy="17.5" r="2.5" />
+                  </svg>
+                </div>
+                <span className="text-xs text-zinc-400 font-medium">Mi vehículo</span>
+              </div>
+              {/* Selector si hay múltiples */}
+              {datos?.vehiculos?.length > 1 && (
+                <select
+                  value={vehiculoActivo.id}
+                  onChange={e => {
+                    const v = datos.vehiculos.find(x => x.id === Number(e.target.value))
+                    if (v) setVehiculoActivo(v)
+                  }}
+                  className="bg-[#1C1F26] border border-[#2d3039] text-xs text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
+                >
+                  {datos.vehiculos.map(v => (
+                    <option key={v.id} value={v.id}>{v.patente}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-black tracking-widest text-white leading-none">
+                  {vehiculoActivo.patente}
+                </div>
+                <div className="text-sm text-zinc-400 mt-1">
+                  {vehiculoActivo.marca} {vehiculoActivo.modelo}
+                  {vehiculoActivo.anio ? ` · ${vehiculoActivo.anio}` : ''}
+                  {vehiculoActivo.color ? ` · ${vehiculoActivo.color}` : ''}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Odómetro</div>
+                <div className="text-xl font-bold text-amber-400 leading-none">
+                  {vehiculoActivo.odometroActual.toLocaleString('es-CL')}
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">km</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sin vehículo asignado */}
+        {!loading && !error && datos && !vehiculoActivo && (
+          <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl px-4 py-8 text-center">
+            <div className="text-3xl mb-2">🚗</div>
+            <div className="text-sm text-zinc-300 font-semibold">Sin vehículo asignado</div>
+            <div className="text-xs text-zinc-500 mt-1">Consulta con el administrador de flota</div>
+          </div>
+        )}
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
+      <main className="max-w-lg mx-auto px-4 pb-10 space-y-4">
         {loading && (
-          <div className="text-center py-16 text-zinc-500 text-sm">Cargando…</div>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+            <div className="text-zinc-500 text-sm">Cargando tu portal…</div>
+          </div>
         )}
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-4 text-sm text-red-400 flex items-start gap-3">
+            <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
             {error}
           </div>
         )}
 
         {!loading && !error && datos && (
           <>
-            {/* ——— Selector de vehículo (solo si hay más de uno) ——— */}
-            {datos.vehiculos?.length > 1 && (
-              <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#2d3039] flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-                  </svg>
-                  <span className="text-sm font-semibold">Mis Vehículos</span>
-                  <span className="ml-auto text-xs text-zinc-500">{datos.vehiculos.length} asignados</span>
-                </div>
-                <div className="p-3 flex flex-col gap-2">
-                  {datos.vehiculos.map(v => {
-                    const activo = vehiculoActivo?.id === v.id
-                    // alerta más crítica entre los documentos
-                    const alertas = v.documentos?.map(d => d.alerta) || []
-                    const nivelAlerta = alertas.includes('VENCIDO') ? 'VENCIDO'
-                      : alertas.includes('CRITICO') ? 'CRITICO' : null
-                    return (
-                      <button
-                        key={v.id}
-                        onClick={() => setVehiculoActivo(v)}
-                        className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all border
-                          ${activo
-                            ? 'bg-amber-500/10 border-amber-500/30'
-                            : 'border-[#2d3039] hover:bg-[#2b2d35]'}`}
-                      >
-                        <div>
-                          <div className={`text-sm font-bold tracking-wide ${activo ? 'text-amber-400' : 'text-white'}`}>
-                            {v.patente}
-                          </div>
-                          <div className="text-xs text-zinc-400 mt-0.5">
-                            {v.marca} {v.modelo} {v.anio}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {nivelAlerta && (
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full
-                              ${nivelAlerta === 'VENCIDO' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                              {nivelAlerta === 'VENCIDO' ? 'Doc. vencido' : 'Doc. por vencer'}
-                            </span>
-                          )}
-                          {activo && (
-                            <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* ——— Vehículo ——————————————————————————— */}
-            {vehiculoActivo ? (
-              <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#2d3039] flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path d="M5 17H3a1 1 0 0 1-1-1v-5l2.5-5H17l2.5 5H22v5a1 1 0 0 1-1 1h-2" />
-                    <circle cx="7.5" cy="17.5" r="2.5" />
-                    <circle cx="16.5" cy="17.5" r="2.5" />
-                  </svg>
-                  <span className="text-sm font-semibold">
-                    {datos.vehiculos?.length > 1 ? vehiculoActivo.patente : 'Mi Vehículo'}
-                  </span>
-                </div>
-                <div className="px-4 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-lg font-bold tracking-wide">{vehiculoActivo.patente}</div>
-                      <div className="text-sm text-zinc-400 mt-0.5">
-                        {vehiculoActivo.marca} {vehiculoActivo.modelo} {vehiculoActivo.anio}
-                      </div>
-                      {vehiculoActivo.color && (
-                        <div className="text-xs text-zinc-500 mt-0.5">{vehiculoActivo.color}</div>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-zinc-500 mb-0.5">Odómetro actual</div>
-                      <div className="text-base font-semibold text-amber-400">
-                        {vehiculoActivo.odometroActual.toLocaleString('es-CL')} km
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </section>
-            ) : (
-              <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] px-4 py-8 text-center">
-                {datos.vehiculos?.length > 1
-                  ? <div className="text-zinc-500 text-sm">Selecciona un vehículo arriba</div>
-                  : <>
-                      <div className="text-zinc-500 text-sm">No tienes un vehículo asignado</div>
-                      <div className="text-zinc-600 text-xs mt-1">Consulta con el administrador de flota</div>
-                    </>
-                }
-              </section>
-            )}
 
             {/* ——— Traslados en curso ——————————————————— */}
             {vehiculoActivo && actRecientes.some(a => a.tipo === 'TRASLADO' && a.trasladoRegistro?.kmSalida != null && a.trasladoRegistro?.kmLlegada == null) && (
-              <section className="bg-[#22252e] rounded-2xl border border-amber-500/40 overflow-hidden">
+              <section className="bg-amber-500/5 rounded-2xl border border-amber-500/40 overflow-hidden">
                 <div className="px-4 py-3 border-b border-amber-500/20 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  <span className="text-sm font-semibold text-amber-400">Traslado en curso</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="text-sm font-bold text-amber-300">Traslado en curso</span>
                 </div>
                 <div className="divide-y divide-[#2d3039]">
                   {actRecientes
@@ -607,45 +594,80 @@ export default function PortalConductor() {
             {vehiculoActivo && (
               <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
                 <div className="px-4 py-3 border-b border-[#2d3039] flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  <span className="text-sm font-semibold">Registrar Actividad</span>
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Registrar actividad</div>
+                    <div className="text-[11px] text-zinc-500">¿Qué quieres registrar?</div>
+                  </div>
                 </div>
                 <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
 
                   {exito && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 text-sm text-emerald-400">
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-400 flex items-center gap-2">
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path d="M5 13l4 4L19 7" />
+                      </svg>
                       {exito}
                     </div>
                   )}
                   {errorForm && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-red-400">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400 flex items-center gap-2">
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                       {errorForm}
                     </div>
                   )}
 
-                  {/* Tipo */}
+                  {/* Tipo — tarjetas grandes con íconos */}
                   <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">Tipo de actividad</label>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Tipo de actividad</label>
+                    <div className="grid grid-cols-5 gap-2">
                       {[
-                        { v: 'COMBUSTIBLE', label: 'Combustible'},
-                        { v: 'TRASLADO',    label: 'Traslado'   },
-                        { v: 'KILOMETRAJE', label: 'Kilometraje'},
-                        { v: 'PEAJE',       label: 'Peaje'      },
-                        { v: 'MANTENCION',  label: 'Mantención' },
-                      ].map(({ v, label }) => (
+                        { v: 'COMBUSTIBLE', label: 'Combustible', icon: (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                            <path d="M3 22V8l9-6 9 6v14M9 22V12h6v10" />
+                          </svg>
+                        )},
+                        { v: 'TRASLADO', label: 'Traslado', icon: (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                            <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                          </svg>
+                        )},
+                        { v: 'KILOMETRAJE', label: 'Km', icon: (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v4l3 3" />
+                          </svg>
+                        )},
+                        { v: 'PEAJE', label: 'Peaje', icon: (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                            <rect x="2" y="6" width="20" height="12" rx="2" />
+                            <path d="M12 10v4M8 12h8" />
+                          </svg>
+                        )},
+                        { v: 'MANTENCION', label: 'Mantenc.', icon: (
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )},
+                      ].map(({ v, label, icon }) => (
                         <button
                           key={v}
                           type="button"
                           onClick={() => setForm(p => ({ ...p, tipo: v }))}
-                          className={`py-2 rounded-lg text-xs font-medium transition-all border
+                          className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl text-[10px] font-semibold transition-all border
                             ${form.tipo === v
-                              ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                              : 'border-[#2d3039] text-zinc-400 hover:bg-[#2b2d35]'}`}
+                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
+                              : 'border-[#2d3039] text-zinc-500 hover:text-zinc-300 hover:bg-[#2b2d35]'}`}
                         >
-                          {label}
+                          {icon}
+                          <span className="leading-none">{label}</span>
                         </button>
                       ))}
                     </div>
@@ -913,80 +935,114 @@ export default function PortalConductor() {
               </section>
             )}
 
-            {/* ——— Documentos del vehículo ————————————— */}
-            {vehiculoActivo && (
-              <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#2d3039] flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="text-sm font-semibold">Documentos</span>
-                </div>
-                <div className="px-4 py-3">
-                  {vehiculoActivo.documentos?.length > 0 ? (
-                    <div className="space-y-2">
-                      {vehiculoActivo.documentos.map(doc => {
-                        const c = ALERTA_COLOR[doc.alerta]
-                        return (
-                          <div key={doc.id} className={`flex items-center justify-between rounded-lg px-3 py-2 ${c.bg}`}>
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${c.dot}`} />
-                              <span className="text-sm font-medium truncate">{TIPO_DOC[doc.tipo] || doc.tipo}</span>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                              <div className="text-right">
-                                <div className={`text-xs font-semibold ${c.text}`}>
-                                  {doc.alerta === 'VENCIDO'
-                                    ? `Venció ${formatFecha(doc.fechaVencimiento)}`
-                                    : `Vence ${formatFecha(doc.fechaVencimiento)}`}
-                                </div>
-                                {doc.alerta !== 'VENCIDO' && (
-                                  <div className="text-[11px] text-zinc-500">{doc.diasRestantes} días</div>
-                                )}
-                              </div>
-                              {doc.archivoBase64 && (
-                                <button
-                                  onClick={() => {
-                                    const b64 = doc.archivoBase64.startsWith('data:')
-                                      ? doc.archivoBase64.split(',')[1]
-                                      : doc.archivoBase64
-                                    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
-                                    const blob = new Blob([bytes], { type: 'application/pdf' })
-                                    const url = URL.createObjectURL(blob)
-                                    window.open(url, '_blank')
-                                    setTimeout(() => URL.revokeObjectURL(url), 10000)
-                                  }}
-                                  className="flex-shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                                  title="Ver PDF"
-                                >
-                                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                  </svg>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
+            {/* ——— Documentos del vehículo (colapsable) ————— */}
+            {vehiculoActivo && (() => {
+              const docs = vehiculoActivo.documentos || []
+              const hayAlerta = docs.some(d => d.alerta === 'VENCIDO' || d.alerta === 'CRITICO')
+              const nAlerta   = docs.filter(d => d.alerta === 'VENCIDO' || d.alerta === 'CRITICO').length
+              return (
+                <section className={`rounded-2xl border overflow-hidden transition-colors
+                  ${hayAlerta ? 'bg-[#22252e] border-amber-500/30' : 'bg-[#1e2029] border-[#2d3039]'}`}>
+
+                  {/* Banner de alerta si hay docs críticos */}
+                  {hayAlerta && (
+                    <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                      </svg>
+                      <span className="text-xs font-semibold text-amber-400">
+                        {nAlerta === 1 ? '1 documento requiere atención' : `${nAlerta} documentos requieren atención`}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="text-xs text-zinc-500 text-center py-2">Sin documentos registrados</div>
                   )}
-                </div>
-              </section>
-            )}
+
+                  {/* Header colapsable */}
+                  <button
+                    type="button"
+                    onClick={() => setVerDocs(v => !v)}
+                    className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-white/5 transition-colors"
+                  >
+                    <svg className="w-4 h-4 text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-zinc-300 flex-1">Documentos del vehículo</span>
+                    {docs.length > 0 && (
+                      <span className="text-xs text-zinc-500 mr-1">{docs.length}</span>
+                    )}
+                    <svg className={`w-4 h-4 text-zinc-500 transition-transform ${verDocs ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Contenido */}
+                  {verDocs && (
+                    <div className="px-4 pb-4 border-t border-[#2d3039] pt-3">
+                      {docs.length > 0 ? (
+                        <div className="space-y-2">
+                          {docs.map(doc => {
+                            const c = ALERTA_COLOR[doc.alerta] || ALERTA_COLOR['VIGENTE']
+                            return (
+                              <div key={doc.id} className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${c.bg}`}>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
+                                  <span className="text-sm font-medium truncate">{TIPO_DOC[doc.tipo] || doc.tipo}</span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                  <div className="text-right">
+                                    <div className={`text-xs font-semibold ${c.text}`}>
+                                      {doc.alerta === 'VENCIDO'
+                                        ? `Venció ${formatFecha(doc.fechaVencimiento)}`
+                                        : `Vence ${formatFecha(doc.fechaVencimiento)}`}
+                                    </div>
+                                    {doc.alerta !== 'VENCIDO' && (
+                                      <div className="text-[11px] text-zinc-500">{doc.diasRestantes} días</div>
+                                    )}
+                                  </div>
+                                  {doc.archivoBase64 && (
+                                    <button
+                                      onClick={() => {
+                                        const b64 = doc.archivoBase64.startsWith('data:')
+                                          ? doc.archivoBase64.split(',')[1]
+                                          : doc.archivoBase64
+                                        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+                                        const blob = new Blob([bytes], { type: 'application/pdf' })
+                                        const url = URL.createObjectURL(blob)
+                                        window.open(url, '_blank')
+                                        setTimeout(() => URL.revokeObjectURL(url), 10000)
+                                      }}
+                                      className="flex-shrink-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                                      title="Ver PDF"
+                                    >
+                                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-zinc-500 text-center py-3">Sin documentos registrados</div>
+                      )}
+                    </div>
+                  )}
+                </section>
+              )
+            })()}
 
             {/* ——— Mis Reportes ——————————————————————— */}
-          <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
+          <section className="bg-[#1e2029] rounded-2xl border border-[#2d3039] overflow-hidden">
             <div className="flex items-center">
               <button
                 onClick={toggleReportes}
-                className="flex-1 px-4 py-3 flex items-center gap-2 text-left hover:bg-[#2b2d35] transition-colors"
+                className="flex-1 px-4 py-3 flex items-center gap-2 text-left hover:bg-white/5 transition-colors"
               >
-                <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <svg className="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path d="M18 20V10M12 20V4M6 20v-6" />
                 </svg>
-                <span className="text-sm font-semibold flex-1">Mis Reportes</span>
+                <span className="text-sm font-semibold text-zinc-300 flex-1">Mis reportes</span>
                 <svg className={`w-4 h-4 text-zinc-500 transition-transform ${verReportes ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path d="M19 9l-7 7-7-7" />
                 </svg>
