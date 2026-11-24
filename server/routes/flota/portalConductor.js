@@ -242,7 +242,7 @@ router.get('/actividades-recientes', async (req, res) => {
 router.patch('/actividad/:id/llegada', async (req, res) => {
   try {
     const { id: usuarioId, tenantId } = req.user
-    const actividadId = Number(req.params.id)
+    const actividadId = req.params.id
     const km = Number(req.body.kmLlegada)
 
     if (!km || km <= 0) return res.status(400).json({ error: 'kmLlegada inválido' })
@@ -299,7 +299,7 @@ router.patch('/actividad/:id/llegada', async (req, res) => {
 router.patch('/actividad/:id/traslado', async (req, res) => {
   try {
     const { id: usuarioId, tenantId } = req.user
-    const actividadId = Number(req.params.id)
+    const actividadId = req.params.id
     const { destino, motivo, kmSalida, kmLlegada, fecha } = req.body
 
     if (!destino) return res.status(400).json({ error: 'destino es obligatorio' })
@@ -316,6 +316,9 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
     if (!actividad) return res.status(404).json({ error: 'Actividad no encontrada' })
     if (actividad.vehiculo.conductorId !== conductor.id) {
       return res.status(403).json({ error: 'No tienes acceso a esta actividad' })
+    }
+    if (!actividad.trasladoRegistro) {
+      return res.status(400).json({ error: 'Esta actividad no es un traslado' })
     }
 
     const kmS = kmSalida  ? Number(kmSalida)  : null
