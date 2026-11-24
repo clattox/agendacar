@@ -465,6 +465,14 @@ async function main () {
   `)
 
 // ────────────────────────────────────────────────────────────────────────────
+// ── Migración: fecha_salida_traslado ─────────────────────────────────────────
+  console.log('[migrate] fecha_salida_traslado...')
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "TrasladoRegistro"
+      ADD COLUMN IF NOT EXISTS "fechaSalida" TIMESTAMPTZ
+  `)
+
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }
 

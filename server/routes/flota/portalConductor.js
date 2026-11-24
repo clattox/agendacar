@@ -169,9 +169,10 @@ router.post('/actividad', async (req, res) => {
         data: {
           actividadId: actividad.id,
           destino,
-          motivo:    motivo    || null,
-          kmSalida:  kmSalida  ? Number(kmSalida)  : null,
-          kmLlegada: kmLlegada ? Number(kmLlegada) : null,
+          motivo:      motivo    || null,
+          kmSalida:    kmSalida  ? Number(kmSalida)  : null,
+          kmLlegada:   kmLlegada ? Number(kmLlegada) : null,
+          fechaSalida: new Date(),
         },
       })
       // Actualizar odómetro si kmLlegada es mayor al actual
@@ -304,7 +305,7 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
   try {
     const { id: usuarioId, tenantId } = req.user
     const actividadId = req.params.id
-    const { destino, motivo, kmSalida, kmLlegada, fecha, horaLlegada } = req.body
+    const { destino, motivo, kmSalida, kmLlegada, fecha, horaSalida, horaLlegada } = req.body
 
     if (!destino) return res.status(400).json({ error: 'destino es obligatorio' })
 
@@ -332,10 +333,17 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
     }
 
     await prisma.$transaction(async tx => {
+      const baseDate = fecha || actividad.fecha.toISOString().slice(0, 10)
+
+      // Calcular fechaSalida si se proporciona hora manual
+      let fechaSalidaUpdate = undefined
+      if (horaSalida) {
+        fechaSalidaUpdate = new Date(`${baseDate}T${horaSalida}:00`)
+      }
+
       // Calcular fechaLlegada si se proporciona hora manual
       let fechaLlegadaUpdate = undefined
       if (kmL && horaLlegada) {
-        const baseDate = fecha || actividad.fecha.toISOString().slice(0, 10)
         fechaLlegadaUpdate = new Date(`${baseDate}T${horaLlegada}:00`)
       }
 
@@ -346,6 +354,7 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
           motivo:       motivo    || null,
           kmSalida:     kmS,
           kmLlegada:    kmL,
+          ...(fechaSalidaUpdate  !== undefined && { fechaSalida:  fechaSalidaUpdate  }),
           ...(fechaLlegadaUpdate !== undefined && { fechaLlegada: fechaLlegadaUpdate }),
         },
       })

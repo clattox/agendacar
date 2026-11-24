@@ -509,6 +509,7 @@ model TrasladoRegistro {
   motivo       String?
   kmSalida     Int?
   kmLlegada    Int?
+  fechaSalida  DateTime? // hora real en que se inició el traslado
   fechaLlegada DateTime? // hora real en que se registró la llegada
 
   @@index([actividadId])

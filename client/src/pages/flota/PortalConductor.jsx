@@ -172,7 +172,8 @@ export default function PortalConductor() {
   const [loadingActRec,   setLoadingActRec]   = useState(false)
 
   // Modal editar traslado
-  const [modalEditTraslado,  setModalEditTraslado]  = useState(null) // { actId, destino, motivo, kmSalida, kmLlegada, fecha, horaLlegada }
+  const [modalEditTraslado,  setModalEditTraslado]  = useState(null) // { actId, destino, motivo, kmSalida, kmLlegada, fecha, horaSalida, horaLlegada }
+  const [verHoraSalidaEdit,  setVerHoraSalidaEdit]  = useState(false)
   const [verHoraLlegadaEdit, setVerHoraLlegadaEdit] = useState(false)
   const [savingEditTraslado, setSavingEditTraslado] = useState(false)
   const [errorEditTraslado,  setErrorEditTraslado]  = useState('')
@@ -340,6 +341,7 @@ export default function PortalConductor() {
         kmSalida:    kmS,
         kmLlegada:   kmL,
         fecha:       modalEditTraslado.fecha || undefined,
+        horaSalida:  modalEditTraslado.horaSalida  || undefined,
         horaLlegada: (kmL && modalEditTraslado.horaLlegada) ? modalEditTraslado.horaLlegada : undefined,
       })
       setModalEditTraslado(null)
@@ -525,15 +527,22 @@ export default function PortalConductor() {
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
-                            onClick={() => { setVerHoraLlegadaEdit(false); setModalEditTraslado({
-                              actId:       act.id,
-                              destino:     act.trasladoRegistro.destino  || '',
-                              motivo:      act.trasladoRegistro.motivo   || '',
-                              kmSalida:    act.trasladoRegistro.kmSalida != null ? String(act.trasladoRegistro.kmSalida) : '',
-                              kmLlegada:   '',
-                              fecha:       act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
-                              horaLlegada: '',
-                            }) }}
+                            onClick={() => {
+                              const hs = act.trasladoRegistro.fechaSalida
+                                ? new Date(act.trasladoRegistro.fechaSalida).toTimeString().slice(0, 5) : ''
+                              setVerHoraSalidaEdit(!!hs)
+                              setVerHoraLlegadaEdit(false)
+                              setModalEditTraslado({
+                                actId:       act.id,
+                                destino:     act.trasladoRegistro.destino  || '',
+                                motivo:      act.trasladoRegistro.motivo   || '',
+                                kmSalida:    act.trasladoRegistro.kmSalida != null ? String(act.trasladoRegistro.kmSalida) : '',
+                                kmLlegada:   '',
+                                fecha:       act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
+                                horaSalida:  hs,
+                                horaLlegada: '',
+                              })
+                            }}
                             className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap"
                             title="Editar traslado"
                           >
@@ -948,12 +957,14 @@ export default function PortalConductor() {
                             <div className="min-w-0">
                               <div className="text-sm text-white truncate">→ {tr.destino}</div>
                               <div className="text-xs text-zinc-500 mt-0.5">
-                                {fechaStr}{km ? ` · ${km.toLocaleString('es-CL')} km` : ''}{tr.fechaLlegada ? ` · llegada ${new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}` : ''}{tr.motivo ? ` · ${tr.motivo}` : ''}
+                                {fechaStr}{tr.fechaSalida ? ` · salida ${new Date(tr.fechaSalida).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}` : ''}{km ? ` · ${km.toLocaleString('es-CL')} km` : ''}{tr.fechaLlegada ? ` · llegada ${new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}` : ''}{tr.motivo ? ` · ${tr.motivo}` : ''}
                               </div>
                             </div>
                             <button
                               onClick={() => {
+                                const hs = tr.fechaSalida  ? new Date(tr.fechaSalida).toTimeString().slice(0, 5)  : ''
                                 const hl = tr.fechaLlegada ? new Date(tr.fechaLlegada).toTimeString().slice(0, 5) : ''
+                                setVerHoraSalidaEdit(!!hs)
                                 setVerHoraLlegadaEdit(!!hl)
                                 setModalEditTraslado({
                                   actId:       act.id,
@@ -962,6 +973,7 @@ export default function PortalConductor() {
                                   kmSalida:    tr.kmSalida  != null ? String(tr.kmSalida)  : '',
                                   kmLlegada:   tr.kmLlegada != null ? String(tr.kmLlegada) : '',
                                   fecha:       act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
+                                  horaSalida:  hs,
                                   horaLlegada: hl,
                                 })
                               }}
@@ -1372,6 +1384,27 @@ export default function PortalConductor() {
                   className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
                 />
               </div>
+              {/* Hora de salida — siempre visible (hay km salida siempre) */}
+              {verHoraSalidaEdit ? (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Hora de salida</label>
+                  <input
+                    type="time"
+                    value={modalEditTraslado.horaSalida}
+                    onChange={e => setModalEditTraslado(p => ({ ...p, horaSalida: e.target.value }))}
+                    className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setVerHoraSalidaEdit(true)}
+                  className="text-xs text-zinc-500 hover:text-amber-400 transition-colors text-left"
+                >
+                  + Agregar hora de salida exacta (opcional)
+                </button>
+              )}
+
               {/* Km salida / llegada */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
