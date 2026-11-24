@@ -177,6 +177,8 @@ export default function PortalConductor() {
   const [verHoraLlegadaEdit, setVerHoraLlegadaEdit] = useState(false)
   const [savingEditTraslado, setSavingEditTraslado] = useState(false)
   const [errorEditTraslado,  setErrorEditTraslado]  = useState('')
+  const [confirmEliminarId,  setConfirmEliminarId]  = useState(null) // actId a eliminar
+  const [eliminandoId,       setEliminandoId]       = useState(null)
 
   // Documentos colapsables — se expande automáticamente si hay docs críticos/vencidos
   const [verDocs, setVerDocs] = useState(false)
@@ -331,6 +333,20 @@ export default function PortalConductor() {
     setModalEditTraslado(null)
     setVerHoraSalidaEdit(false)
     setVerHoraLlegadaEdit(false)
+  }
+
+  async function eliminarTraslado(actId) {
+    setEliminandoId(actId)
+    try {
+      await api.delete(`/flota/actividades/${actId}`)
+      setConfirmEliminarId(null)
+      cargar(true)
+      cargarActRecientes(vehiculoActivo?.id)
+    } catch {
+      // silencioso — el botón vuelve a su estado normal
+    } finally {
+      setEliminandoId(null)
+    }
   }
 
   async function guardarEditTraslado() {
@@ -966,30 +982,60 @@ export default function PortalConductor() {
                                 {fechaStr}{tr.fechaSalida ? ` · salida ${new Date(tr.fechaSalida).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' })}` : ''}{km ? ` · ${km.toLocaleString('es-CL')} km` : ''}{tr.fechaLlegada ? ` · llegada ${new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' })}` : ''}{tr.motivo ? ` · ${tr.motivo}` : ''}
                               </div>
                             </div>
-                            <button
-                              onClick={() => {
-                                const hs = tr.fechaSalida  ? new Date(tr.fechaSalida).toLocaleTimeString('es-CL',  { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
-                                const hl = tr.fechaLlegada ? new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
-                                setVerHoraSalidaEdit(!!hs)
-                                setVerHoraLlegadaEdit(!!hl)
-                                setModalEditTraslado({
-                                  actId:       act.id,
-                                  destino:     tr.destino   || '',
-                                  motivo:      tr.motivo    || '',
-                                  kmSalida:    tr.kmSalida  != null ? String(tr.kmSalida)  : '',
-                                  kmLlegada:   tr.kmLlegada != null ? String(tr.kmLlegada) : '',
-                                  fecha:       act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
-                                  horaSalida:  hs,
-                                  horaLlegada: hl,
-                                })
-                              }}
-                              className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap"
-                            >
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              Editar
-                            </button>
+                            {confirmEliminarId === act.id ? (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-xs text-zinc-400">¿Eliminar?</span>
+                                <button
+                                  onClick={() => eliminarTraslado(act.id)}
+                                  disabled={eliminandoId === act.id}
+                                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-red-500 text-red-400 hover:bg-red-500/10 transition-colors whitespace-nowrap disabled:opacity-50"
+                                >
+                                  {eliminandoId === act.id ? '…' : 'Sí, eliminar'}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmEliminarId(null)}
+                                  className="shrink-0 inline-flex items-center text-xs font-medium px-2 py-1.5 rounded-lg border border-[#3d4049] text-zinc-500 hover:text-white transition-colors"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => {
+                                    const hs = tr.fechaSalida  ? new Date(tr.fechaSalida).toLocaleTimeString('es-CL',  { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
+                                    const hl = tr.fechaLlegada ? new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
+                                    setVerHoraSalidaEdit(!!hs)
+                                    setVerHoraLlegadaEdit(!!hl)
+                                    setModalEditTraslado({
+                                      actId:       act.id,
+                                      destino:     tr.destino   || '',
+                                      motivo:      tr.motivo    || '',
+                                      kmSalida:    tr.kmSalida  != null ? String(tr.kmSalida)  : '',
+                                      kmLlegada:   tr.kmLlegada != null ? String(tr.kmLlegada) : '',
+                                      fecha:       act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
+                                      horaSalida:  hs,
+                                      horaLlegada: hl,
+                                    })
+                                  }}
+                                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap"
+                                >
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => setConfirmEliminarId(act.id)}
+                                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-red-400 hover:border-red-500/50 transition-colors whitespace-nowrap"
+                                >
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                  Eliminar
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )
                       })}
