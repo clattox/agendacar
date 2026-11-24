@@ -498,6 +498,7 @@ router.get('/mis-reportes', async (req, res) => {
       montoCombustible: 0,
       montoPeajes:     0,
       nActividades:    0,
+      traslados:       [],
     }))
 
     for (const act of actividades) {
@@ -509,6 +510,18 @@ router.get('/mis-reportes', async (req, res) => {
         const tr = act.trasladoRegistro
         if (tr.kmSalida != null && tr.kmLlegada != null) {
           m.kmRecorridos += tr.kmLlegada - tr.kmSalida
+        }
+        if (tr.kmLlegada != null) {
+          m.traslados.push({
+            fecha:        act.fecha,
+            destino:      tr.destino,
+            motivo:       tr.motivo    || null,
+            kmSalida:     tr.kmSalida,
+            kmLlegada:    tr.kmLlegada,
+            distancia:    tr.kmSalida != null ? tr.kmLlegada - tr.kmSalida : null,
+            fechaSalida:  tr.fechaSalida  || null,
+            fechaLlegada: tr.fechaLlegada || null,
+          })
         }
       }
       if (act.combustibleRegistro) {

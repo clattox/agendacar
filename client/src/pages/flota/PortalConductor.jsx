@@ -13,7 +13,7 @@ const MESES_NOMBRE = [
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
 ]
 
-function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales }) {
+function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales, incluirTraslados = false }) {
   const filas = meses.map(m => {
     const totalGasto = m.montoCombustible + m.montoPeajes
     return `
@@ -66,6 +66,11 @@ function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales }) {
   tfoot .total-row td{font-weight:700;border-top:2px solid #d1d5db;border-bottom:none;background:#f9fafb}
   .amber{color:#d97706}
   .footer{margin-top:24px;font-size:10px;color:#9ca3af;text-align:right}
+  .traslados-section{margin-top:24px}
+  .traslados-section h2{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .traslados-section h2::before{content:'';display:inline-block;width:12px;height:12px;background:#f59e0b;border-radius:2px}
+  .tag-destino{font-weight:600}
+  .tag-motivo{font-size:10px;color:#6b7280}
 </style></head>
 <body>
   <h1>${titulo}</h1>
@@ -84,6 +89,37 @@ function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales }) {
     <tbody>${filas}</tbody>
     ${filaTotales}
   </table>
+  ${(() => {
+    if (!incluirTraslados) return ''
+    const todos = meses.flatMap(m => (m.traslados || []))
+    if (todos.length === 0) return ''
+    const NUM2 = v => v != null ? v.toLocaleString('es-CL') : '—'
+    const hora = ts => ts ? new Date(ts).toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Santiago' }) : '—'
+    const filasTr = todos.map(tr => {
+      const fecha = new Date(tr.fecha).toLocaleDateString('es-CL', { day:'2-digit', month:'short' })
+      return `<tr>
+        <td>${fecha}</td>
+        <td><span class="tag-destino">${tr.destino}</span>${tr.motivo ? `<br><span class="tag-motivo">${tr.motivo}</span>` : ''}</td>
+        <td class="num">${hora(tr.fechaSalida)}</td>
+        <td class="num">${hora(tr.fechaLlegada)}</td>
+        <td class="num">${tr.kmSalida != null ? NUM2(tr.kmSalida) : '—'}</td>
+        <td class="num">${tr.kmLlegada != null ? NUM2(tr.kmLlegada) : '—'}</td>
+        <td class="num bold">${tr.distancia != null ? `${NUM2(tr.distancia)} km` : '—'}</td>
+      </tr>`
+    }).join('')
+    return `<div class="traslados-section">
+      <h2>Traslados del período</h2>
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th>Destino / Motivo</th>
+          <th style="text-align:right">Salida</th><th style="text-align:right">Llegada</th>
+          <th style="text-align:right">Km salida</th><th style="text-align:right">Km llegada</th>
+          <th style="text-align:right">Distancia</th>
+        </tr></thead>
+        <tbody>${filasTr}</tbody>
+      </table>
+    </div>`
+  })()}
   <div class="footer">AgendaCar · Reporte de flota</div>
 </body></html>`
 
@@ -179,6 +215,8 @@ export default function PortalConductor() {
   const [errorEditTraslado,  setErrorEditTraslado]  = useState('')
   const [confirmEliminarId,  setConfirmEliminarId]  = useState(null) // actId a eliminar
   const [eliminandoId,       setEliminandoId]       = useState(null)
+  const [menuActId,          setMenuActId]          = useState(null)  // 3 puntos abierto
+  const [inclTrasladosPDF,   setInclTrasladosPDF]   = useState(false)
 
   // Documentos colapsables — se expande automáticamente si hay docs críticos/vencidos
   const [verDocs, setVerDocs] = useState(false)
@@ -982,60 +1020,73 @@ export default function PortalConductor() {
                                 {fechaStr}{tr.fechaSalida ? ` · salida ${new Date(tr.fechaSalida).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' })}` : ''}{km ? ` · ${km.toLocaleString('es-CL')} km` : ''}{tr.fechaLlegada ? ` · llegada ${new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' })}` : ''}{tr.motivo ? ` · ${tr.motivo}` : ''}
                               </div>
                             </div>
-                            {confirmEliminarId === act.id ? (
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <span className="text-xs text-zinc-400">¿Eliminar?</span>
-                                <button
-                                  onClick={() => eliminarTraslado(act.id)}
-                                  disabled={eliminandoId === act.id}
-                                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-red-500 text-red-400 hover:bg-red-500/10 transition-colors whitespace-nowrap disabled:opacity-50"
-                                >
-                                  {eliminandoId === act.id ? '…' : 'Sí, eliminar'}
-                                </button>
-                                <button
-                                  onClick={() => setConfirmEliminarId(null)}
-                                  className="shrink-0 inline-flex items-center text-xs font-medium px-2 py-1.5 rounded-lg border border-[#3d4049] text-zinc-500 hover:text-white transition-colors"
-                                >
-                                  No
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <button
-                                  onClick={() => {
-                                    const hs = tr.fechaSalida  ? new Date(tr.fechaSalida).toLocaleTimeString('es-CL',  { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
-                                    const hl = tr.fechaLlegada ? new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
-                                    setVerHoraSalidaEdit(!!hs)
-                                    setVerHoraLlegadaEdit(!!hl)
-                                    setModalEditTraslado({
-                                      actId:       act.id,
-                                      destino:     tr.destino   || '',
-                                      motivo:      tr.motivo    || '',
-                                      kmSalida:    tr.kmSalida  != null ? String(tr.kmSalida)  : '',
-                                      kmLlegada:   tr.kmLlegada != null ? String(tr.kmLlegada) : '',
-                                      fecha:       act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
-                                      horaSalida:  hs,
-                                      horaLlegada: hl,
-                                    })
-                                  }}
-                                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap"
-                                >
-                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                  Editar
-                                </button>
-                                <button
-                                  onClick={() => setConfirmEliminarId(act.id)}
-                                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-red-400 hover:border-red-500/50 transition-colors whitespace-nowrap"
-                                >
-                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                  Eliminar
-                                </button>
-                              </div>
-                            )}
+                            {/* Menú 3 puntos */}
+                            <div className="relative shrink-0">
+                              {confirmEliminarId === act.id ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs text-zinc-400">¿Eliminar?</span>
+                                  <button
+                                    onClick={() => eliminarTraslado(act.id)}
+                                    disabled={eliminandoId === act.id}
+                                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-red-500 text-red-400 hover:bg-red-500/10 transition-colors whitespace-nowrap disabled:opacity-50"
+                                  >
+                                    {eliminandoId === act.id ? '…' : 'Sí'}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmEliminarId(null)}
+                                    className="inline-flex items-center text-xs font-medium px-2 py-1.5 rounded-lg border border-[#3d4049] text-zinc-500 hover:text-white transition-colors"
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => setMenuActId(menuActId === act.id ? null : act.id)}
+                                    className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-[#3d4049] transition-colors"
+                                  >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                      <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                                    </svg>
+                                  </button>
+                                  {menuActId === act.id && (
+                                    <div className="absolute right-0 top-8 z-20 w-36 bg-[#2b2d35] border border-[#3d4049] rounded-xl shadow-xl overflow-hidden">
+                                      <button
+                                        onClick={() => {
+                                          setMenuActId(null)
+                                          const hs = tr.fechaSalida  ? new Date(tr.fechaSalida).toLocaleTimeString('es-CL',  { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Santiago' }) : ''
+                                          const hl = tr.fechaLlegada ? new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'America/Santiago' }) : ''
+                                          setVerHoraSalidaEdit(!!hs)
+                                          setVerHoraLlegadaEdit(!!hl)
+                                          setModalEditTraslado({
+                                            actId: act.id, destino: tr.destino || '', motivo: tr.motivo || '',
+                                            kmSalida: tr.kmSalida != null ? String(tr.kmSalida) : '',
+                                            kmLlegada: tr.kmLlegada != null ? String(tr.kmLlegada) : '',
+                                            fecha: act.fecha ? act.fecha.slice(0,10) : new Date().toISOString().slice(0,10),
+                                            horaSalida: hs, horaLlegada: hl,
+                                          })
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-zinc-300 hover:bg-[#3d4049] hover:text-white transition-colors"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                          <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                        Editar
+                                      </button>
+                                      <button
+                                        onClick={() => { setMenuActId(null); setConfirmEliminarId(act.id) }}
+                                        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                          <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                        Eliminar
+                                      </button>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
                         )
                       })}
@@ -1107,45 +1158,65 @@ export default function PortalConductor() {
                     </div>
                   )}
                   {/* Exportar PDF */}
-                  {reporteData && reporteData.totales.nActividades > 0 && (
-                    <button
-                      onClick={() => {
-                        const mesFiltrado = !verAnioPortal
-                          ? reporteData.meses.find(m => m.mesNum === mesMostrado)
-                          : null
-                        const esAnual = verAnioPortal || !mesFiltrado
-
-                        exportarPDFPortal(esAnual ? {
-                          titulo: `Reporte anual ${anioReporte}`,
-                          chips: [
-                            { label: 'Km recorridos', value: `${NUM(reporteData.totales.kmRecorridos)} km`, sub: `Año ${anioReporte}` },
-                            { label: 'Combustible',   value: CLP(reporteData.totales.montoCombustible) },
-                            { label: 'Peajes',        value: CLP(reporteData.totales.montoPeajes) },
-                            { label: 'Actividades',   value: NUM(reporteData.totales.nActividades) },
-                          ],
-                          meses: reporteData.meses,
-                          totales: reporteData.totales,
-                          mostrarTotales: true,
-                        } : {
-                          titulo: `Reporte ${MESES_NOMBRE[mesFiltrado.mesNum - 1]} ${anioReporte}`,
-                          chips: [
-                            { label: 'Km recorridos', value: `${NUM(mesFiltrado.kmRecorridos)} km`, sub: 'En el mes' },
-                            { label: 'Combustible',   value: CLP(mesFiltrado.montoCombustible) },
-                            { label: 'Peajes',        value: CLP(mesFiltrado.montoPeajes) },
-                            { label: 'Actividades',   value: NUM(mesFiltrado.nActividades) },
-                          ],
-                          meses: [mesFiltrado],
-                          mostrarTotales: false,
-                        })
-                      }}
-                      className="ml-auto flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold border border-[#2d3039] text-zinc-400 hover:text-white hover:bg-[#2b2d35] transition-colors whitespace-nowrap"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
-                      </svg>
-                      PDF
-                    </button>
-                  )}
+                  {reporteData && reporteData.totales.nActividades > 0 && (() => {
+                    const mesFiltrado = !verAnioPortal
+                      ? reporteData.meses.find(m => m.mesNum === mesMostrado)
+                      : null
+                    const esAnual = verAnioPortal || !mesFiltrado
+                    const mesData = esAnual ? null : mesFiltrado
+                    const hayTraslados = esAnual
+                      ? reporteData.meses.some(m => m.traslados?.length > 0)
+                      : (mesData?.traslados?.length > 0)
+                    return (
+                      <div className="ml-auto flex items-center gap-2">
+                        {hayTraslados && (
+                          <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-zinc-500 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={inclTrasladosPDF}
+                              onChange={e => setInclTrasladosPDF(e.target.checked)}
+                              className="accent-amber-500 w-3.5 h-3.5"
+                            />
+                            Con traslados
+                          </label>
+                        )}
+                        <button
+                          onClick={() => {
+                            exportarPDFPortal(esAnual ? {
+                              titulo: `Reporte anual ${anioReporte}`,
+                              chips: [
+                                { label: 'Km recorridos', value: `${NUM(reporteData.totales.kmRecorridos)} km`, sub: `Año ${anioReporte}` },
+                                { label: 'Combustible',   value: CLP(reporteData.totales.montoCombustible) },
+                                { label: 'Peajes',        value: CLP(reporteData.totales.montoPeajes) },
+                                { label: 'Actividades',   value: NUM(reporteData.totales.nActividades) },
+                              ],
+                              meses: reporteData.meses,
+                              totales: reporteData.totales,
+                              mostrarTotales: true,
+                              incluirTraslados: inclTrasladosPDF,
+                            } : {
+                              titulo: `Reporte ${MESES_NOMBRE[mesFiltrado.mesNum - 1]} ${anioReporte}`,
+                              chips: [
+                                { label: 'Km recorridos', value: `${NUM(mesFiltrado.kmRecorridos)} km`, sub: 'En el mes' },
+                                { label: 'Combustible',   value: CLP(mesFiltrado.montoCombustible) },
+                                { label: 'Peajes',        value: CLP(mesFiltrado.montoPeajes) },
+                                { label: 'Actividades',   value: NUM(mesFiltrado.nActividades) },
+                              ],
+                              meses: [mesFiltrado],
+                              mostrarTotales: false,
+                              incluirTraslados: inclTrasladosPDF,
+                            })
+                          }}
+                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold border border-[#2d3039] text-zinc-400 hover:text-white hover:bg-[#2b2d35] transition-colors whitespace-nowrap"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
+                          </svg>
+                          PDF
+                        </button>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {loadingRep && (
