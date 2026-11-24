@@ -649,7 +649,7 @@ export default function PortalConductor() {
                     <Field label="Odómetro actual (km)">
                       <input
                         type="number"
-                        min={vehiculoActivo.odometroActual}
+                        min="0"
                         value={form.odometroActual}
                         onChange={e => setForm(p => ({ ...p, odometroActual: e.target.value }))}
                         placeholder={`Actual: ${vehiculoActivo.odometroActual.toLocaleString('es-CL')} km`}

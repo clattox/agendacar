@@ -123,16 +123,20 @@ router.post('/actividad', async (req, res) => {
 
     // Sub-registro según tipo
     if (tipo === 'KILOMETRAJE' && odometroActual) {
-      const kmRecorridos = odometroActual > vehiculo.odometroActual
-        ? odometroActual - vehiculo.odometroActual
-        : null
+      const esMasReciente = odometroActual > vehiculo.odometroActual
+      const kmRecorridos = esMasReciente ? odometroActual - vehiculo.odometroActual : null
       await prisma.kmRegistro.create({
         data: { actividadId: actividad.id, odometroActual, kmRecorridos },
       })
-      await prisma.flotaVehiculo.update({
-        where: { id: vehiculo.id },
-        data:  { odometroActual },
-      })
+      // Solo actualizar el odómetro "actual" del vehículo si el valor ingresado
+      // es mayor al que ya tenía — evita que un registro histórico (backfill de
+      // una fecha anterior, con km menor) retroceda el odómetro del vehículo.
+      if (esMasReciente) {
+        await prisma.flotaVehiculo.update({
+          where: { id: vehiculo.id },
+          data:  { odometroActual },
+        })
+      }
     }
 
     if (tipo === 'COMBUSTIBLE' && tipoCombustible && litros && monto) {
