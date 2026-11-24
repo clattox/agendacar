@@ -5,6 +5,23 @@ const router = require('express').Router()
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+// ——— helper: convierte 'HH:MM' en hora Chile (America/Santiago) a un Date UTC ————
+// Chile está en UTC-3 (verano) o UTC-4 (invierno). Usa DST awareness vía Intl.
+function horaChileAUtc(fechaBase, horaStr) {
+  const provisional = new Date(`${fechaBase}T${horaStr}:00Z`)
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Santiago',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  })
+  const parts = formatter.formatToParts(provisional)
+  const get = (t) => parts.find(p => p.type === t)?.value
+  const santiagoDe = new Date(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:00Z`)
+  const offsetMs = provisional.getTime() - santiagoDe.getTime()
+  return new Date(provisional.getTime() + offsetMs)
+}
+
 // ——— helper: enriquece documentos con días restantes ————————
 function enriquecerDocumentos(vehiculo) {
   const hoy = new Date()
@@ -281,6 +298,7 @@ router.patch('/actividad/:id/llegada', async (req, res) => {
     const { id: usuarioId, tenantId } = req.user
     const actividadId = req.params.id
     const km = Number(req.body.kmLlegada)
+    const horaLlegada = req.body.horaLlegada || null  // 'HH:MM' en hora Santiago, opcional
 
     if (!km || km <= 0) return res.status(400).json({ error: 'kmLlegada inválido' })
 
@@ -311,10 +329,16 @@ router.patch('/actividad/:id/llegada', async (req, res) => {
       return res.status(400).json({ error: `Debe ser mayor al km de salida (${actividad.trasladoRegistro.kmSalida})` })
     }
 
+    // Calcular fecha de llegada: hora Santiago si se envía, si no hora actual
+    const fechaBase = actividad.fecha.toISOString().slice(0, 10)
+    const fechaLlegada = horaLlegada
+      ? horaChileAUtc(fechaBase, horaLlegada)
+      : new Date()
+
     await prisma.$transaction(async tx => {
       await tx.trasladoRegistro.update({
         where: { id: actividad.trasladoRegistro.id },
-        data:  { kmLlegada: km, fechaLlegada: new Date() },
+        data:  { kmLlegada: km, fechaLlegada },
       })
       if (km > actividad.vehiculo.odometroActual) {
         await tx.flotaVehiculo.update({
@@ -366,37 +390,6 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
 
     await prisma.$transaction(async tx => {
       const baseDate = fecha || actividad.fecha.toISOString().slice(0, 10)
-
-      // Convierte 'HH:MM' en hora Chile (America/Santiago) a un Date UTC.
-      // Chile está en UTC-3 (verano) o UTC-4 (invierno).
-      // Estrategia: formatear la fecha/hora en Santiago usando Intl, luego
-      // comparar con la hora UTC de ese mismo instante para obtener el offset,
-      // y finalmente despejar la UTC real de la hora local ingresada.
-      function horaChileAUtc(fechaBase, horaStr) {
-        // Paso 1: crear un Date provisional usando la hora como si fuera UTC
-        const provisional = new Date(`${fechaBase}T${horaStr}:00Z`)
-
-        // Paso 2: obtener cómo se ve ese instante en Santiago (nos da el offset real)
-        const formatter = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'America/Santiago',
-          year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit', second: '2-digit',
-          hour12: false,
-        })
-        const parts = formatter.formatToParts(provisional)
-        const get = (t) => parts.find(p => p.type === t)?.value
-        // Hora Santiago correspondiente al provisional (que lo tratamos como UTC)
-        const santiagoDe = new Date(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:00Z`)
-
-        // Paso 3: el offset = provisional - santiagoDe
-        // Ejemplo: provisional = 11:00 UTC, Santiago lo ve como 08:00 (UTC-3)
-        //          offset = 11:00 - 08:00 = +3h = +10800000 ms
-        const offsetMs = provisional.getTime() - santiagoDe.getTime()
-
-        // Paso 4: la UTC real = hora_local_ingresada + offset
-        // 11:00 Santiago + 3h = 14:00 UTC ✓
-        return new Date(provisional.getTime() + offsetMs)
-      }
 
       // Calcular fechaSalida si se proporciona hora manual
       let fechaSalidaUpdate = undefined

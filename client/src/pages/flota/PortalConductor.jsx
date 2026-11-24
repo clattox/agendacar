@@ -13,13 +13,15 @@ const MESES_NOMBRE = [
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
 ]
 
-function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales, incluirTraslados = false }) {
+function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales, incluirTraslados = false, vehiculo = null, conductor = null }) {
   const filas = meses.map(m => {
     const totalGasto = m.montoCombustible + m.montoPeajes
+    const sinDatos   = m.nActividades === 0
     return `
-      <tr style="opacity:${m.nActividades === 0 ? 0.4 : 1}">
+      <tr style="opacity:${sinDatos ? 0.4 : 1}">
         <td>${m.mes}</td>
         <td class="num">${m.kmRecorridos > 0 ? `${NUM(m.kmRecorridos)} km` : '—'}</td>
+        <td class="num">${m.litros > 0 ? `${NUM(Math.round(m.litros * 10) / 10)} L` : '—'}</td>
         <td class="num">${m.montoCombustible > 0 ? CLP(m.montoCombustible) : '—'}</td>
         <td class="num">${m.montoPeajes > 0 ? CLP(m.montoPeajes) : '—'}</td>
         <td class="num bold">${totalGasto > 0 ? CLP(totalGasto) : '—'}</td>
@@ -28,14 +30,17 @@ function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales, incl
   }).join('')
 
   const filaTotales = mostrarTotales && totales ? `
-    <tfoot><tr class="total-row">
-      <td>Total</td>
-      <td class="num">${totales.kmRecorridos > 0 ? `${NUM(totales.kmRecorridos)} km` : '—'}</td>
-      <td class="num">${totales.montoCombustible > 0 ? CLP(totales.montoCombustible) : '—'}</td>
-      <td class="num">${totales.montoPeajes > 0 ? CLP(totales.montoPeajes) : '—'}</td>
-      <td class="num amber">${(totales.montoCombustible + totales.montoPeajes) > 0 ? CLP(totales.montoCombustible + totales.montoPeajes) : '—'}</td>
-      <td class="num">${totales.nActividades > 0 ? totales.nActividades : '—'}</td>
-    </tr></tfoot>` : ''
+    <tfoot>
+      <tr class="total-row">
+        <td>Total</td>
+        <td class="num">${totales.kmRecorridos > 0 ? `${NUM(totales.kmRecorridos)} km` : '—'}</td>
+        <td class="num">${totales.litros > 0 ? `${NUM(Math.round(totales.litros * 10) / 10)} L` : '—'}</td>
+        <td class="num">${totales.montoCombustible > 0 ? CLP(totales.montoCombustible) : '—'}</td>
+        <td class="num">${totales.montoPeajes > 0 ? CLP(totales.montoPeajes) : '—'}</td>
+        <td class="num amber">${(totales.montoCombustible + totales.montoPeajes) > 0 ? CLP(totales.montoCombustible + totales.montoPeajes) : '—'}</td>
+        <td class="num">${totales.nActividades > 0 ? totales.nActividades : '—'}</td>
+      </tr>
+    </tfoot>` : ''
 
   const chipsHtml = chips.map(c => `
     <div class="chip">
@@ -44,51 +49,113 @@ function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales, incl
       ${c.sub ? `<div class="chip-sub">${c.sub}</div>` : ''}
     </div>`).join('')
 
+  // Ficha del vehículo
+  const fichaVehiculoHtml = vehiculo ? `
+    <div class="ficha-vehiculo">
+      <div class="ficha-col">
+        <span class="ficha-label">Patente</span>
+        <span class="ficha-valor patente">${vehiculo.patente}</span>
+      </div>
+      <div class="ficha-col">
+        <span class="ficha-label">Vehículo</span>
+        <span class="ficha-valor">${[vehiculo.marca, vehiculo.modelo, vehiculo.anio].filter(Boolean).join(' ')}</span>
+      </div>
+      ${conductor ? `
+      <div class="ficha-col">
+        <span class="ficha-label">Conductor</span>
+        <span class="ficha-valor">${conductor}</span>
+      </div>` : ''}
+    </div>` : ''
+
   const html = `<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><title>${titulo}</title>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${titulo}</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:-apple-system,Arial,sans-serif;font-size:12px;color:#111;padding:32px}
-  h1{font-size:18px;font-weight:700;margin-bottom:2px}
-  .subtitle{font-size:11px;color:#666;margin-bottom:20px}
-  .chips{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-  .chip{border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;min-width:120px}
-  .chip-label{font-size:10px;color:#6b7280;font-weight:500;text-transform:uppercase;letter-spacing:.03em}
-  .chip-value{font-size:16px;font-weight:700;margin:2px 0 1px}
-  .chip-sub{font-size:10px;color:#9ca3af}
-  h2{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-  h2::before{content:'';display:inline-block;width:12px;height:12px;background:#f59e0b;border-radius:2px}
-  table{width:100%;border-collapse:collapse;font-size:11px}
-  th{text-align:left;padding:7px 10px;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid #e5e7eb;background:#f9fafb}
-  td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
-  .num{text-align:right;font-variant-numeric:tabular-nums}
-  .bold{font-weight:600}
-  tfoot .total-row td{font-weight:700;border-top:2px solid #d1d5db;border-bottom:none;background:#f9fafb}
-  .amber{color:#d97706}
-  .footer{margin-top:24px;font-size:10px;color:#9ca3af;text-align:right}
-  .traslados-section{margin-top:24px}
-  .traslados-section h2{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-  .traslados-section h2::before{content:'';display:inline-block;width:12px;height:12px;background:#f59e0b;border-radius:2px}
-  .tag-destino{font-weight:600}
-  .tag-motivo{font-size:10px;color:#6b7280}
-</style></head>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, Arial, sans-serif; font-size: 12px; color: #111; padding: 32px 36px; }
+
+  /* Cabecera */
+  .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #f59e0b; }
+  .header-left { display: flex; flex-direction: column; gap: 4px; }
+  .header-empresa { font-size: 11px; color: #6b7280; font-weight: 500; }
+  .header-right { text-align: right; }
+  .header-titulo { font-size: 17px; font-weight: 700; color: #111; line-height: 1.2; }
+  .header-fecha { font-size: 10px; color: #9ca3af; margin-top: 3px; }
+
+  /* Ficha vehículo */
+  .ficha-vehiculo { display: flex; gap: 24px; margin-bottom: 20px; padding: 12px 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; flex-wrap: wrap; }
+  .ficha-col { display: flex; flex-direction: column; gap: 2px; }
+  .ficha-label { font-size: 9px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .ficha-valor { font-size: 13px; font-weight: 600; color: #111; }
+  .patente { font-size: 15px; letter-spacing: 0.08em; }
+
+  /* Chips */
+  .chips { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .chip { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; min-width: 120px; }
+  .chip-label { font-size: 9px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .chip-value { font-size: 15px; font-weight: 700; margin: 2px 0 1px; }
+  .chip-sub { font-size: 10px; color: #9ca3af; }
+
+  /* Sección */
+  h2 { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  h2::before { content: ''; display: inline-block; width: 10px; height: 10px; background: #f59e0b; border-radius: 2px; }
+
+  /* Tabla */
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { text-align: left; padding: 7px 10px; font-size: 9.5px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 2px solid #e5e7eb; background: #f9fafb; }
+  td { padding: 7px 10px; border-bottom: 1px solid #f3f4f6; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .bold { font-weight: 600; }
+  tfoot .total-row td { font-weight: 700; border-top: 2px solid #d1d5db; border-bottom: none; background: #f9fafb; }
+  .amber { color: #d97706; }
+
+  /* Tabla traslados */
+  .traslados-section { margin-top: 24px; }
+  .traslados-section h2 { margin-bottom: 8px; }
+  .tag-destino { font-weight: 600; }
+  .tag-motivo { color: #6b7280; font-size: 10px; }
+
+  /* Footer */
+  .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
+  .footer-brand { font-size: 10px; color: #9ca3af; }
+  .footer-brand strong { color: #6b7280; }
+</style>
+</head>
 <body>
-  <h1>${titulo}</h1>
-  <div class="subtitle">Generado el ${new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'})}</div>
+  <div class="header">
+    <div class="header-left">
+      <div class="header-empresa">AgendaCar · Portal Conductor</div>
+    </div>
+    <div class="header-right">
+      <div class="header-titulo">${titulo}</div>
+      <div class="header-fecha">Generado el ${new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'long', year:'numeric' })}</div>
+    </div>
+  </div>
+
+  ${fichaVehiculoHtml}
+
   <div class="chips">${chipsHtml}</div>
+
   <h2>Detalle</h2>
   <table>
-    <thead><tr>
-      <th>Mes</th>
-      <th style="text-align:right">Km recorridos</th>
-      <th style="text-align:right">Combustible</th>
-      <th style="text-align:right">Peajes</th>
-      <th style="text-align:right">Total gastos</th>
-      <th style="text-align:right">Actividades</th>
-    </tr></thead>
+    <thead>
+      <tr>
+        <th>Mes</th>
+        <th style="text-align:right">Km recorridos</th>
+        <th style="text-align:right">Litros</th>
+        <th style="text-align:right">Combustible</th>
+        <th style="text-align:right">Peajes</th>
+        <th style="text-align:right">Total gastos</th>
+        <th style="text-align:right">Actividades</th>
+      </tr>
+    </thead>
     <tbody>${filas}</tbody>
     ${filaTotales}
   </table>
+
   ${(() => {
     if (!incluirTraslados) return ''
     const todos = meses.flatMap(m => (m.traslados || []))
@@ -107,21 +174,30 @@ function exportarPDFPortal({ titulo, chips, meses, totales, mostrarTotales, incl
         <td class="num bold">${tr.distancia != null ? `${NUM2(tr.distancia)} km` : '—'}</td>
       </tr>`
     }).join('')
-    return `<div class="traslados-section">
-      <h2>Traslados del período</h2>
-      <table>
-        <thead><tr>
-          <th>Fecha</th><th>Destino / Motivo</th>
-          <th style="text-align:right">Salida</th><th style="text-align:right">Llegada</th>
-          <th style="text-align:right">Km salida</th><th style="text-align:right">Km llegada</th>
-          <th style="text-align:right">Distancia</th>
-        </tr></thead>
-        <tbody>${filasTr}</tbody>
-      </table>
-    </div>`
+    return `
+  <div class="traslados-section">
+    <h2>Traslados del período</h2>
+    <table>
+      <thead><tr>
+        <th>Fecha</th>
+        <th>Destino / Motivo</th>
+        <th style="text-align:right">Salida</th>
+        <th style="text-align:right">Llegada</th>
+        <th style="text-align:right">Km salida</th>
+        <th style="text-align:right">Km llegada</th>
+        <th style="text-align:right">Distancia</th>
+      </tr></thead>
+      <tbody>${filasTr}</tbody>
+    </table>
+  </div>`
   })()}
-  <div class="footer">AgendaCar · Reporte de flota</div>
-</body></html>`
+
+  <div class="footer">
+    <div class="footer-brand"><strong>AgendaCar</strong> · Reporte de flota</div>
+    <div class="footer-brand">Portal Conductor</div>
+  </div>
+</body>
+</html>`
 
   const win = window.open('', '_blank')
   win.document.write(html)
@@ -198,10 +274,11 @@ export default function PortalConductor() {
   const [errorForm,  setErrorForm]  = useState('')
 
   // Modal registrar llegada
-  const [modalLlegada,   setModalLlegada]   = useState(null)  // { actId, kmSalida, destino }
-  const [kmLlegadaInput, setKmLlegadaInput] = useState('')
-  const [savingLlegada,  setSavingLlegada]  = useState(false)
-  const [errorLlegada,   setErrorLlegada]   = useState('')
+  const [modalLlegada,    setModalLlegada]    = useState(null)  // { actId, kmSalida, destino }
+  const [kmLlegadaInput,  setKmLlegadaInput]  = useState('')
+  const [horaLlegadaInput,setHoraLlegadaInput]= useState('')
+  const [savingLlegada,   setSavingLlegada]   = useState(false)
+  const [errorLlegada,    setErrorLlegada]    = useState('')
 
   // Actividades recientes (para mostrar traslados en curso)
   const [actRecientes,    setActRecientes]    = useState([])
@@ -278,6 +355,19 @@ export default function PortalConductor() {
     setErrorForm('')
     cargarActRecientes(vehiculoActivo?.id)
   }, [vehiculoActivo?.id, cargarActRecientes])
+
+  // Pre-fill km de salida con km de llegada del último traslado completado
+  useEffect(() => {
+    const ultimoTraslado = actRecientes
+      .filter(a => a.tipo === 'TRASLADO' && a.trasladoRegistro?.kmLlegada != null)
+      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0]
+    if (ultimoTraslado?.trasladoRegistro?.kmLlegada) {
+      setForm(prev => ({
+        ...prev,
+        kmSalida: String(ultimoTraslado.trasladoRegistro.kmLlegada),
+      }))
+    }
+  }, [actRecientes])
 
   async function cargar(mantenerVehiculo = false) {
     setLoading(true)
@@ -356,7 +446,10 @@ export default function PortalConductor() {
     setSavingLlegada(true)
     setErrorLlegada('')
     try {
-      await api.patch(`/flota/portal/actividad/${modalLlegada.actId}/llegada`, { kmLlegada: km })
+      await api.patch(`/flota/portal/actividad/${modalLlegada.actId}/llegada`, {
+        kmLlegada: km,
+        ...(horaLlegadaInput ? { horaLlegada: horaLlegadaInput } : {}),
+      })
       setModalLlegada(null)
       cargar(true)
       cargarActRecientes(vehiculoActivo?.id)
@@ -612,7 +705,13 @@ export default function PortalConductor() {
                             Editar
                           </button>
                           <button
-                            onClick={() => { setModalLlegada({ actId: act.id, kmSalida: act.trasladoRegistro.kmSalida, destino: act.trasladoRegistro.destino }); setKmLlegadaInput(''); setErrorLlegada('') }}
+                            onClick={() => {
+                              setModalLlegada({ actId: act.id, kmSalida: act.trasladoRegistro.kmSalida, destino: act.trasladoRegistro.destino })
+                              setKmLlegadaInput('')
+                              setErrorLlegada('')
+                              const horaActual = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' })
+                              setHoraLlegadaInput(horaActual)
+                            }}
                             className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500 text-black hover:bg-amber-400 transition-colors whitespace-nowrap"
                           >
                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -1182,10 +1281,13 @@ export default function PortalConductor() {
                         )}
                         <button
                           onClick={() => {
+                            const veh = vehiculoActivo ? { patente: vehiculoActivo.patente, marca: vehiculoActivo.marca, modelo: vehiculoActivo.modelo, anio: vehiculoActivo.anio } : null
+                            const cond = usuario?.nombre || null
                             exportarPDFPortal(esAnual ? {
                               titulo: `Reporte anual ${anioReporte}`,
                               chips: [
                                 { label: 'Km recorridos', value: `${NUM(reporteData.totales.kmRecorridos)} km`, sub: `Año ${anioReporte}` },
+                                { label: 'Litros',        value: `${NUM(Math.round((reporteData.totales.litros || 0) * 10) / 10)} L` },
                                 { label: 'Combustible',   value: CLP(reporteData.totales.montoCombustible) },
                                 { label: 'Peajes',        value: CLP(reporteData.totales.montoPeajes) },
                                 { label: 'Actividades',   value: NUM(reporteData.totales.nActividades) },
@@ -1194,10 +1296,13 @@ export default function PortalConductor() {
                               totales: reporteData.totales,
                               mostrarTotales: true,
                               incluirTraslados: inclTrasladosPDF,
+                              vehiculo: veh,
+                              conductor: cond,
                             } : {
                               titulo: `Reporte ${MESES_NOMBRE[mesFiltrado.mesNum - 1]} ${anioReporte}`,
                               chips: [
                                 { label: 'Km recorridos', value: `${NUM(mesFiltrado.kmRecorridos)} km`, sub: 'En el mes' },
+                                { label: 'Litros',        value: `${NUM(Math.round((mesFiltrado.litros || 0) * 10) / 10)} L` },
                                 { label: 'Combustible',   value: CLP(mesFiltrado.montoCombustible) },
                                 { label: 'Peajes',        value: CLP(mesFiltrado.montoPeajes) },
                                 { label: 'Actividades',   value: NUM(mesFiltrado.nActividades) },
@@ -1205,6 +1310,8 @@ export default function PortalConductor() {
                               meses: [mesFiltrado],
                               mostrarTotales: false,
                               incluirTraslados: inclTrasladosPDF,
+                              vehiculo: veh,
+                              conductor: cond,
                             })
                           }}
                           className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold border border-[#2d3039] text-zinc-400 hover:text-white hover:bg-[#2b2d35] transition-colors whitespace-nowrap"
@@ -1429,6 +1536,13 @@ export default function PortalConductor() {
             {modalLlegada.kmSalida != null && (
               <div className="text-xs text-zinc-500 mb-3">Salida: {modalLlegada.kmSalida.toLocaleString('es-CL')} km</div>
             )}
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Hora de llegada</label>
+            <input
+              type="time"
+              className="w-full bg-[#1C1F26] border border-[#3d4049] rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 mb-3"
+              value={horaLlegadaInput}
+              onChange={e => setHoraLlegadaInput(e.target.value)}
+            />
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">Odómetro de llegada (km)</label>
             <input
               type="number"
