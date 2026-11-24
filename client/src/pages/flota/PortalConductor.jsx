@@ -291,6 +291,7 @@ export default function PortalConductor() {
         fecha: new Date().toISOString().slice(0, 10),
       }))
       cargar(true) // refresca odómetro, mantiene el vehículo seleccionado
+      cargarActRecientes(vehiculoActivo?.id) // refresca traslado en curso / recientes al instante
     } catch (e) {
       setErrorForm(e.response?.data?.error || 'Error al registrar actividad')
     } finally {
