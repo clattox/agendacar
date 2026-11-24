@@ -248,9 +248,6 @@ router.patch('/actividad/:id/llegada', async (req, res) => {
     const { id: usuarioId, tenantId } = req.user
     const actividadId = req.params.id
     const km = Number(req.body.kmLlegada)
-    // fechaLlegada es opcional: el frontend la envía solo si el conductor
-    // especificó una hora de llegada distinta a "ahora" (campo colapsado).
-    const fechaLlegada = req.body.fechaLlegada ? new Date(req.body.fechaLlegada) : new Date()
 
     if (!km || km <= 0) return res.status(400).json({ error: 'kmLlegada inválido' })
 
@@ -284,7 +281,7 @@ router.patch('/actividad/:id/llegada', async (req, res) => {
     await prisma.$transaction(async tx => {
       await tx.trasladoRegistro.update({
         where: { id: actividad.trasladoRegistro.id },
-        data:  { kmLlegada: km, fechaLlegada },
+        data:  { kmLlegada: km },
       })
       if (km > actividad.vehiculo.odometroActual) {
         await tx.flotaVehiculo.update({
@@ -307,7 +304,7 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
   try {
     const { id: usuarioId, tenantId } = req.user
     const actividadId = req.params.id
-    const { destino, motivo, kmSalida, kmLlegada, fecha, fechaLlegada } = req.body
+    const { destino, motivo, kmSalida, kmLlegada, fecha } = req.body
 
     if (!destino) return res.status(400).json({ error: 'destino es obligatorio' })
 
@@ -342,18 +339,17 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
           motivo:    motivo    || null,
           kmSalida:  kmS,
           kmLlegada: kmL,
-          // fechaLlegada es undefined cuando el conductor no editó la hora
-          // de llegada (no tocar el campo); null/ISO cuando sí la editó.
-          ...(fechaLlegada !== undefined ? { fechaLlegada: fechaLlegada ? new Date(fechaLlegada) : null } : {}),
         },
       })
       if (fecha) {
-        // El frontend siempre combina fecha + hora local antes de enviar
-        // (new Date(...).toISOString()), así que acá ya llega una fecha-hora
-        // completa — new Date(fecha) la interpreta correctamente sin desfase.
+        // fecha llega como 'YYYY-MM-DD' sin hora. new Date('YYYY-MM-DD') la
+        // interpreta como medianoche UTC, lo que al mostrarla en hora de
+        // Chile (UTC-3) retrocede al día anterior. Anclamos a mediodía UTC
+        // para que el día calendario se mantenga correcto en cualquier
+        // huso horario razonable.
         await tx.flotaActividad.update({
           where: { id: actividadId },
-          data:  { fecha: new Date(fecha) },
+          data:  { fecha: new Date(`${fecha}T12:00:00.000Z`) },
         })
       }
       // Actualizar odómetro si kmLlegada es el mayor
