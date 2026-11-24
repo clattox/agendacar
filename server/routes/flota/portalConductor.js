@@ -338,9 +338,14 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
         },
       })
       if (fecha) {
+        // fecha llega como 'YYYY-MM-DD' sin hora. new Date('YYYY-MM-DD') la
+        // interpreta como medianoche UTC, lo que al mostrarla en hora de
+        // Chile (UTC-3) retrocede al día anterior. Anclamos a mediodía UTC
+        // para que el día calendario se mantenga correcto en cualquier
+        // huso horario razonable.
         await tx.flotaActividad.update({
           where: { id: actividadId },
-          data:  { fecha: new Date(fecha) },
+          data:  { fecha: new Date(`${fecha}T12:00:00.000Z`) },
         })
       }
       // Actualizar odómetro si kmLlegada es el mayor
