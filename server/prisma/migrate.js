@@ -456,6 +456,14 @@ async function main () {
       ON "PlanMantencionVehiculo"("vehiculoId", "plantillaId")
   `)
 
+// ── Migración: fecha_llegada_traslado ────────────────────────────────────────
+  console.log('[migrate] fecha_llegada_traslado...')
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "TrasladoRegistro"
+      ADD COLUMN IF NOT EXISTS "fechaLlegada" TIMESTAMPTZ
+  `)
+
 // ────────────────────────────────────────────────────────────────────────────
   console.log('[migrate] ✓ Todas las migraciones aplicadas correctamente.')
 }
