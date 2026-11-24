@@ -412,10 +412,10 @@ export default function VehiculoDetalle() {
           {/* Stats del mes */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard label="Gasto total"   value={FMT(stats.gastoTotal)}        icon="💰" />
-              <StatCard label="Combustible"   value={FMT(stats.gastoCombustible)}  sub={stats.litrosTotales ? `${Number(stats.litrosTotales).toFixed(1)} L` : ''} icon="⛽" />
-              <StatCard label="Peajes"        value={FMT(stats.gastoPeajes)}       icon="🏷️" />
-              <StatCard label="Km recorridos" value={KM(stats.kmRecorridos)}       icon="📍" />
+              <StatCard label="Gasto total"   value={FMT(stats.gastoTotal)}       color="total" />
+              <StatCard label="Combustible"   value={FMT(stats.gastoCombustible)} color="combustible" sub={stats.litrosTotales ? `${Number(stats.litrosTotales).toFixed(1)} L cargados` : 'Sin registros'} />
+              <StatCard label="Peajes"        value={FMT(stats.gastoPeajes)}      color="peajes" />
+              <StatCard label="Km recorridos" value={stats.kmRecorridos > 0 ? KM(stats.kmRecorridos) : '—'} color="km" />
             </div>
           )}
 
@@ -467,21 +467,43 @@ export default function VehiculoDetalle() {
                 </button>
               </div>
             )}
-            {actividades.length > 0 && (
-              <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
-                <div className="divide-y divide-[#E5E7EB]">
-                  {actividades.slice(0, 10).map(act => (
-                    <ActividadRow
-                      key={act.id}
-                      actividad={act}
-                      esAdmin={esAdmin}
-                      onEditComb={esAdmin && act.tipo === 'COMBUSTIBLE' ? () => setModalEditComb(act) : null}
-                      onDelete={esAdmin ? () => eliminarActividad(act.id) : null}
-                    />
+            {actividades.length > 0 && (() => {
+              // Agrupar por fecha (día)
+              const grupos = []
+              let diaActual = null
+              actividades.slice(0, 10).forEach(act => {
+                const dia = new Date(act.fecha).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+                if (dia !== diaActual) {
+                  diaActual = dia
+                  grupos.push({ dia, actos: [] })
+                }
+                grupos[grupos.length - 1].actos.push(act)
+              })
+              return (
+                <div className="flex flex-col gap-3">
+                  {grupos.map(({ dia, actos }) => (
+                    <div key={dia}>
+                      <div className="text-xs font-semibold text-[#A0A6AE] uppercase tracking-wider px-1 mb-1.5 capitalize">
+                        {dia}
+                      </div>
+                      <div className="bg-white border border-[#E1E4E8] rounded-xl overflow-hidden">
+                        <div className="divide-y divide-[#E5E7EB]">
+                          {actos.map(act => (
+                            <ActividadRow
+                              key={act.id}
+                              actividad={act}
+                              esAdmin={esAdmin}
+                              onEditComb={esAdmin && act.tipo === 'COMBUSTIBLE' ? () => setModalEditComb(act) : null}
+                              onDelete={esAdmin ? () => eliminarActividad(act.id) : null}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )
+            })()}
           </div>
         </div>
       )}
@@ -1208,14 +1230,23 @@ function InfoItem({ label, value, alert }) {
   )
 }
 
-function StatCard({ label, value, sub, icon }) {
+const STAT_COLORS = {
+  total:       'bg-amber-50   border-amber-200   text-amber-700',
+  combustible: 'bg-orange-50  border-orange-200  text-orange-700',
+  peajes:      'bg-purple-50  border-purple-200  text-purple-700',
+  km:          'bg-sky-50     border-sky-200     text-sky-700',
+  default:     'bg-white      border-[#E1E4E8]   text-[#252A31]',
+}
+
+function StatCard({ label, value, sub, icon, color }) {
+  const cls = STAT_COLORS[color] || STAT_COLORS.default
   return (
-    <div className="bg-white border border-[#E1E4E8] rounded-xl px-4 py-3.5 flex items-center gap-3">
-      <span className="text-xl">{icon}</span>
+    <div className={`rounded-xl border px-4 py-3.5 flex items-center gap-3 ${cls}`}>
+      {icon && <span className="text-xl flex-shrink-0">{icon}</span>}
       <div className="min-w-0">
-        <div className="text-xs text-[#737B86]">{label}</div>
-        <div className="text-base font-bold text-[#252A31] leading-tight mt-0.5">{value}</div>
-        {sub && <div className="text-xs text-[#737B86] mt-0.5">{sub}</div>}
+        <div className="text-xs font-semibold opacity-60 uppercase tracking-wide">{label}</div>
+        <div className="text-base font-bold leading-tight mt-0.5">{value}</div>
+        {sub && <div className="text-xs opacity-60 mt-0.5">{sub}</div>}
       </div>
     </div>
   )
