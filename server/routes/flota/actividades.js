@@ -287,6 +287,59 @@ router.post('/', async (req, res) => {
   }
 })
 
+// ——— PATCH /api/flota/actividades/:id/llegada ————————————————
+// Completa el km de llegada de un traslado pendiente
+router.patch('/:id/llegada', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { id } = req.params
+    const { kmLlegada } = req.body
+
+    if (!kmLlegada || isNaN(Number(kmLlegada)) || Number(kmLlegada) <= 0) {
+      return res.status(400).json({ error: 'kmLlegada es obligatorio y debe ser un número positivo' })
+    }
+
+    const km = Number(kmLlegada)
+
+    // Verificar que es un traslado del tenant sin km llegada aún
+    const actividad = await prisma.flotaActividad.findFirst({
+      where: { id, tenantId, tipo: 'TRASLADO' },
+      include: {
+        trasladoRegistro: { select: { id: true, kmSalida: true, kmLlegada: true } },
+        vehiculo: { select: { id: true, odometroActual: true } },
+      }
+    })
+    if (!actividad) return res.status(404).json({ error: 'Traslado no encontrado' })
+    if (!actividad.trasladoRegistro) return res.status(400).json({ error: 'Esta actividad no tiene registro de traslado' })
+    if (actividad.trasladoRegistro.kmLlegada != null) {
+      return res.status(400).json({ error: 'Este traslado ya tiene km de llegada registrado' })
+    }
+    if (actividad.trasladoRegistro.kmSalida && km <= actividad.trasladoRegistro.kmSalida) {
+      return res.status(400).json({ error: 'El km de llegada debe ser mayor al km de salida' })
+    }
+
+    await prisma.$transaction(async tx => {
+      // Actualizar el registro de traslado
+      await tx.trasladoRegistro.update({
+        where: { id: actividad.trasladoRegistro.id },
+        data:  { kmLlegada: km },
+      })
+      // Actualizar odómetro del vehículo si corresponde
+      if (km > (actividad.vehiculo.odometroActual || 0)) {
+        await tx.flotaVehiculo.update({
+          where: { id: actividad.vehiculo.id },
+          data:  { odometroActual: km },
+        })
+      }
+    })
+
+    res.json({ ok: true, kmLlegada: km })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al registrar km de llegada' })
+  }
+})
+
 // ——— DELETE /api/flota/actividades/:id ————————————————————————
 router.delete('/:id', async (req, res) => {
   try {

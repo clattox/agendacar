@@ -125,6 +125,10 @@ export default function VehiculoDetalle() {
   const [modalEditar,     setModalEditar]     = useState(false)
   const [modalEditComb,   setModalEditComb]   = useState(null)
   const [modalRecarga,    setModalRecarga]    = useState(false)
+  const [modalLlegada,    setModalLlegada]    = useState(null)  // { actId, kmSalida, destino }
+  const [kmLlegadaInput,  setKmLlegadaInput]  = useState('')
+  const [savingLlegada,   setSavingLlegada]   = useState(false)
+  const [errorLlegada,    setErrorLlegada]    = useState('')
 
   const usuario = getUsuario()
   const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin'
@@ -174,6 +178,29 @@ export default function VehiculoDetalle() {
     await api.delete(`/flota/actividades/${actId}`)
     await cargarActividades(1, filtroTipo)
   }, [cargarActividades, filtroTipo])
+
+  const completarLlegada = useCallback(async () => {
+    if (!modalLlegada) return
+    const km = Number(kmLlegadaInput)
+    if (!km || km <= 0) { setErrorLlegada('Ingresa un odómetro válido'); return }
+    if (modalLlegada.kmSalida && km <= modalLlegada.kmSalida) {
+      setErrorLlegada(`Debe ser mayor al km de salida (${modalLlegada.kmSalida.toLocaleString('es-CL')} km)`)
+      return
+    }
+    setSavingLlegada(true)
+    setErrorLlegada('')
+    try {
+      await api.patch(`/flota/actividades/${modalLlegada.actId}/llegada`, { kmLlegada: km })
+      setModalLlegada(null)
+      setKmLlegadaInput('')
+      await cargarActividades(1, filtroTipo)
+      await cargarVehiculo()
+    } catch (e) {
+      setErrorLlegada(e?.response?.data?.error || 'Error al guardar')
+    } finally {
+      setSavingLlegada(false)
+    }
+  }, [modalLlegada, kmLlegadaInput, cargarActividades, cargarVehiculo, filtroTipo])
 
   // Abrir modal de documentos automáticamente si viene con ?docs=1
   useEffect(() => {
@@ -670,19 +697,24 @@ export default function VehiculoDetalle() {
                 const kmRec = t.kmSalida != null && t.kmLlegada != null
                   ? t.kmLlegada - t.kmSalida
                   : null
+                const pendiente = t.kmSalida != null && t.kmLlegada == null
                 return (
-                  <div key={act.id} className="bg-white rounded-xl border border-[#E1E4E8] p-4">
+                  <div key={act.id} className={`bg-white rounded-xl border p-4 ${pendiente ? 'border-amber-300' : 'border-[#E1E4E8]'}`}>
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="flex flex-col gap-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-semibold text-[#252A31] truncate">
                             {t.destino}
                           </span>
-                          {kmRec != null && (
+                          {pendiente ? (
+                            <span className="text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full whitespace-nowrap font-semibold">
+                              En curso
+                            </span>
+                          ) : kmRec != null ? (
                             <span className="text-xs bg-sky-50 text-sky-600 px-2 py-0.5 rounded-full whitespace-nowrap font-medium">
                               {KM(kmRec)}
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         {t.motivo && (
                           <span className="text-xs text-[#737B86]">{t.motivo}</span>
@@ -703,6 +735,18 @@ export default function VehiculoDetalle() {
                         <div className="text-xs text-[#A0A6AE] whitespace-nowrap">
                           {new Date(act.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </div>
+                        {pendiente && (
+                          <button
+                            onClick={() => { setModalLlegada({ actId: act.id, kmSalida: t.kmSalida, destino: t.destino }); setKmLlegadaInput(''); setErrorLlegada('') }}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-colors whitespace-nowrap"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Registrar llegada
+                          </button>
+                        )}
                         {esAdmin && (
                           <button
                             onClick={() => eliminarActividad(act.id)}
@@ -858,6 +902,60 @@ export default function VehiculoDetalle() {
           onClose={() => setModalRecarga(false)}
           onSuccess={v => { setVehiculo(v); setModalRecarga(false) }}
         />
+      )}
+
+      {/* Modal: completar km llegada */}
+      {modalLlegada && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-[#252A31]">Registrar llegada</h3>
+                <p className="text-xs text-[#737B86] mt-0.5">{modalLlegada.destino}</p>
+              </div>
+              <button onClick={() => setModalLlegada(null)} className="text-[#A0A6AE] hover:text-[#252A31] transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-[#252A31]">Odómetro de llegada (km)</label>
+              {modalLlegada.kmSalida != null && (
+                <p className="text-xs text-[#A0A6AE]">Salida: {modalLlegada.kmSalida.toLocaleString('es-CL')} km</p>
+              )}
+              <input
+                type="number"
+                value={kmLlegadaInput}
+                onChange={e => { setKmLlegadaInput(e.target.value); setErrorLlegada('') }}
+                onKeyDown={e => e.key === 'Enter' && completarLlegada()}
+                placeholder={modalLlegada.kmSalida ? `Mayor a ${modalLlegada.kmSalida.toLocaleString('es-CL')}` : 'Ej: 197500'}
+                className="w-full px-3 py-2.5 rounded-xl border border-[#E1E4E8] text-sm text-[#252A31] focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                autoFocus
+              />
+              {errorLlegada && (
+                <p className="text-xs text-red-500">{errorLlegada}</p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setModalLlegada(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-[#E1E4E8] text-sm text-[#737B86] hover:bg-[#F5F6F7] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={completarLlegada}
+                disabled={savingLlegada || !kmLlegadaInput}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+              >
+                {savingLlegada ? 'Guardando…' : 'Guardar llegada'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
