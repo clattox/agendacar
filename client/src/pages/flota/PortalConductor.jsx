@@ -327,6 +327,12 @@ export default function PortalConductor() {
     }
   }
 
+  function cerrarModalEdit() {
+    setModalEditTraslado(null)
+    setVerHoraSalidaEdit(false)
+    setVerHoraLlegadaEdit(false)
+  }
+
   async function guardarEditTraslado() {
     if (!modalEditTraslado.destino?.trim()) return setErrorEditTraslado('El destino es obligatorio')
     const kmS = modalEditTraslado.kmSalida  ? Number(modalEditTraslado.kmSalida)  : null
@@ -344,7 +350,7 @@ export default function PortalConductor() {
         horaSalida:  modalEditTraslado.horaSalida  || undefined,
         horaLlegada: (kmL && modalEditTraslado.horaLlegada) ? modalEditTraslado.horaLlegada : undefined,
       })
-      setModalEditTraslado(null)
+      cerrarModalEdit()
       cargar(true)
       cargarActRecientes(vehiculoActivo?.id)
     } catch (e) {
@@ -1338,13 +1344,13 @@ export default function PortalConductor() {
       {/* ——— Modal editar traslado ————————————————————— */}
       {modalEditTraslado && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-4 pb-4 sm:pb-0">
-          <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl w-full max-w-sm p-5 space-y-4">
+          <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-bold">Editar traslado</div>
                 <div className="text-xs text-zinc-500 mt-0.5">Modifica los datos del traslado</div>
               </div>
-              <button onClick={() => setModalEditTraslado(null)} className="text-zinc-500 hover:text-white p-1">
+              <button onClick={cerrarModalEdit} className="text-zinc-500 hover:text-white p-1">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -1463,7 +1469,7 @@ export default function PortalConductor() {
 
             <div className="flex gap-2 pt-1">
               <button
-                onClick={() => setModalEditTraslado(null)}
+                onClick={cerrarModalEdit}
                 className="flex-1 py-2.5 rounded-xl border border-[#3d4049] text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
               >
                 Cancelar
