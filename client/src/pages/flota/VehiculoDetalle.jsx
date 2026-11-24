@@ -306,15 +306,47 @@ export default function VehiculoDetalle() {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-4 mt-1 flex-wrap">
-              <span className="font-mono text-sm text-[#252A31] tracking-widest">{vehiculo.patente}</span>
-              <span className="text-[#737B86] text-sm">{vehiculo.anio}</span>
-              {vehiculo.categoria && <span className="text-[#737B86] text-sm">{vehiculo.categoria}</span>}
-              {vehiculo.color && <span className="text-[#737B86] text-sm">{vehiculo.color}</span>}
-              {vehiculo.numeroInterno && <span className="text-xs bg-[#F4F5F6] text-[#737B86] px-2 py-0.5 rounded font-mono border border-[#E1E4E8]">#{vehiculo.numeroInterno}</span>}
-              {vehiculo.region && <span className="text-xs text-[#737B86]">{vehiculo.region}</span>}
-              {vehiculo.unidadOperativa && <span className="text-xs text-[#737B86]">{vehiculo.unidadOperativa}</span>}
+            {/* Línea 1 — identidad del vehículo: patente, año, categoría, color */}
+            <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5 text-sm">
+              <span className="font-mono font-semibold text-[#252A31] tracking-widest">{vehiculo.patente}</span>
+              {[vehiculo.anio, vehiculo.categoria, vehiculo.color].filter(Boolean).map((val, i) => (
+                <span key={i} className="flex items-center gap-2 text-[#737B86]">
+                  <span className="text-[#D1D5DB]">·</span>{val}
+                </span>
+              ))}
             </div>
+
+            {/* Línea 2 — datos operativos: tag interno, región, unidad */}
+            {(vehiculo.numeroInterno || vehiculo.region || vehiculo.unidadOperativa) && (
+              <div className="flex items-center flex-wrap gap-2 mt-2">
+                {vehiculo.numeroInterno && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-mono font-medium bg-[#F4F5F6] text-[#4B5563] px-2 py-1 rounded-md border border-[#E1E4E8]">
+                    <svg className="w-3 h-3 text-[#A0A6AE]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+                      <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
+                    </svg>
+                    {vehiculo.numeroInterno}
+                  </span>
+                )}
+                {vehiculo.region && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-[#737B86]">
+                    <svg className="w-3.5 h-3.5 text-[#A0A6AE]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M12 21s-7-6.4-7-11a7 7 0 1114 0c0 4.6-7 11-7 11z" />
+                      <circle cx="12" cy="10" r="2.5" />
+                    </svg>
+                    {vehiculo.region}
+                  </span>
+                )}
+                {vehiculo.unidadOperativa && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-[#737B86]">
+                    <svg className="w-3.5 h-3.5 text-[#A0A6AE]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+                    </svg>
+                    {vehiculo.unidadOperativa}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Acciones */}
