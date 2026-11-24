@@ -135,6 +135,7 @@ export default function PortalConductor() {
   const [form,    setForm]    = useState({
     tipo:            'COMBUSTIBLE',
     fecha:           new Date().toISOString().slice(0, 10),
+    hora:            '', // opcional — vacío = hora del momento en que se registra
     notas:           '',
     odometroActual:  '',
     tipoCombustible: 'BENCINA_95',
@@ -229,6 +230,7 @@ export default function PortalConductor() {
       tipoMantencion: '', taller: '', costo: '', numeroFolio: '', proxFecha: '', proxKm: '',
       notas: '',
       fecha: new Date().toISOString().slice(0, 10),
+      hora: '',
     }))
     setExito('')
     setErrorForm('')
@@ -265,10 +267,14 @@ export default function PortalConductor() {
     }
     setEnviando(true)
     try {
-      // Combinar la fecha elegida con la hora actual local para evitar desfase UTC
+      // Combinar la fecha elegida con una hora para evitar desfase UTC.
+      // Si el conductor indicó una hora (útil al registrar actividades
+      // atrasadas), se usa esa; si no, se usa la hora actual del momento
+      // en que se está registrando.
       const ahora = new Date()
       const [anio, mes, dia] = form.fecha.split('-').map(Number)
-      const fechaConHora = new Date(anio, mes - 1, dia, ahora.getHours(), ahora.getMinutes(), ahora.getSeconds())
+      const [horaH, horaM] = form.hora ? form.hora.split(':').map(Number) : [ahora.getHours(), ahora.getMinutes()]
+      const fechaConHora = new Date(anio, mes - 1, dia, horaH, horaM, 0)
 
       await api.post('/flota/portal/actividad', {
         ...form,
@@ -633,16 +639,27 @@ export default function PortalConductor() {
                     </div>
                   </div>
 
-                  {/* Fecha */}
-                  <Field label="Fecha">
-                    <input
-                      type="date"
-                      value={form.fecha}
-                      onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))}
-                      className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
-                      required
-                    />
-                  </Field>
+                  {/* Fecha + Hora */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Fecha">
+                      <input
+                        type="date"
+                        value={form.fecha}
+                        onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))}
+                        className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                        required
+                      />
+                    </Field>
+                    <Field label="Hora (opcional)">
+                      <input
+                        type="time"
+                        value={form.hora}
+                        onChange={e => setForm(p => ({ ...p, hora: e.target.value }))}
+                        placeholder="Ahora"
+                        className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                      />
+                    </Field>
+                  </div>
 
                   {/* Campos según tipo */}
                   {form.tipo === 'KILOMETRAJE' && (
