@@ -5,7 +5,7 @@
 // Opción "Ver año completo" muestra la tabla con los 12 meses.
 
 import { useState } from 'react'
-import { useReporteMensual, useVehiculosLista } from '../../hooks/useFlota'
+import { useReporteMensual, useVehiculosLista, useTenantInfo } from '../../hooks/useFlota'
 
 const CLP = v => v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 const NUM = v => v.toLocaleString('es-CL')
@@ -122,7 +122,7 @@ function TablaReporte({ meses, totales, titulo, mostrarTotales = true }) {
   )
 }
 
-function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true }) {
+function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true, vehiculo = null, tenant = null }) {
   const filas = meses.map(m => {
     const totalGasto = m.montoCombustible + m.montoPeajes
     const sinDatos   = m.nActividades === 0
@@ -158,6 +158,30 @@ function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true }) {
       ${c.sub ? `<div class="chip-sub">${c.sub}</div>` : ''}
     </div>`).join('')
 
+  // Cabecera: logo + nombre empresa
+  const logoHtml = tenant?.logoUrl
+    ? `<img src="${tenant.logoUrl}" alt="Logo" style="height:40px;object-fit:contain;max-width:160px;" />`
+    : ''
+  const nombreEmpresa = tenant?.nombre || 'AgendaCar'
+
+  // Ficha del vehículo (solo cuando hay un vehículo seleccionado)
+  const fichaVehiculoHtml = vehiculo ? `
+    <div class="ficha-vehiculo">
+      <div class="ficha-col">
+        <span class="ficha-label">Patente</span>
+        <span class="ficha-valor patente">${vehiculo.patente}</span>
+      </div>
+      <div class="ficha-col">
+        <span class="ficha-label">Vehículo</span>
+        <span class="ficha-valor">${[vehiculo.marca, vehiculo.modelo, vehiculo.anio].filter(Boolean).join(' ')}</span>
+      </div>
+      ${vehiculo.conductor?.nombre ? `
+      <div class="ficha-col">
+        <span class="ficha-label">Conductor</span>
+        <span class="ficha-valor">${vehiculo.conductor.nombre}</span>
+      </div>` : ''}
+    </div>` : ''
+
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -165,30 +189,67 @@ function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true }) {
 <title>${titulo}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, Arial, sans-serif; font-size: 12px; color: #111; padding: 32px; }
-  h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
-  .subtitle { font-size: 11px; color: #666; margin-bottom: 20px; }
-  .chips { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-  .chip { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; min-width: 130px; }
-  .chip-label { font-size: 10px; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
-  .chip-value { font-size: 16px; font-weight: 700; margin: 2px 0 1px; }
+  body { font-family: -apple-system, Arial, sans-serif; font-size: 12px; color: #111; padding: 32px 36px; }
+
+  /* Cabecera */
+  .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #f59e0b; }
+  .header-left { display: flex; flex-direction: column; gap: 4px; }
+  .header-logo { margin-bottom: 4px; }
+  .header-empresa { font-size: 11px; color: #6b7280; font-weight: 500; }
+  .header-right { text-align: right; }
+  .header-titulo { font-size: 17px; font-weight: 700; color: #111; line-height: 1.2; }
+  .header-fecha { font-size: 10px; color: #9ca3af; margin-top: 3px; }
+
+  /* Ficha vehículo */
+  .ficha-vehiculo { display: flex; gap: 24px; margin-bottom: 20px; padding: 12px 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; flex-wrap: wrap; }
+  .ficha-col { display: flex; flex-direction: column; gap: 2px; }
+  .ficha-label { font-size: 9px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .ficha-valor { font-size: 13px; font-weight: 600; color: #111; }
+  .patente { font-size: 15px; letter-spacing: 0.08em; }
+
+  /* Chips */
+  .chips { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .chip { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; min-width: 120px; }
+  .chip-label { font-size: 9px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .chip-value { font-size: 15px; font-weight: 700; margin: 2px 0 1px; }
   .chip-sub { font-size: 10px; color: #9ca3af; }
-  h2 { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-  h2::before { content: ''; display: inline-block; width: 12px; height: 12px; background: #f59e0b; border-radius: 2px; }
+
+  /* Sección */
+  h2 { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  h2::before { content: ''; display: inline-block; width: 10px; height: 10px; background: #f59e0b; border-radius: 2px; }
+
+  /* Tabla */
   table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  th { text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 2px solid #e5e7eb; background: #f9fafb; }
+  th { text-align: left; padding: 7px 10px; font-size: 9.5px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 2px solid #e5e7eb; background: #f9fafb; }
   td { padding: 7px 10px; border-bottom: 1px solid #f3f4f6; }
+  tr:last-child td { border-bottom: none; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
   .bold { font-weight: 600; }
   tfoot .total-row td { font-weight: 700; border-top: 2px solid #d1d5db; border-bottom: none; background: #f9fafb; }
   .amber { color: #d97706; }
-  .footer { margin-top: 24px; font-size: 10px; color: #9ca3af; text-align: right; }
+
+  /* Footer */
+  .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
+  .footer-brand { font-size: 10px; color: #9ca3af; }
+  .footer-brand strong { color: #6b7280; }
 </style>
 </head>
 <body>
-  <h1>${titulo}</h1>
-  <div class="subtitle">Generado el ${new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'long', year:'numeric' })}</div>
+  <div class="header">
+    <div class="header-left">
+      ${logoHtml ? `<div class="header-logo">${logoHtml}</div>` : ''}
+      <div class="header-empresa">${logoHtml ? '' : nombreEmpresa}</div>
+    </div>
+    <div class="header-right">
+      <div class="header-titulo">${titulo}</div>
+      <div class="header-fecha">Generado el ${new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'long', year:'numeric' })}</div>
+    </div>
+  </div>
+
+  ${fichaVehiculoHtml}
+
   <div class="chips">${chipsHtml}</div>
+
   <h2>Detalle</h2>
   <table>
     <thead>
@@ -205,7 +266,11 @@ function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true }) {
     <tbody>${filas}</tbody>
     ${filaTotales}
   </table>
-  <div class="footer">AgendaCar · Reporte de flota</div>
+
+  <div class="footer">
+    <div class="footer-brand"><strong>${nombreEmpresa}</strong> · Reporte de flota</div>
+    <div class="footer-brand">AgendaCar</div>
+  </div>
 </body>
 </html>`
 
@@ -228,6 +293,7 @@ export default function Reportes() {
 
   const { data, loading, error }                   = useReporteMensual(anio, vehiculoId || null)
   const { data: vehiculos, error: vehiculosError } = useVehiculosLista()
+  const { data: tenant }                           = useTenantInfo()
 
   // Años disponibles: desde 2024 hasta 2030 (o el año actual si supera 2030)
   const ANIO_INICIO = 2024
@@ -348,9 +414,9 @@ export default function Reportes() {
                 {mesSeleccionado && mesSeleccionado.nActividades > 0 && (
                   <button
                     onClick={() => {
-                      const patente = vehiculoId && vehiculos ? vehiculos.find(v => v.id === vehiculoId)?.patente : null
+                      const veh = vehiculoId && vehiculos ? vehiculos.find(v => v.id === vehiculoId) : null
                       exportarPDF({
-                        titulo: `Reporte ${MESES[mes]} ${anio}${patente ? ' · ' + patente : ''}`,
+                        titulo: `Reporte ${MESES[mes]} ${anio}${veh ? ' · ' + veh.patente : ''}`,
                         chips: [
                           { label: 'Km recorridos', value: `${NUM(mesSeleccionado.kmRecorridos)} km`, sub: 'En el mes' },
                           { label: 'Combustible', value: CLP(mesSeleccionado.montoCombustible), sub: mesSeleccionado.litros > 0 ? `${NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L cargados` : 'Sin registros' },
@@ -359,6 +425,8 @@ export default function Reportes() {
                         ],
                         meses: [mesSeleccionado],
                         mostrarTotales: false,
+                        vehiculo: veh || null,
+                        tenant,
                       })
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
@@ -533,9 +601,9 @@ export default function Reportes() {
                 {data.totales.nActividades > 0 && (
                   <button
                     onClick={() => {
-                      const patente = vehiculoId && vehiculos ? vehiculos.find(v => v.id === vehiculoId)?.patente : null
+                      const veh = vehiculoId && vehiculos ? vehiculos.find(v => v.id === vehiculoId) : null
                       exportarPDF({
-                        titulo: `Reporte anual ${anio}${patente ? ' · ' + patente : ''}`,
+                        titulo: `Reporte anual ${anio}${veh ? ' · ' + veh.patente : ''}`,
                         chips: [
                           { label: 'Km totales', value: `${NUM(data.totales.kmRecorridos)} km`, sub: `Año ${anio}` },
                           { label: 'Combustible', value: CLP(data.totales.montoCombustible), sub: `${NUM(Math.round(data.totales.litros * 10) / 10)} L cargados` },
@@ -545,6 +613,8 @@ export default function Reportes() {
                         meses: data.meses,
                         totales: data.totales,
                         mostrarTotales: true,
+                        vehiculo: veh || null,
+                        tenant,
                       })
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
