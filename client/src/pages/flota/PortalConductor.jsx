@@ -172,7 +172,8 @@ export default function PortalConductor() {
   const [loadingActRec,   setLoadingActRec]   = useState(false)
 
   // Modal editar traslado
-  const [modalEditTraslado,  setModalEditTraslado]  = useState(null) // { actId, destino, motivo, kmSalida, kmLlegada, fecha }
+  const [modalEditTraslado,  setModalEditTraslado]  = useState(null) // { actId, destino, motivo, kmSalida, kmLlegada, fecha, horaLlegada }
+  const [verHoraLlegadaEdit, setVerHoraLlegadaEdit] = useState(false)
   const [savingEditTraslado, setSavingEditTraslado] = useState(false)
   const [errorEditTraslado,  setErrorEditTraslado]  = useState('')
 
@@ -334,11 +335,12 @@ export default function PortalConductor() {
     setErrorEditTraslado('')
     try {
       await api.patch(`/flota/portal/actividad/${modalEditTraslado.actId}/traslado`, {
-        destino:   modalEditTraslado.destino.trim(),
-        motivo:    modalEditTraslado.motivo?.trim() || null,
-        kmSalida:  kmS,
-        kmLlegada: kmL,
-        fecha:     modalEditTraslado.fecha || undefined,
+        destino:     modalEditTraslado.destino.trim(),
+        motivo:      modalEditTraslado.motivo?.trim() || null,
+        kmSalida:    kmS,
+        kmLlegada:   kmL,
+        fecha:       modalEditTraslado.fecha || undefined,
+        horaLlegada: (kmL && modalEditTraslado.horaLlegada) ? modalEditTraslado.horaLlegada : undefined,
       })
       setModalEditTraslado(null)
       cargar(true)
@@ -523,14 +525,15 @@ export default function PortalConductor() {
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
-                            onClick={() => setModalEditTraslado({
-                              actId:     act.id,
-                              destino:   act.trasladoRegistro.destino  || '',
-                              motivo:    act.trasladoRegistro.motivo   || '',
-                              kmSalida:  act.trasladoRegistro.kmSalida != null ? String(act.trasladoRegistro.kmSalida) : '',
-                              kmLlegada: '',
-                              fecha:     act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
-                            })}
+                            onClick={() => { setVerHoraLlegadaEdit(false); setModalEditTraslado({
+                              actId:       act.id,
+                              destino:     act.trasladoRegistro.destino  || '',
+                              motivo:      act.trasladoRegistro.motivo   || '',
+                              kmSalida:    act.trasladoRegistro.kmSalida != null ? String(act.trasladoRegistro.kmSalida) : '',
+                              kmLlegada:   '',
+                              fecha:       act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
+                              horaLlegada: '',
+                            }) }}
                             className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap"
                             title="Editar traslado"
                           >
@@ -949,14 +952,19 @@ export default function PortalConductor() {
                               </div>
                             </div>
                             <button
-                              onClick={() => setModalEditTraslado({
-                                actId:     act.id,
-                                destino:   tr.destino   || '',
-                                motivo:    tr.motivo    || '',
-                                kmSalida:  tr.kmSalida  != null ? String(tr.kmSalida)  : '',
-                                kmLlegada: tr.kmLlegada != null ? String(tr.kmLlegada) : '',
-                                fecha:     act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
-                              })}
+                              onClick={() => {
+                                const hl = tr.fechaLlegada ? new Date(tr.fechaLlegada).toTimeString().slice(0, 5) : ''
+                                setVerHoraLlegadaEdit(!!hl)
+                                setModalEditTraslado({
+                                  actId:       act.id,
+                                  destino:     tr.destino   || '',
+                                  motivo:      tr.motivo    || '',
+                                  kmSalida:    tr.kmSalida  != null ? String(tr.kmSalida)  : '',
+                                  kmLlegada:   tr.kmLlegada != null ? String(tr.kmLlegada) : '',
+                                  fecha:       act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
+                                  horaLlegada: hl,
+                                })
+                              }}
                               className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap"
                             >
                               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -1390,6 +1398,29 @@ export default function PortalConductor() {
                 </div>
               </div>
             </div>
+
+            {/* Hora de llegada — solo si hay km llegada */}
+            {modalEditTraslado.kmLlegada && (
+              verHoraLlegadaEdit ? (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Hora de llegada</label>
+                  <input
+                    type="time"
+                    value={modalEditTraslado.horaLlegada}
+                    onChange={e => setModalEditTraslado(p => ({ ...p, horaLlegada: e.target.value }))}
+                    className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setVerHoraLlegadaEdit(true)}
+                  className="text-xs text-zinc-500 hover:text-amber-400 transition-colors text-left"
+                >
+                  + Agregar hora de llegada exacta (opcional)
+                </button>
+              )
+            )}
 
             {errorEditTraslado && (
               <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">

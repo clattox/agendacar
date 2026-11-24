@@ -304,7 +304,7 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
   try {
     const { id: usuarioId, tenantId } = req.user
     const actividadId = req.params.id
-    const { destino, motivo, kmSalida, kmLlegada, fecha } = req.body
+    const { destino, motivo, kmSalida, kmLlegada, fecha, horaLlegada } = req.body
 
     if (!destino) return res.status(400).json({ error: 'destino es obligatorio' })
 
@@ -332,13 +332,21 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
     }
 
     await prisma.$transaction(async tx => {
+      // Calcular fechaLlegada si se proporciona hora manual
+      let fechaLlegadaUpdate = undefined
+      if (kmL && horaLlegada) {
+        const baseDate = fecha || actividad.fecha.toISOString().slice(0, 10)
+        fechaLlegadaUpdate = new Date(`${baseDate}T${horaLlegada}:00`)
+      }
+
       await tx.trasladoRegistro.update({
         where: { id: actividad.trasladoRegistro.id },
         data: {
           destino,
-          motivo:    motivo    || null,
-          kmSalida:  kmS,
-          kmLlegada: kmL,
+          motivo:       motivo    || null,
+          kmSalida:     kmS,
+          kmLlegada:    kmL,
+          ...(fechaLlegadaUpdate !== undefined && { fechaLlegada: fechaLlegadaUpdate }),
         },
       })
       if (fecha) {
