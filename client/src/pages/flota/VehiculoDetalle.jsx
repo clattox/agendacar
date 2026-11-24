@@ -449,6 +449,7 @@ export default function VehiculoDetalle() {
                       actividad={act}
                       esAdmin={esAdmin}
                       onEditComb={esAdmin && act.tipo === 'COMBUSTIBLE' ? () => setModalEditComb(act) : null}
+                      onDelete={esAdmin ? () => eliminarActividad(act.id) : null}
                     />
                   ))}
                 </div>
@@ -698,8 +699,21 @@ export default function VehiculoDetalle() {
                           )}
                         </div>
                       </div>
-                      <div className="text-xs text-[#A0A6AE] whitespace-nowrap shrink-0">
-                        {new Date(act.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <div className="text-xs text-[#A0A6AE] whitespace-nowrap">
+                          {new Date(act.fecha).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                        {esAdmin && (
+                          <button
+                            onClick={() => eliminarActividad(act.id)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:border-red-300 transition-colors"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Eliminar
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
