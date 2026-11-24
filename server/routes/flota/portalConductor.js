@@ -294,6 +294,68 @@ router.patch('/actividad/:id/llegada', async (req, res) => {
   }
 })
 
+// ——— PATCH /api/flota/portal/actividad/:id/traslado ————————
+// El conductor edita los datos de un traslado (suyo)
+router.patch('/actividad/:id/traslado', async (req, res) => {
+  try {
+    const { id: usuarioId, tenantId } = req.user
+    const actividadId = Number(req.params.id)
+    const { destino, motivo, kmSalida, kmLlegada, fecha } = req.body
+
+    if (!destino) return res.status(400).json({ error: 'destino es obligatorio' })
+
+    const conductor = await prisma.conductor.findFirst({
+      where: { usuarioId, tenantId },
+    })
+    if (!conductor) return res.status(403).json({ error: 'Sin perfil de conductor' })
+
+    const actividad = await prisma.flotaActividad.findFirst({
+      where: { id: actividadId, tenantId, tipo: 'TRASLADO' },
+      include: { trasladoRegistro: true, vehiculo: true },
+    })
+    if (!actividad) return res.status(404).json({ error: 'Actividad no encontrada' })
+    if (actividad.vehiculo.conductorId !== conductor.id) {
+      return res.status(403).json({ error: 'No tienes acceso a esta actividad' })
+    }
+
+    const kmS = kmSalida  ? Number(kmSalida)  : null
+    const kmL = kmLlegada ? Number(kmLlegada) : null
+    if (kmS && kmL && kmL <= kmS) {
+      return res.status(400).json({ error: 'Km llegada debe ser mayor al de salida' })
+    }
+
+    await prisma.$transaction(async tx => {
+      await tx.trasladoRegistro.update({
+        where: { id: actividad.trasladoRegistro.id },
+        data: {
+          destino,
+          motivo:    motivo    || null,
+          kmSalida:  kmS,
+          kmLlegada: kmL,
+        },
+      })
+      if (fecha) {
+        await tx.flotaActividad.update({
+          where: { id: actividadId },
+          data:  { fecha: new Date(fecha) },
+        })
+      }
+      // Actualizar odómetro si kmLlegada es el mayor
+      if (kmL && kmL > actividad.vehiculo.odometroActual) {
+        await tx.flotaVehiculo.update({
+          where: { id: actividad.vehiculo.id },
+          data:  { odometroActual: kmL },
+        })
+      }
+    })
+
+    res.json({ message: 'Traslado actualizado' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al actualizar traslado' })
+  }
+})
+
 // ——— GET /api/flota/portal/mis-reportes ————————————————————
 // El conductor ve su propio resumen mensual (todos sus vehículos)
 router.get('/mis-reportes', async (req, res) => {

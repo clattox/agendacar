@@ -169,6 +169,11 @@ export default function PortalConductor() {
   // Actividades recientes (para mostrar traslados en curso)
   const [actRecientes,    setActRecientes]    = useState([])
   const [loadingActRec,   setLoadingActRec]   = useState(false)
+
+  // Modal editar traslado
+  const [modalEditTraslado,  setModalEditTraslado]  = useState(null) // { actId, destino, motivo, kmSalida, kmLlegada, fecha }
+  const [savingEditTraslado, setSavingEditTraslado] = useState(false)
+  const [errorEditTraslado,  setErrorEditTraslado]  = useState('')
   // pdfModal eliminado — documentos se abren en nueva pestaña
 
   useEffect(() => {
@@ -293,6 +298,31 @@ export default function PortalConductor() {
       setErrorLlegada(e.response?.data?.error || 'Error al registrar')
     } finally {
       setSavingLlegada(false)
+    }
+  }
+
+  async function guardarEditTraslado() {
+    if (!modalEditTraslado.destino?.trim()) return setErrorEditTraslado('El destino es obligatorio')
+    const kmS = modalEditTraslado.kmSalida  ? Number(modalEditTraslado.kmSalida)  : null
+    const kmL = modalEditTraslado.kmLlegada ? Number(modalEditTraslado.kmLlegada) : null
+    if (kmS && kmL && kmL <= kmS) return setErrorEditTraslado('Km llegada debe ser mayor al de salida')
+    setSavingEditTraslado(true)
+    setErrorEditTraslado('')
+    try {
+      await api.patch(`/flota/portal/actividad/${modalEditTraslado.actId}/traslado`, {
+        destino:   modalEditTraslado.destino.trim(),
+        motivo:    modalEditTraslado.motivo?.trim() || null,
+        kmSalida:  kmS,
+        kmLlegada: kmL,
+        fecha:     modalEditTraslado.fecha || undefined,
+      })
+      setModalEditTraslado(null)
+      cargar(true)
+      cargarActRecientes(vehiculoActivo?.id)
+    } catch (e) {
+      setErrorEditTraslado(e.response?.data?.error || 'Error al guardar')
+    } finally {
+      setSavingEditTraslado(false)
     }
   }
 
@@ -486,21 +516,92 @@ export default function PortalConductor() {
                             {act.trasladoRegistro.motivo && ` · ${act.trasladoRegistro.motivo}`}
                           </div>
                         </div>
-                        <button
-                          onClick={() => { setModalLlegada({ actId: act.id, kmSalida: act.trasladoRegistro.kmSalida, destino: act.trasladoRegistro.destino }); setKmLlegadaInput(''); setErrorLlegada('') }}
-                          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500 text-black hover:bg-amber-400 transition-colors whitespace-nowrap"
-                        >
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          Registrar llegada
-                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => setModalEditTraslado({
+                              actId:     act.id,
+                              destino:   act.trasladoRegistro.destino  || '',
+                              motivo:    act.trasladoRegistro.motivo   || '',
+                              kmSalida:  act.trasladoRegistro.kmSalida != null ? String(act.trasladoRegistro.kmSalida) : '',
+                              kmLlegada: '',
+                              fecha:     act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
+                            })}
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap"
+                            title="Editar traslado"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => { setModalLlegada({ actId: act.id, kmSalida: act.trasladoRegistro.kmSalida, destino: act.trasladoRegistro.destino }); setKmLlegadaInput(''); setErrorLlegada('') }}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500 text-black hover:bg-amber-400 transition-colors whitespace-nowrap"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Registrar llegada
+                          </button>
+                        </div>
                       </div>
                     ))}
                 </div>
               </section>
             )}
+
+            {/* ——— Traslados recientes (completados, editables) ——— */}
+            {vehiculoActivo && (() => {
+              const trasladosRecientes = actRecientes.filter(a =>
+                a.tipo === 'TRASLADO' && a.trasladoRegistro?.kmLlegada != null
+              )
+              if (trasladosRecientes.length === 0) return null
+              return (
+                <section className="bg-[#22252e] rounded-2xl border border-[#2d3039] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[#2d3039] flex items-center gap-2">
+                    <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                    <span className="text-sm font-semibold text-zinc-300">Traslados recientes</span>
+                    <span className="ml-auto text-xs text-zinc-500">{trasladosRecientes.length} registros</span>
+                  </div>
+                  <div className="divide-y divide-[#2d3039]">
+                    {trasladosRecientes.map(act => {
+                      const tr = act.trasladoRegistro
+                      const km = tr.kmSalida != null && tr.kmLlegada != null ? tr.kmLlegada - tr.kmSalida : null
+                      const fechaStr = new Date(act.fecha).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })
+                      return (
+                        <div key={act.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm text-white truncate">→ {tr.destino}</div>
+                            <div className="text-xs text-zinc-500 mt-0.5">
+                              {fechaStr}{km ? ` · ${km.toLocaleString('es-CL')} km` : ''}{tr.motivo ? ` · ${tr.motivo}` : ''}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setModalEditTraslado({
+                              actId:     act.id,
+                              destino:   tr.destino   || '',
+                              motivo:    tr.motivo    || '',
+                              kmSalida:  tr.kmSalida  != null ? String(tr.kmSalida)  : '',
+                              kmLlegada: tr.kmLlegada != null ? String(tr.kmLlegada) : '',
+                              fecha:     act.fecha ? act.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
+                            })}
+                            className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#3d4049] text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Editar
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+              )
+            })()}
 
             {/* ——— Registrar actividad ——————————————— */}
             {vehiculoActivo && (
@@ -1113,6 +1214,107 @@ export default function PortalConductor() {
                 className="flex-1 py-2.5 rounded-xl bg-amber-500 text-black text-sm font-bold hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {savingLlegada ? 'Guardando…' : 'Confirmar llegada'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ——— Modal editar traslado ————————————————————— */}
+      {modalEditTraslado && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-4 pb-4 sm:pb-0">
+          <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl w-full max-w-sm p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold">Editar traslado</div>
+                <div className="text-xs text-zinc-500 mt-0.5">Modifica los datos del traslado</div>
+              </div>
+              <button onClick={() => setModalEditTraslado(null)} className="text-zinc-500 hover:text-white p-1">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Fecha */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Fecha</label>
+                <input
+                  type="date"
+                  value={modalEditTraslado.fecha}
+                  onChange={e => setModalEditTraslado(p => ({ ...p, fecha: e.target.value }))}
+                  className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+              {/* Destino */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Destino <span className="text-red-400">*</span></label>
+                <input
+                  type="text"
+                  value={modalEditTraslado.destino}
+                  onChange={e => setModalEditTraslado(p => ({ ...p, destino: e.target.value }))}
+                  placeholder="Ciudad, dirección o referencia"
+                  className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                />
+              </div>
+              {/* Motivo */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Motivo</label>
+                <input
+                  type="text"
+                  value={modalEditTraslado.motivo}
+                  onChange={e => setModalEditTraslado(p => ({ ...p, motivo: e.target.value }))}
+                  placeholder="Ej: Entrega de mercadería"
+                  className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                />
+              </div>
+              {/* Km salida / llegada */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Km salida</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={modalEditTraslado.kmSalida}
+                    onChange={e => setModalEditTraslado(p => ({ ...p, kmSalida: e.target.value }))}
+                    placeholder="Ej: 195000"
+                    className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Km llegada</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={modalEditTraslado.kmLlegada}
+                    onChange={e => setModalEditTraslado(p => ({ ...p, kmLlegada: e.target.value }))}
+                    placeholder="Dejar vacío si en curso"
+                    className="w-full bg-[#1C1F26] border border-[#2d3039] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 placeholder-zinc-600"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {errorEditTraslado && (
+              <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                {errorEditTraslado}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setModalEditTraslado(null)}
+                className="flex-1 py-2.5 rounded-xl border border-[#3d4049] text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={guardarEditTraslado}
+                disabled={savingEditTraslado || !modalEditTraslado.destino?.trim()}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-black text-sm font-bold hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingEditTraslado ? 'Guardando…' : 'Guardar cambios'}
               </button>
             </div>
           </div>
