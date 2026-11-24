@@ -338,7 +338,7 @@ export default function PortalConductor() {
   async function eliminarTraslado(actId) {
     setEliminandoId(actId)
     try {
-      await api.delete(`/flota/actividades/${actId}`)
+      await api.delete(`/flota/portal/actividad/${actId}`)
       setConfirmEliminarId(null)
       cargar(true)
       cargarActRecientes(vehiculoActivo?.id)

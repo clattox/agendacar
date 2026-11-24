@@ -156,7 +156,9 @@ export default function VehiculoDetalle() {
   const cargarActividades = useCallback(async (p = 1, tipo = '') => {
     setLoadingActs(true)
     try {
-      const qs = new URLSearchParams({ page: p, limit: 15, ...(tipo ? { tipo } : {}) }).toString()
+      const desde = new Date()
+      desde.setDate(desde.getDate() - diasResumen)
+      const qs = new URLSearchParams({ page: p, limit: 30, desde: desde.toISOString(), ...(tipo ? { tipo } : {}) }).toString()
       const res = await api.get(`/flota/vehiculos/${id}/actividades?${qs}`)
       if (p === 1) {
         setActividades(res.data.data)
@@ -170,7 +172,7 @@ export default function VehiculoDetalle() {
     } finally {
       setLoadingActs(false)
     }
-  }, [id])
+  }, [id, diasResumen])
 
   useEffect(() => { cargarVehiculo() }, [cargarVehiculo])
   useEffect(() => { cargarActividades(1, filtroTipo) }, [cargarActividades, filtroTipo])
