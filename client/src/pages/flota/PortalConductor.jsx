@@ -400,8 +400,8 @@ export default function PortalConductor() {
           </button>
         </div>
 
-        {/* Tarjeta del vehículo activo — hero visual */}
-        {!loading && !error && vehiculoActivo && (
+        {/* Tarjeta del vehículo — siempre visible cuando datos está listo */}
+        {!loading && !error && datos && (
           <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl px-4 py-4 shadow-xl">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -412,52 +412,58 @@ export default function PortalConductor() {
                     <circle cx="16.5" cy="17.5" r="2.5" />
                   </svg>
                 </div>
-                <span className="text-xs text-zinc-400 font-medium">Mi vehículo</span>
+                <span className="text-xs text-zinc-400 font-medium">
+                  {datos.vehiculos?.length > 1 ? 'Selecciona un vehículo' : 'Mi vehículo'}
+                </span>
               </div>
               {/* Selector si hay múltiples */}
-              {datos?.vehiculos?.length > 1 && (
+              {datos.vehiculos?.length > 1 && (
                 <select
-                  value={vehiculoActivo.id}
+                  value={vehiculoActivo?.id ?? ''}
                   onChange={e => {
                     const v = datos.vehiculos.find(x => x.id === Number(e.target.value))
                     if (v) setVehiculoActivo(v)
                   }}
                   className="bg-[#1C1F26] border border-[#2d3039] text-xs text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
                 >
+                  <option value="" disabled>— elige —</option>
                   {datos.vehiculos.map(v => (
                     <option key={v.id} value={v.id}>{v.patente}</option>
                   ))}
                 </select>
               )}
             </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <div className="text-2xl font-black tracking-widest text-white leading-none">
-                  {vehiculoActivo.patente}
-                </div>
-                <div className="text-sm text-zinc-400 mt-1">
-                  {vehiculoActivo.marca} {vehiculoActivo.modelo}
-                  {vehiculoActivo.anio ? ` · ${vehiculoActivo.anio}` : ''}
-                  {vehiculoActivo.color ? ` · ${vehiculoActivo.color}` : ''}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Odómetro</div>
-                <div className="text-xl font-bold text-amber-400 leading-none">
-                  {vehiculoActivo.odometroActual.toLocaleString('es-CL')}
-                </div>
-                <div className="text-xs text-zinc-500 mt-0.5">km</div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Sin vehículo asignado */}
-        {!loading && !error && datos && !vehiculoActivo && (
-          <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl px-4 py-8 text-center">
-            <div className="text-3xl mb-2">🚗</div>
-            <div className="text-sm text-zinc-300 font-semibold">Sin vehículo asignado</div>
-            <div className="text-xs text-zinc-500 mt-1">Consulta con el administrador de flota</div>
+            {vehiculoActivo ? (
+              <div className="flex items-end justify-between">
+                <div>
+                  <div className="text-2xl font-black tracking-widest text-white leading-none">
+                    {vehiculoActivo.patente}
+                  </div>
+                  <div className="text-sm text-zinc-400 mt-1">
+                    {vehiculoActivo.marca} {vehiculoActivo.modelo}
+                    {vehiculoActivo.anio ? ` · ${vehiculoActivo.anio}` : ''}
+                    {vehiculoActivo.color ? ` · ${vehiculoActivo.color}` : ''}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Odómetro</div>
+                  <div className="text-xl font-bold text-amber-400 leading-none">
+                    {vehiculoActivo.odometroActual.toLocaleString('es-CL')}
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-0.5">km</div>
+                </div>
+              </div>
+            ) : (
+              /* Sin vehículo asignado (y no hay múltiples para seleccionar) */
+              datos.vehiculos?.length > 1
+                ? <div className="text-xs text-zinc-500 text-center py-2">Selecciona un vehículo arriba</div>
+                : <div className="text-center py-3">
+                    <div className="text-2xl mb-1">🚗</div>
+                    <div className="text-sm text-zinc-300 font-semibold">Sin vehículo asignado</div>
+                    <div className="text-xs text-zinc-500 mt-0.5">Consulta con el administrador de flota</div>
+                  </div>
+            )}
           </div>
         )}
       </header>
