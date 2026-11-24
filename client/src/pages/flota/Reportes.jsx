@@ -281,7 +281,7 @@ function exportarPDF({ titulo, chips, meses, totales, mostrarTotales = true, veh
     const CLP2 = v => v != null ? v.toLocaleString('es-CL', { style:'currency', currency:'CLP', maximumFractionDigits:0 }) : '—'
     const NUM2 = v => v != null ? v.toLocaleString('es-CL') : '—'
     const filasTr = todos.map(tr => {
-      const hora = (ts) => ts ? new Date(ts).toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' }) : '—'
+      const hora = (ts) => ts ? new Date(ts).toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit', timeZone:'America/Santiago' }) : '—'
       const fecha = new Date(tr.fecha).toLocaleDateString('es-CL', { day:'2-digit', month:'short' })
       return `<tr>
         <td>${fecha}</td>

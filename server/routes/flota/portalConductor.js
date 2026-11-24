@@ -335,16 +335,42 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
     await prisma.$transaction(async tx => {
       const baseDate = fecha || actividad.fecha.toISOString().slice(0, 10)
 
+      // Convierte 'HH:MM' en hora Chile (America/Santiago) a un Date UTC.
+      // Chile está en UTC-3 (verano) o UTC-4 (invierno). Usamos el offset
+      // real del momento construyendo la fecha como si fuera hora local de
+      // Santiago, luego ajustamos al UTC equivalente.
+      function horaChileAUtc(fechaBase, horaStr) {
+        // Intl.DateTimeFormat nos da el offset real de Santiago en ese instante.
+        const isoLocal = `${fechaBase}T${horaStr}:00`
+        // Construir Date asumiendo UTC primero, luego obtener el offset de Santiago.
+        const tempUtc = new Date(`${isoLocal}Z`)
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone:   'America/Santiago',
+          year:       'numeric', month:  '2-digit', day:    '2-digit',
+          hour:       '2-digit', minute: '2-digit', second: '2-digit',
+          hour12:     false,
+        })
+        // Reconstruir la fecha en Santiago para ese instante y calcular el desfase
+        const parts = formatter.formatToParts(tempUtc)
+        const get = (t) => parts.find(p => p.type === t)?.value
+        const santiagoCadena = `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}Z`
+        const santiagoComo  = new Date(santiagoCadena)
+        // La diferencia entre tempUtc (que trata isoLocal como UTC) y la hora
+        // Santiago real es el offset: tempUtc - santiagoComo = offsetMs
+        const offsetMs = tempUtc.getTime() - santiagoComo.getTime()
+        return new Date(tempUtc.getTime() - offsetMs)
+      }
+
       // Calcular fechaSalida si se proporciona hora manual
       let fechaSalidaUpdate = undefined
       if (horaSalida) {
-        fechaSalidaUpdate = new Date(`${baseDate}T${horaSalida}:00`)
+        fechaSalidaUpdate = horaChileAUtc(baseDate, horaSalida)
       }
 
       // Calcular fechaLlegada si se proporciona hora manual
       let fechaLlegadaUpdate = undefined
       if (kmL && horaLlegada) {
-        fechaLlegadaUpdate = new Date(`${baseDate}T${horaLlegada}:00`)
+        fechaLlegadaUpdate = horaChileAUtc(baseDate, horaLlegada)
       }
 
       await tx.trasladoRegistro.update({

@@ -535,7 +535,7 @@ export default function PortalConductor() {
                           <button
                             onClick={() => {
                               const hs = act.trasladoRegistro.fechaSalida
-                                ? new Date(act.trasladoRegistro.fechaSalida).toTimeString().slice(0, 5) : ''
+                                ? new Date(act.trasladoRegistro.fechaSalida).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
                               setVerHoraSalidaEdit(!!hs)
                               setVerHoraLlegadaEdit(false)
                               setModalEditTraslado({
@@ -963,13 +963,13 @@ export default function PortalConductor() {
                             <div className="min-w-0">
                               <div className="text-sm text-white truncate">→ {tr.destino}</div>
                               <div className="text-xs text-zinc-500 mt-0.5">
-                                {fechaStr}{tr.fechaSalida ? ` · salida ${new Date(tr.fechaSalida).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}` : ''}{km ? ` · ${km.toLocaleString('es-CL')} km` : ''}{tr.fechaLlegada ? ` · llegada ${new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}` : ''}{tr.motivo ? ` · ${tr.motivo}` : ''}
+                                {fechaStr}{tr.fechaSalida ? ` · salida ${new Date(tr.fechaSalida).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' })}` : ''}{km ? ` · ${km.toLocaleString('es-CL')} km` : ''}{tr.fechaLlegada ? ` · llegada ${new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' })}` : ''}{tr.motivo ? ` · ${tr.motivo}` : ''}
                               </div>
                             </div>
                             <button
                               onClick={() => {
-                                const hs = tr.fechaSalida  ? new Date(tr.fechaSalida).toTimeString().slice(0, 5)  : ''
-                                const hl = tr.fechaLlegada ? new Date(tr.fechaLlegada).toTimeString().slice(0, 5) : ''
+                                const hs = tr.fechaSalida  ? new Date(tr.fechaSalida).toLocaleTimeString('es-CL',  { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
+                                const hl = tr.fechaLlegada ? new Date(tr.fechaLlegada).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : ''
                                 setVerHoraSalidaEdit(!!hs)
                                 setVerHoraLlegadaEdit(!!hl)
                                 setModalEditTraslado({
