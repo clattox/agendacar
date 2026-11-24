@@ -359,7 +359,7 @@ export default function Reportes() {
               </div>
 
               {/* Stats del mes */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 <StatChip
                   label="Km recorridos"
                   value={mesSeleccionado ? `${NUM(mesSeleccionado.kmRecorridos)} km` : '—'}
@@ -371,6 +371,15 @@ export default function Reportes() {
                   sub={mesSeleccionado?.litros > 0
                     ? `${NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L cargados`
                     : 'Sin registros'}
+                />
+                <StatChip
+                  label="Rendimiento"
+                  value={mesSeleccionado?.kmRecorridos > 0 && mesSeleccionado?.litros > 0
+                    ? `${(mesSeleccionado.kmRecorridos / mesSeleccionado.litros).toFixed(1)} km/L`
+                    : '—'}
+                  sub={mesSeleccionado?.kmRecorridos > 0 && mesSeleccionado?.litros > 0
+                    ? `${NUM(mesSeleccionado.kmRecorridos)} km · ${NUM(Math.round(mesSeleccionado.litros * 10) / 10)} L`
+                    : 'Sin datos'}
                 />
                 <StatChip
                   label="Peajes"
@@ -444,7 +453,7 @@ export default function Reportes() {
                 )}
               </div>
               {/* Stats anuales */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 <StatChip
                   label="Km totales"
                   value={`${NUM(data.totales.kmRecorridos)} km`}
@@ -454,6 +463,15 @@ export default function Reportes() {
                   label="Combustible"
                   value={CLP(data.totales.montoCombustible)}
                   sub={`${NUM(Math.round(data.totales.litros * 10) / 10)} L cargados`}
+                />
+                <StatChip
+                  label="Rendimiento"
+                  value={data.totales.kmRecorridos > 0 && data.totales.litros > 0
+                    ? `${(data.totales.kmRecorridos / data.totales.litros).toFixed(1)} km/L`
+                    : '—'}
+                  sub={data.totales.kmRecorridos > 0 && data.totales.litros > 0
+                    ? `${NUM(data.totales.kmRecorridos)} km · ${NUM(Math.round(data.totales.litros * 10) / 10)} L`
+                    : 'Sin datos'}
                 />
                 <StatChip
                   label="Peajes"
