@@ -540,8 +540,11 @@ router.get('/mis-reportes', async (req, res) => {
 // Permite al conductor eliminar un traslado propio (solo TRASLADO)
 router.delete('/actividad/:id', async (req, res) => {
   try {
-    const { tenantId, conductorId } = req.user
+    const { id: usuarioId, tenantId } = req.user
     const { id } = req.params
+
+    const conductor = await prisma.conductor.findFirst({ where: { usuarioId, tenantId } })
+    if (!conductor) return res.status(404).json({ error: 'Perfil de conductor no encontrado' })
 
     // Verificar que la actividad pertenece al tenant, es del conductor y es TRASLADO
     const actividad = await prisma.flotaActividad.findFirst({
@@ -554,7 +557,7 @@ router.delete('/actividad/:id', async (req, res) => {
     }
 
     // Solo puede eliminar traslados que él mismo registró
-    if (actividad.registradoPorId !== conductorId) {
+    if (actividad.registradoPorId !== conductor.id) {
       return res.status(403).json({ error: 'Solo puedes eliminar traslados que registraste tú' })
     }
 
