@@ -129,6 +129,7 @@ export default function VehiculoDetalle() {
   const [kmLlegadaInput,  setKmLlegadaInput]  = useState('')
   const [savingLlegada,   setSavingLlegada]   = useState(false)
   const [errorLlegada,    setErrorLlegada]    = useState('')
+  const [diasResumen,     setDiasResumen]     = useState(7)
 
   const usuario = getUsuario()
   const esAdmin = usuario?.rol === 'admin' || usuario?.rol === 'superadmin'
@@ -451,10 +452,25 @@ export default function VehiculoDetalle() {
 
           {/* Actividad reciente */}
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
               <span className="text-xs font-semibold text-[#737B86] uppercase tracking-wider">
                 Actividad reciente
               </span>
+              <div className="flex gap-1">
+                {[7, 15, 30].map(d => (
+                  <button
+                    key={d}
+                    onClick={() => setDiasResumen(d)}
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors whitespace-nowrap ${
+                      diasResumen === d
+                        ? 'bg-amber-50 border-amber-300 text-amber-700'
+                        : 'bg-white border-[#E1E4E8] text-[#737B86] hover:border-[#C6CAD0] hover:text-[#252A31]'
+                    }`}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
             </div>
             {loadingActs && actividades.length === 0 && (
               <div className="flex items-center justify-center py-10 text-[#737B86] text-sm">Cargando…</div>
@@ -468,10 +484,19 @@ export default function VehiculoDetalle() {
               </div>
             )}
             {actividades.length > 0 && (() => {
-              // Agrupar por fecha (día)
+              // Filtrar por rango de dias seleccionado
+              const corte = new Date()
+              corte.setDate(corte.getDate() - diasResumen)
+              const actsFiltradas = actividades.filter(act => new Date(act.fecha) >= corte)
+              if (actsFiltradas.length === 0) return (
+                <div className="flex flex-col items-center justify-center py-8 text-center bg-white border border-[#E1E4E8] rounded-xl">
+                  <p className="text-[#737B86] text-sm">Sin actividades en los últimos {diasResumen} días</p>
+                </div>
+              )
+              // Agrupar por fecha (dia)
               const grupos = []
               let diaActual = null
-              actividades.slice(0, 10).forEach(act => {
+              actsFiltradas.forEach(act => {
                 const dia = new Date(act.fecha).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
                 if (dia !== diaActual) {
                   diaActual = dia
@@ -1007,7 +1032,11 @@ function ActividadRow({ actividad: act, onEditComb, onDelete }) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-[#252A31]">{resumen.titulo}</span>
             {resumen.badge && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-current opacity-70">
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap ${
+                resumen.pendiente
+                  ? 'bg-amber-50 text-amber-600 border-amber-200'
+                  : 'border-current opacity-70'
+              }`}>
                 {resumen.badge}
               </span>
             )}
@@ -1139,9 +1168,12 @@ function buildResumen(act) {
     case 'TRASLADO': {
       const t = act.trasladoRegistro
       const kmRec = t?.kmSalida && t?.kmLlegada ? t.kmLlegada - t.kmSalida : null
+      const pendiente = t?.kmSalida != null && t?.kmLlegada == null
       return {
         titulo: t?.destino ? `Traslado → ${t.destino}` : 'Traslado',
+        badge:  pendiente ? 'En curso' : null,
         valor:  kmRec ? `${kmRec.toLocaleString('es-CL')} km` : null,
+        pendiente,
       }
     }
     default:
