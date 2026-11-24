@@ -94,14 +94,16 @@ router.get('/mensual', async (req, res) => {
       if (act.trasladoRegistro?.kmLlegada)        m.kmOdometros.push(act.trasladoRegistro.kmLlegada)
 
       if (act.combustibleRegistro) {
-        const cr = act.combustibleRegistro
-        m.litros           += cr.litros || 0
-        m.montoCombustible += cr.monto  || 0
+        const cr     = act.combustibleRegistro
+        const litros = parseFloat(cr.litros) || 0   // Decimal → Number
+        const monto  = cr.monto || 0
+        m.litros           += litros
+        m.montoCombustible += monto
         m.cargas.push({
-          fecha:  act.fecha,
-          litros: cr.litros,
-          monto:  cr.monto,
-          tipo:   cr.tipoCombustible,
+          fecha:    act.fecha,
+          litros:   litros,
+          monto:    monto,
+          tipo:     cr.tipoCombustible,
           odometro: cr.odometroAlCargar,
           estacion: cr.estacion || null,
         })
