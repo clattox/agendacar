@@ -505,10 +505,11 @@ model TrasladoRegistro {
   actividadId String         @unique
   actividad   FlotaActividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
 
-  destino     String
-  motivo      String?
-  kmSalida    Int?
-  kmLlegada   Int?
+  destino      String
+  motivo       String?
+  kmSalida     Int?
+  kmLlegada    Int?
+  fechaLlegada DateTime? // hora real de llegada, registrada automáticamente
 
   @@index([actividadId])
 }

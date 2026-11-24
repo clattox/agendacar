@@ -281,7 +281,7 @@ router.patch('/actividad/:id/llegada', async (req, res) => {
     await prisma.$transaction(async tx => {
       await tx.trasladoRegistro.update({
         where: { id: actividad.trasladoRegistro.id },
-        data:  { kmLlegada: km },
+        data:  { kmLlegada: km, fechaLlegada: new Date() },
       })
       if (km > actividad.vehiculo.odometroActual) {
         await tx.flotaVehiculo.update({

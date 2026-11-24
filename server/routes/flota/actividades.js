@@ -322,7 +322,7 @@ router.patch('/:id/llegada', async (req, res) => {
       // Actualizar el registro de traslado
       await tx.trasladoRegistro.update({
         where: { id: actividad.trasladoRegistro.id },
-        data:  { kmLlegada: km },
+        data:  { kmLlegada: km, fechaLlegada: new Date() },
       })
       // Actualizar odómetro del vehículo si corresponde
       if (km > (actividad.vehiculo.odometroActual || 0)) {
