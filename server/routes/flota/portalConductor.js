@@ -201,6 +201,99 @@ router.post('/actividad', async (req, res) => {
   }
 })
 
+// ——— GET /api/flota/portal/actividades-recientes ————————————
+// Últimas 15 actividades del vehículo del conductor (para mostrar traslados en curso)
+router.get('/actividades-recientes', async (req, res) => {
+  try {
+    const { id: usuarioId, tenantId } = req.user
+    const vehiculoId = req.query.vehiculoId ? Number(req.query.vehiculoId) : null
+
+    const conductor = await prisma.conductor.findFirst({
+      where: { usuarioId, tenantId },
+    })
+    if (!conductor) return res.status(403).json({ error: 'Sin perfil de conductor' })
+
+    let vId = vehiculoId
+    if (!vId) {
+      const v = await prisma.flotaVehiculo.findFirst({
+        where: { conductorId: conductor.id, tenantId },
+        select: { id: true },
+      })
+      vId = v?.id
+    }
+    if (!vId) return res.json([])
+
+    const actividades = await prisma.flotaActividad.findMany({
+      where: { tenantId, vehiculoId: vId },
+      include: { trasladoRegistro: true },
+      orderBy: { fecha: 'desc' },
+      take: 15,
+    })
+
+    res.json(actividades)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener actividades' })
+  }
+})
+
+// ——— PATCH /api/flota/portal/actividad/:id/llegada ——————————
+// El conductor registra el km de llegada en un traslado en curso
+router.patch('/actividad/:id/llegada', async (req, res) => {
+  try {
+    const { id: usuarioId, tenantId } = req.user
+    const actividadId = Number(req.params.id)
+    const km = Number(req.body.kmLlegada)
+
+    if (!km || km <= 0) return res.status(400).json({ error: 'kmLlegada inválido' })
+
+    const conductor = await prisma.conductor.findFirst({
+      where: { usuarioId, tenantId },
+    })
+    if (!conductor) return res.status(403).json({ error: 'Sin perfil de conductor' })
+
+    // Verificar que la actividad pertenece al conductor (via vehículo asignado)
+    const actividad = await prisma.flotaActividad.findFirst({
+      where: { id: actividadId, tenantId, tipo: 'TRASLADO' },
+      include: {
+        trasladoRegistro: true,
+        vehiculo: true,
+      },
+    })
+    if (!actividad) return res.status(404).json({ error: 'Actividad no encontrada' })
+    if (actividad.vehiculo.conductorId !== conductor.id) {
+      return res.status(403).json({ error: 'No tienes acceso a esta actividad' })
+    }
+    if (!actividad.trasladoRegistro) {
+      return res.status(400).json({ error: 'Esta actividad no es un traslado' })
+    }
+    if (actividad.trasladoRegistro.kmLlegada != null) {
+      return res.status(400).json({ error: 'Ya tiene km de llegada registrado' })
+    }
+    if (actividad.trasladoRegistro.kmSalida != null && km <= actividad.trasladoRegistro.kmSalida) {
+      return res.status(400).json({ error: `Debe ser mayor al km de salida (${actividad.trasladoRegistro.kmSalida})` })
+    }
+
+    await prisma.$transaction(async tx => {
+      await tx.trasladoRegistro.update({
+        where: { id: actividad.trasladoRegistro.id },
+        data:  { kmLlegada: km },
+      })
+      if (km > actividad.vehiculo.odometroActual) {
+        await tx.flotaVehiculo.update({
+          where: { id: actividad.vehiculo.id },
+          data:  { odometroActual: km },
+        })
+      }
+    })
+
+    res.json({ message: 'Llegada registrada' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al registrar llegada' })
+  }
+})
+
 // ——— GET /api/flota/portal/mis-reportes ————————————————————
 // El conductor ve su propio resumen mensual (todos sus vehículos)
 router.get('/mis-reportes', async (req, res) => {
@@ -233,6 +326,7 @@ router.get('/mis-reportes', async (req, res) => {
         kmRegistro:          true,
         combustibleRegistro: true,
         peajeRegistro:       true,
+        trasladoRegistro:    true,
       },
       orderBy: { fecha: 'asc' },
     })
@@ -257,8 +351,14 @@ router.get('/mis-reportes', async (req, res) => {
       const m = mesesData[idx]
       m.nActividades++
       if (act.kmRegistro)          m.kmRecorridos      += act.kmRegistro.kmRecorridos || 0
+      if (act.trasladoRegistro) {
+        const tr = act.trasladoRegistro
+        if (tr.kmSalida != null && tr.kmLlegada != null) {
+          m.kmRecorridos += tr.kmLlegada - tr.kmSalida
+        }
+      }
       if (act.combustibleRegistro) {
-        m.litros              += act.combustibleRegistro.litros || 0
+        m.litros              += parseFloat(act.combustibleRegistro.litros) || 0
         m.montoCombustible    += act.combustibleRegistro.monto  || 0
       }
       if (act.peajeRegistro)       m.montoPeajes       += act.peajeRegistro.monto || 0

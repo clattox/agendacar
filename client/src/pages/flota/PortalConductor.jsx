@@ -159,6 +159,16 @@ export default function PortalConductor() {
   const [enviando,   setEnviando]   = useState(false)
   const [exito,      setExito]      = useState('')
   const [errorForm,  setErrorForm]  = useState('')
+
+  // Modal registrar llegada
+  const [modalLlegada,   setModalLlegada]   = useState(null)  // { actId, kmSalida, destino }
+  const [kmLlegadaInput, setKmLlegadaInput] = useState('')
+  const [savingLlegada,  setSavingLlegada]  = useState(false)
+  const [errorLlegada,   setErrorLlegada]   = useState('')
+
+  // Actividades recientes (para mostrar traslados en curso)
+  const [actRecientes,    setActRecientes]    = useState([])
+  const [loadingActRec,   setLoadingActRec]   = useState(false)
   // pdfModal eliminado — documentos se abren en nueva pestaña
 
   useEffect(() => {
@@ -187,7 +197,8 @@ export default function PortalConductor() {
     }))
     setExito('')
     setErrorForm('')
-  }, [vehiculoActivo?.id])
+    cargarActRecientes(vehiculoActivo?.id)
+  }, [vehiculoActivo?.id, cargarActRecientes])
 
   async function cargar(mantenerVehiculo = false) {
     setLoading(true)
@@ -249,6 +260,39 @@ export default function PortalConductor() {
       setErrorForm(e.response?.data?.error || 'Error al registrar actividad')
     } finally {
       setEnviando(false)
+    }
+  }
+
+  const cargarActRecientes = useCallback(async (vid) => {
+    if (!vid) return
+    setLoadingActRec(true)
+    try {
+      const res = await api.get(`/flota/portal/actividades-recientes?vehiculoId=${vid}`)
+      setActRecientes(res.data)
+    } catch {
+      setActRecientes([])
+    } finally {
+      setLoadingActRec(false)
+    }
+  }, [])
+
+  async function completarLlegada() {
+    const km = Number(kmLlegadaInput)
+    if (!km || km <= 0) return setErrorLlegada('Ingresa un km válido')
+    if (modalLlegada.kmSalida && km <= modalLlegada.kmSalida) {
+      return setErrorLlegada(`Debe ser mayor al km de salida (${modalLlegada.kmSalida.toLocaleString('es-CL')} km)`)
+    }
+    setSavingLlegada(true)
+    setErrorLlegada('')
+    try {
+      await api.patch(`/flota/portal/actividad/${modalLlegada.actId}/llegada`, { kmLlegada: km })
+      setModalLlegada(null)
+      cargar(true)
+      cargarActRecientes(vehiculoActivo?.id)
+    } catch (e) {
+      setErrorLlegada(e.response?.data?.error || 'Error al registrar')
+    } finally {
+      setSavingLlegada(false)
     }
   }
 
@@ -418,6 +462,43 @@ export default function PortalConductor() {
                       <div className="text-zinc-600 text-xs mt-1">Consulta con el administrador de flota</div>
                     </>
                 }
+              </section>
+            )}
+
+            {/* ——— Traslados en curso ——————————————————— */}
+            {vehiculoActivo && actRecientes.some(a => a.tipo === 'TRASLADO' && a.trasladoRegistro?.kmSalida != null && a.trasladoRegistro?.kmLlegada == null) && (
+              <section className="bg-[#22252e] rounded-2xl border border-amber-500/40 overflow-hidden">
+                <div className="px-4 py-3 border-b border-amber-500/20 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="text-sm font-semibold text-amber-400">Traslado en curso</span>
+                </div>
+                <div className="divide-y divide-[#2d3039]">
+                  {actRecientes
+                    .filter(a => a.tipo === 'TRASLADO' && a.trasladoRegistro?.kmSalida != null && a.trasladoRegistro?.kmLlegada == null)
+                    .map(act => (
+                      <div key={act.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-white truncate">
+                            → {act.trasladoRegistro.destino}
+                          </div>
+                          <div className="text-xs text-zinc-400 mt-0.5">
+                            Salida: {act.trasladoRegistro.kmSalida.toLocaleString('es-CL')} km
+                            {act.trasladoRegistro.motivo && ` · ${act.trasladoRegistro.motivo}`}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => { setModalLlegada({ actId: act.id, kmSalida: act.trasladoRegistro.kmSalida, destino: act.trasladoRegistro.destino }); setKmLlegadaInput(''); setErrorLlegada('') }}
+                          className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500 text-black hover:bg-amber-400 transition-colors whitespace-nowrap"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Registrar llegada
+                        </button>
+                      </div>
+                    ))}
+                </div>
               </section>
             )}
 
@@ -992,6 +1073,51 @@ export default function PortalConductor() {
       </main>
 
       {/* Documentos se abren en nueva pestaña — sin modal */}
+
+      {/* ——— Modal registrar llegada ————————————————————— */}
+      {modalLlegada && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-4 pb-4 sm:pb-0">
+          <div className="bg-[#22252e] border border-[#2d3039] rounded-2xl w-full max-w-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-sm font-bold text-white">Registrar llegada</div>
+                <div className="text-xs text-zinc-400 mt-0.5 truncate">{modalLlegada.destino}</div>
+              </div>
+              <button onClick={() => setModalLlegada(null)} className="text-zinc-500 hover:text-white p-1">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            {modalLlegada.kmSalida != null && (
+              <div className="text-xs text-zinc-500 mb-3">Salida: {modalLlegada.kmSalida.toLocaleString('es-CL')} km</div>
+            )}
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Odómetro de llegada (km)</label>
+            <input
+              type="number"
+              className="w-full bg-[#1C1F26] border border-[#3d4049] rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 mb-3"
+              value={kmLlegadaInput}
+              onChange={e => { setKmLlegadaInput(e.target.value); setErrorLlegada('') }}
+              placeholder={modalLlegada.kmSalida ? `Mayor a ${modalLlegada.kmSalida.toLocaleString('es-CL')}` : 'Ej: 197500'}
+              autoFocus
+            />
+            {errorLlegada && <p className="text-xs text-red-400 mb-3">{errorLlegada}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setModalLlegada(null)}
+                className="flex-1 py-2.5 rounded-xl border border-[#3d4049] text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={completarLlegada}
+                disabled={savingLlegada || !kmLlegadaInput}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-black text-sm font-bold hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingLlegada ? 'Guardando…' : 'Confirmar llegada'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
