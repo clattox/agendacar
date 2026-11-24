@@ -336,29 +336,34 @@ router.patch('/actividad/:id/traslado', async (req, res) => {
       const baseDate = fecha || actividad.fecha.toISOString().slice(0, 10)
 
       // Convierte 'HH:MM' en hora Chile (America/Santiago) a un Date UTC.
-      // Chile está en UTC-3 (verano) o UTC-4 (invierno). Usamos el offset
-      // real del momento construyendo la fecha como si fuera hora local de
-      // Santiago, luego ajustamos al UTC equivalente.
+      // Chile está en UTC-3 (verano) o UTC-4 (invierno).
+      // Estrategia: formatear la fecha/hora en Santiago usando Intl, luego
+      // comparar con la hora UTC de ese mismo instante para obtener el offset,
+      // y finalmente despejar la UTC real de la hora local ingresada.
       function horaChileAUtc(fechaBase, horaStr) {
-        // Intl.DateTimeFormat nos da el offset real de Santiago en ese instante.
-        const isoLocal = `${fechaBase}T${horaStr}:00`
-        // Construir Date asumiendo UTC primero, luego obtener el offset de Santiago.
-        const tempUtc = new Date(`${isoLocal}Z`)
+        // Paso 1: crear un Date provisional usando la hora como si fuera UTC
+        const provisional = new Date(`${fechaBase}T${horaStr}:00Z`)
+
+        // Paso 2: obtener cómo se ve ese instante en Santiago (nos da el offset real)
         const formatter = new Intl.DateTimeFormat('en-CA', {
-          timeZone:   'America/Santiago',
-          year:       'numeric', month:  '2-digit', day:    '2-digit',
-          hour:       '2-digit', minute: '2-digit', second: '2-digit',
-          hour12:     false,
+          timeZone: 'America/Santiago',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hour12: false,
         })
-        // Reconstruir la fecha en Santiago para ese instante y calcular el desfase
-        const parts = formatter.formatToParts(tempUtc)
+        const parts = formatter.formatToParts(provisional)
         const get = (t) => parts.find(p => p.type === t)?.value
-        const santiagoCadena = `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}Z`
-        const santiagoComo  = new Date(santiagoCadena)
-        // La diferencia entre tempUtc (que trata isoLocal como UTC) y la hora
-        // Santiago real es el offset: tempUtc - santiagoComo = offsetMs
-        const offsetMs = tempUtc.getTime() - santiagoComo.getTime()
-        return new Date(tempUtc.getTime() - offsetMs)
+        // Hora Santiago correspondiente al provisional (que lo tratamos como UTC)
+        const santiagoDe = new Date(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:00Z`)
+
+        // Paso 3: el offset = provisional - santiagoDe
+        // Ejemplo: provisional = 11:00 UTC, Santiago lo ve como 08:00 (UTC-3)
+        //          offset = 11:00 - 08:00 = +3h = +10800000 ms
+        const offsetMs = provisional.getTime() - santiagoDe.getTime()
+
+        // Paso 4: la UTC real = hora_local_ingresada + offset
+        // 11:00 Santiago + 3h = 14:00 UTC ✓
+        return new Date(provisional.getTime() + offsetMs)
       }
 
       // Calcular fechaSalida si se proporciona hora manual
