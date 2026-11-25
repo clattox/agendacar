@@ -310,6 +310,14 @@ enum TipoDocumento {
   SOAP
   PERMISO_CIRCULACION
   SEGURO_VOLUNTARIO
+  PADRON
+}
+
+enum TipoDocumentoConductor {
+  LICENCIA_CONDUCIR
+  CEDULA_IDENTIDAD
+  CERTIFICADO_ANTECEDENTES
+  OTRO
 }
 
 model Conductor {
@@ -331,6 +339,7 @@ model Conductor {
   flotaVehiculos    FlotaVehiculo[]
   estadosCambios    EstadoCambioFlota[]
   actividades       FlotaActividad[]
+  documentos        ConductorDocumento[]
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -406,6 +415,31 @@ model VehiculoDocumento {
 
   @@index([tenantId])
   @@index([vehiculoId, tipo])
+  @@index([fechaVencimiento])
+}
+
+model ConductorDocumento {
+  id              String                  @id @default(cuid())
+  tenantId        Int
+  conductorId     String
+  conductor       Conductor               @relation(fields: [conductorId], references: [id], onDelete: Cascade)
+
+  tipo            TipoDocumentoConductor
+
+  fechaEmision     DateTime?
+  fechaVencimiento DateTime?             // null = sin vencimiento (ej: cédula indefinida)
+
+  numeroDocumento  String?
+  categoria        String?               // para licencia: A1, B, C, D, etc.
+  archivoBase64    String?               // PDF o imagen en base64
+  archivoNombre    String?
+
+  activo           Boolean               @default(true)
+
+  createdAt        DateTime              @default(now())
+
+  @@index([tenantId])
+  @@index([conductorId, tipo])
   @@index([fechaVencimiento])
 }
 

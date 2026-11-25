@@ -191,4 +191,116 @@ router.put('/:documentoId', async (req, res) => {
   }
 })
 
+// ══════════════════════════════════════════════════════════════
+// DOCUMENTOS DE CONDUCTOR
+// ══════════════════════════════════════════════════════════════
+
+// ——— GET /api/flota/documentos/conductor/:conductorId ————————
+router.get('/conductor/:conductorId', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { conductorId } = req.params
+
+    // Verificar que el conductor pertenece al tenant
+    const conductor = await prisma.conductor.findFirst({ where: { id: conductorId, tenantId } })
+    if (!conductor) return res.status(404).json({ error: 'Conductor no encontrado' })
+
+    const hoy = new Date()
+    const documentos = await prisma.conductorDocumento.findMany({
+      where: { conductorId, tenantId, activo: true },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const data = documentos.map(doc => {
+      if (!doc.fechaVencimiento) return { ...doc, diasRestantes: null, alerta: 'VIGENTE' }
+      const diasRestantes = Math.ceil((new Date(doc.fechaVencimiento) - hoy) / (1000 * 60 * 60 * 24))
+      const alerta = diasRestantes < 0 ? 'VENCIDO' : diasRestantes <= 15 ? 'CRITICO' : diasRestantes <= 60 ? 'PROXIMO' : 'VIGENTE'
+      return { ...doc, diasRestantes, alerta }
+    })
+
+    res.json(data)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al obtener documentos del conductor' })
+  }
+})
+
+// ——— POST /api/flota/documentos/conductor/:conductorId ———————
+router.post('/conductor/:conductorId', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { conductorId } = req.params
+    const { tipo, fechaEmision, fechaVencimiento, numeroDocumento, categoria, archivoBase64, archivoNombre } = req.body
+
+    if (!tipo) return res.status(400).json({ error: 'El tipo de documento es obligatorio' })
+
+    const conductor = await prisma.conductor.findFirst({ where: { id: conductorId, tenantId } })
+    if (!conductor) return res.status(404).json({ error: 'Conductor no encontrado' })
+
+    const documento = await prisma.conductorDocumento.create({
+      data: {
+        tenantId,
+        conductorId,
+        tipo,
+        fechaEmision:     fechaEmision     ? new Date(fechaEmision)     : null,
+        fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : null,
+        numeroDocumento:  numeroDocumento  || null,
+        categoria:        categoria        || null,
+        archivoBase64:    archivoBase64    || null,
+        archivoNombre:    archivoNombre    || null,
+      },
+    })
+    res.status(201).json(documento)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al crear documento del conductor' })
+  }
+})
+
+// ——— PUT /api/flota/documentos/conductor/doc/:docId ——————————
+router.put('/conductor/doc/:docId', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const { tipo, fechaEmision, fechaVencimiento, numeroDocumento, categoria, archivoBase64, archivoNombre } = req.body
+
+    const doc = await prisma.conductorDocumento.findFirst({ where: { id: req.params.docId, tenantId } })
+    if (!doc) return res.status(404).json({ error: 'Documento no encontrado' })
+
+    const updated = await prisma.conductorDocumento.update({
+      where: { id: req.params.docId },
+      data: {
+        tipo:             tipo             ?? doc.tipo,
+        fechaEmision:     fechaEmision     ? new Date(fechaEmision)     : doc.fechaEmision,
+        fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : doc.fechaVencimiento,
+        numeroDocumento:  numeroDocumento  !== undefined ? numeroDocumento  : doc.numeroDocumento,
+        categoria:        categoria        !== undefined ? categoria        : doc.categoria,
+        archivoBase64:    archivoBase64    !== undefined ? archivoBase64    : doc.archivoBase64,
+        archivoNombre:    archivoNombre    !== undefined ? archivoNombre    : doc.archivoNombre,
+      },
+    })
+    res.json(updated)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al actualizar documento del conductor' })
+  }
+})
+
+// ——— DELETE /api/flota/documentos/conductor/doc/:docId ———————
+router.delete('/conductor/doc/:docId', async (req, res) => {
+  try {
+    const { tenantId } = req.user
+    const doc = await prisma.conductorDocumento.findFirst({ where: { id: req.params.docId, tenantId } })
+    if (!doc) return res.status(404).json({ error: 'Documento no encontrado' })
+
+    await prisma.conductorDocumento.update({
+      where: { id: req.params.docId },
+      data: { activo: false },
+    })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al eliminar documento del conductor' })
+  }
+})
+
 module.exports = router

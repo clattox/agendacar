@@ -8,6 +8,7 @@ const TIPO_LABELS = {
   PERMISO_CIRCULACION: 'Permiso de Circulación',
   SOAP:                'SOAP',
   SEGURO_VOLUNTARIO:   'Seguro Voluntario',
+  PADRON:              'Padrón',
   OTRO:                'Otro',
 }
 

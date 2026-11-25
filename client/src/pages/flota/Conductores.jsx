@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useConductores } from '../../hooks/useFlota'
 import api from '../../lib/api'
+import DocumentosConductor from '../../components/flota/DocumentosConductor'
 
 // ——— Modal acceso conductor ————————————————————————————
 function ModalAcceso({ conductor, onClose, onDone }) {
@@ -359,6 +360,7 @@ export default function FlotaConductores() {
   const [showNew,      setShowNew]      = useState(false)
   const [modalAcceso,       setModalAcceso]       = useState(null)
   const [modalEditar,       setModalEditar]       = useState(null)
+  const [modalDocumentos,   setModalDocumentos]   = useState(null)
   const [mostrarInactivos,  setMostrarInactivos]  = useState(false)
   const [toggling,          setToggling]          = useState(null) // id del que se está procesando
 
@@ -579,9 +581,18 @@ export default function FlotaConductores() {
                       {c.usuario ? 'Con acceso' : 'Sin acceso'}
                     </button>
                   </td>
-                  {/* Botones editar + desactivar */}
+                  {/* Botones documentos + editar + desactivar */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setModalDocumentos(c)}
+                        title="Ver documentos"
+                        className="p-1.5 rounded-lg text-[#737B86] hover:text-amber-500 hover:bg-[#FFF4DE] transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
+                        </svg>
+                      </button>
                       <button
                         onClick={() => setModalEditar(c)}
                         title="Editar conductor"
@@ -638,6 +649,14 @@ export default function FlotaConductores() {
           conductor={modalEditar}
           onClose={() => setModalEditar(null)}
           onDone={() => { setModalEditar(null); refetch() }}
+        />
+      )}
+
+      {/* Modal de documentos del conductor */}
+      {modalDocumentos && (
+        <DocumentosConductor
+          conductor={modalDocumentos}
+          onClose={() => setModalDocumentos(null)}
         />
       )}
     </div>

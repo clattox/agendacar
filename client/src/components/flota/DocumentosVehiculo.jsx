@@ -10,6 +10,7 @@ const TIPOS = [
   { value: 'PERMISO_CIRCULACION', label: 'Permiso de Circulación' },
   { value: 'SOAP',                label: 'SOAP' },
   { value: 'SEGURO_VOLUNTARIO',   label: 'Seguro Voluntario' },
+  { value: 'PADRON',              label: 'Padrón' },
   { value: 'OTRO',                label: 'Otro documento' },
 ]
 
