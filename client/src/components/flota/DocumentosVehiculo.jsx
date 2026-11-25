@@ -154,7 +154,8 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setFormError(null)
-    if (!form.tipo || !form.fechaVencimiento) {
+    const sinVencimiento = form.tipo === 'PADRON' || form.tipo === 'OTRO'
+    if (!form.tipo || (!sinVencimiento && !form.fechaVencimiento)) {
       setFormError('Tipo y fecha de vencimiento son obligatorios')
       return
     }
@@ -396,15 +397,27 @@ export default function DocumentosVehiculo({ vehiculo, onClose }) {
                 </div>
               )}
 
-              {/* Vencimiento (oculto para Permiso, ya que se auto-calcula) */}
+              {/* Vencimiento (oculto para Permiso; opcional para Padrón y Otro) */}
               {!esPermiso && (
-                <Field label="Fecha de vencimiento *">
-                  <input required type="date" value={form.fechaVencimiento}
-                    onChange={e => set('fechaVencimiento', e.target.value)} className={INPUT} />
+                <Field label={
+                  form.tipo === 'PADRON' || form.tipo === 'OTRO'
+                    ? 'Fecha de vencimiento (opcional)'
+                    : 'Fecha de vencimiento *'
+                }>
+                  <input
+                    type="date"
+                    required={form.tipo !== 'PADRON' && form.tipo !== 'OTRO'}
+                    value={form.fechaVencimiento}
+                    onChange={e => set('fechaVencimiento', e.target.value)}
+                    className={INPUT}
+                  />
                   {(form.tipo === 'SOAP' || form.tipo === 'REVISION_TECNICA') && form.fechaVencimiento && form.fechaEmision && (
                     <p className="text-xs text-[#737B86] mt-1">
                       Calculado automáticamente desde la fecha de emisión · puedes ajustarlo si es necesario
                     </p>
+                  )}
+                  {(form.tipo === 'PADRON' || form.tipo === 'OTRO') && (
+                    <p className="text-xs text-[#A0A6AE] mt-1">Deja vacío si el documento no vence</p>
                   )}
                 </Field>
               )}
