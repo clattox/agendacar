@@ -65,8 +65,12 @@ const createTenant = async (req, res) => {
 
     res.status(201).json(tenant)
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'Error al crear tenant' })
+    console.error('createTenant error:', error)
+    // Conflicto de email único en Usuario
+    if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+      return res.status(409).json({ error: 'El email de administrador ya está en uso' })
+    }
+    res.status(500).json({ error: 'Error al crear tenant', detail: error.message })
   }
 }
 
