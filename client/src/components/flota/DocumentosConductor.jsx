@@ -13,8 +13,6 @@ const TIPOS = [
 
 const TIPO_LABEL = Object.fromEntries(TIPOS.map(t => [t.value, t.label]))
 
-// Categorías de licencia chilena
-const CATEGORIAS_LICENCIA = ['A1', 'A2', 'A3', 'A4', 'B', 'C', 'D', 'F']
 
 function alertaBadge(doc) {
   if (!doc.fechaVencimiento) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#F4F5F6] text-[#737B86] border border-[#E1E4E8]">Sin vencimiento</span>
@@ -270,10 +268,14 @@ export default function DocumentosConductor({ conductor, onClose }) {
               {/* Categoría (solo para licencia) */}
               {esLicencia && (
                 <Field label="Categoría de licencia">
-                  <select value={form.categoria} onChange={e => set('categoria', e.target.value)} className={INPUT}>
-                    <option value="">No especificar</option>
-                    {CATEGORIAS_LICENCIA.map(c => <option key={c} value={c}>Clase {c}</option>)}
-                  </select>
+                  <input
+                    type="text"
+                    value={form.categoria}
+                    onChange={e => set('categoria', e.target.value)}
+                    placeholder="Ej: A4  /  B  /  A2 A4  /  B D"
+                    className={INPUT}
+                  />
+                  <p className="text-xs text-[#A0A6AE] mt-1">Puedes ingresar varias clases separadas por espacio</p>
                 </Field>
               )}
 
