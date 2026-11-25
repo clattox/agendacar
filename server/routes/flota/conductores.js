@@ -29,13 +29,19 @@ router.get('/', async (req, res) => {
           select: { id: true, patente: true, marca: true, modelo: true },
           take: 1,
         },
+        documentos: {
+          where: { tenantId, tipo: 'LICENCIA_CONDUCIR', activo: true },
+          select: { id: true, categoria: true, fechaVencimiento: true, numeroDocumento: true },
+          orderBy: { createdAt: 'desc' },
+        },
       },
       orderBy: { nombre: 'asc' },
     })
-    // Añadir vehiculoAsignado como campo directo para facilitar el frontend
+    // Añadir vehiculoAsignado y licencias como campos directos para el frontend
     const result = conductores.map(c => ({
       ...c,
       vehiculoAsignado: c.flotaVehiculos?.[0] ?? null,
+      licencias: c.documentos ?? [],
     }))
     res.json(result)
   } catch (err) {
@@ -95,20 +101,16 @@ router.put('/:id', async (req, res) => {
     const existing = await prisma.conductor.findFirst({ where: { id: req.params.id, tenantId } })
     if (!existing) return res.status(404).json({ error: 'Conductor no encontrado' })
 
-    const { nombre, rut, licenciaNumero, licenciaCategoria,
-            licenciaVence, telefono, email, activo } = req.body
+    const { nombre, rut, telefono, email, activo } = req.body
 
     const conductor = await prisma.conductor.update({
       where: { id: req.params.id },
       data: {
-        ...(nombre             !== undefined && { nombre }),
-        ...(rut                !== undefined && { rut }),
-        ...(licenciaNumero     !== undefined && { licenciaNumero }),
-        ...(licenciaCategoria  !== undefined && { licenciaCategoria }),
-        ...(licenciaVence      !== undefined && { licenciaVence: licenciaVence ? new Date(licenciaVence) : null }),
-        ...(telefono           !== undefined && { telefono }),
-        ...(email              !== undefined && { email }),
-        ...(activo             !== undefined && { activo }),
+        ...(nombre  !== undefined && { nombre }),
+        ...(rut     !== undefined && { rut }),
+        ...(telefono !== undefined && { telefono }),
+        ...(email   !== undefined && { email }),
+        ...(activo  !== undefined && { activo }),
       },
     })
     res.json(conductor)

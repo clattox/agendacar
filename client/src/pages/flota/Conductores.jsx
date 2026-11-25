@@ -194,15 +194,11 @@ function ModalAcceso({ conductor, onClose, onDone }) {
 // ——— Modal editar conductor ————————————————————————————
 function ModalEditar({ conductor, onClose, onDone }) {
   const [form, setForm] = useState({
-    nombre:            conductor.nombre            || '',
-    rut:               conductor.rut               || '',
-    telefono:          conductor.telefono          || '',
-    email:             conductor.email             || '',
-    licenciaCategoria: conductor.licenciaCategoria || '',
-    licenciaVence:     conductor.licenciaVence
-      ? conductor.licenciaVence.substring(0, 10)
-      : '',
-    activo: conductor.activo !== false,
+    nombre:   conductor.nombre   || '',
+    rut:      conductor.rut      || '',
+    telefono: conductor.telefono || '',
+    email:    conductor.email    || '',
+    activo:   conductor.activo !== false,
   })
   const [saving, setSaving] = useState(false)
   const [err,    setErr]    = useState('')
@@ -212,10 +208,7 @@ function ModalEditar({ conductor, onClose, onDone }) {
     if (!form.nombre.trim()) return setErr('El nombre es obligatorio')
     setSaving(true); setErr('')
     try {
-      await api.put(`/flota/conductores/${conductor.id}`, {
-        ...form,
-        licenciaVence: form.licenciaVence || null,
-      })
+      await api.put(`/flota/conductores/${conductor.id}`, form)
       onDone()
     } catch (error) {
       setErr(error.response?.data?.error || 'Error al guardar')
@@ -292,28 +285,6 @@ function ModalEditar({ conductor, onClose, onDone }) {
                 className="input"
               />
             </div>
-          </div>
-
-          {/* Categoría licencia */}
-          <div>
-            <label className="block text-xs font-medium text-[#737B86] mb-1.5">Categoría licencia</label>
-            <input
-              value={form.licenciaCategoria}
-              onChange={e => setForm(p => ({ ...p, licenciaCategoria: e.target.value }))}
-              placeholder="B, C, D…"
-              className="input"
-            />
-          </div>
-
-          {/* Vencimiento licencia */}
-          <div>
-            <label className="block text-xs font-medium text-[#737B86] mb-1.5">Vencimiento licencia</label>
-            <input
-              type="date"
-              value={form.licenciaVence}
-              onChange={e => setForm(p => ({ ...p, licenciaVence: e.target.value }))}
-              className="input"
-            />
           </div>
 
           {/* Estado activo */}
@@ -475,9 +446,18 @@ export default function FlotaConductores() {
               <tr><td colSpan={8} className="text-center py-12 text-[#737B86]">Sin conductores registrados</td></tr>
             )}
             {conductores.map(c => {
-              // Vigencia licencia
+              // Licencias desde ConductorDocumento
               const hoy = new Date()
-              const vence = c.licenciaVence ? new Date(c.licenciaVence) : null
+              const licencias = c.licencias ?? []
+              // Licencia más próxima a vencer (o primera)
+              const licPrincipal = licencias.length > 0
+                ? licencias.reduce((prev, cur) => {
+                    if (!prev.fechaVencimiento) return cur
+                    if (!cur.fechaVencimiento)  return prev
+                    return new Date(cur.fechaVencimiento) < new Date(prev.fechaVencimiento) ? cur : prev
+                  })
+                : null
+              const vence = licPrincipal?.fechaVencimiento ? new Date(licPrincipal.fechaVencimiento) : null
               const diasVence = vence ? Math.ceil((vence - hoy) / 86400000) : null
               const licAlerta = diasVence !== null
                 ? (diasVence < 0 ? 'VENCIDA' : diasVence <= 30 ? 'PROXIMA' : 'OK')
@@ -521,16 +501,17 @@ export default function FlotaConductores() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {(c.licenciaCategoria || c.licenciaNumero) ? (
+                    {licencias.length > 0 ? (
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5">
-                          {c.licenciaCategoria && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-[#F4F5F6] border border-[#E1E4E8] text-[#252A31]">
-                              {c.licenciaCategoria}
+                        {/* Categorías de todas las licencias */}
+                        <div className="flex flex-wrap items-center gap-1">
+                          {licencias.map(lic => lic.categoria && (
+                            <span key={lic.id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-[#F4F5F6] border border-[#E1E4E8] text-[#252A31]">
+                              {lic.categoria}
                             </span>
-                          )}
-                          <span className="text-xs text-[#737B86] font-mono">{c.licenciaNumero ?? ''}</span>
+                          ))}
                         </div>
+                        {/* Alerta del vencimiento más próximo */}
                         {vence && (
                           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold w-fit
                             ${licAlerta === 'VENCIDA' ? 'bg-[#FEE2E2] text-[#DC2626]'
