@@ -615,12 +615,25 @@ export default function PortalConductor() {
                     {vehiculoActivo.color ? ` · ${vehiculoActivo.color}` : ''}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Odómetro</div>
-                  <div className="text-xl font-bold text-amber-400 leading-none">
-                    {vehiculoActivo.odometroActual.toLocaleString('es-CL')}
+                <div className="text-right flex flex-col items-end gap-2">
+                  <div>
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Odómetro</div>
+                    <div className="text-xl font-bold text-amber-400 leading-none">
+                      {vehiculoActivo.odometroActual.toLocaleString('es-CL')}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5">km</div>
                   </div>
-                  <div className="text-xs text-zinc-500 mt-0.5">km</div>
+                  {vehiculoActivo.saldoCupon > 0 && (
+                    <div>
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Cupón combustible</div>
+                      <div className={`text-base font-bold leading-none ${vehiculoActivo.saldoCupon < 20000 ? 'text-red-400' : 'text-emerald-400'}`}>
+                        {vehiculoActivo.saldoCupon.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })}
+                      </div>
+                      {vehiculoActivo.saldoCupon < 20000 && (
+                        <div className="text-[10px] text-red-400 mt-0.5">Saldo bajo</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
