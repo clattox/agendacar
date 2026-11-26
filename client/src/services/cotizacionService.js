@@ -14,3 +14,8 @@ export async function enviarEmailCotizacion(reservaId) {
   const { data } = await api.post(`/cotizaciones/${reservaId}/email`)
   return data
 }
+
+export async function eliminarCotizacion(reservaId) {
+  const { data } = await api.delete(`/cotizaciones/${reservaId}`)
+  return data
+}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link2, Mail, MessageCircle, Minus, Plus, Printer, Trash2 } from 'lucide-react'
 import Button from './ui/Button'
 import Dialog from './ui/Dialog'
-import { getCotizacion, guardarCotizacion, enviarEmailCotizacion } from '../services/cotizacionService'
+import { getCotizacion, guardarCotizacion, enviarEmailCotizacion, eliminarCotizacion } from '../services/cotizacionService'
 import { fmtFecha, fmtHora } from '../lib/dates'
 import { getApiErrorMessage } from '../lib/errors'
 import { getUsuario } from '../lib/auth'
@@ -94,6 +94,8 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
   const [linkEvidencia, setLinkEvidencia] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [enviandoEmail, setEnviandoEmail] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
+  const [tieneCotizacion, setTieneCotizacion] = useState(false)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
   const inputRef = useRef(null)
@@ -105,9 +107,11 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
     setError('')
     setExito('')
 
+    setTieneCotizacion(false)
     // Intentar cargar cotización guardada previamente
     getCotizacion(reserva.id)
       .then(cot => {
+        setTieneCotizacion(true)
         if (cot?.items?.length) {
           setItems(cot.items.map(i => ({
             _id: nextId(),
@@ -169,6 +173,24 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
     linkEvidencia: linkEvidencia.trim() || null,
     items: itemsValidos().map(({ descripcion, cantidad, valor }) => ({ descripcion, cantidad: cantidad || 1, valor }))
   })
+
+  const handleEliminar = async () => {
+    if (!window.confirm('¿Eliminar esta cotización? El número quedará disponible para reutilizarse.')) return
+    setEliminando(true); setError(''); setExito('')
+    try {
+      await eliminarCotizacion(reserva.id)
+      setTieneCotizacion(false)
+      setItems([{ _id: nextId(), descripcion: '', cantidad: 1, valor: 0, _empty: true }])
+      setNotas(''); setIncluyeIva(false); setClienteRut(''); setClienteDireccion(''); setClienteComuna('')
+      setFechaEmision(new Date().toISOString().slice(0, 10)); setHoraIngreso(''); setLinkEvidencia('')
+      setExito('Cotización eliminada. El número quedó libre para reutilizarse.')
+      onGuardado()
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'No se pudo eliminar la cotización.'))
+    } finally {
+      setEliminando(false)
+    }
+  }
 
   const handleGuardar = async () => {
     setGuardando(true); setError(''); setExito('')
@@ -394,11 +416,11 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
       size="lg"
       footer={
         <div className="flex justify-between w-full items-center gap-2 flex-wrap">
-          <div className="flex gap-2">
-            <Button variant="ghost" leftIcon={Printer} onClick={handleImprimir} disabled={guardando || enviandoEmail}>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="ghost" leftIcon={Printer} onClick={handleImprimir} disabled={guardando || enviandoEmail || eliminando}>
               Imprimir PDF
             </Button>
-            <Button variant="ghost" leftIcon={MessageCircle} onClick={handleWhatsApp} disabled={guardando || enviandoEmail}>
+            <Button variant="ghost" leftIcon={MessageCircle} onClick={handleWhatsApp} disabled={guardando || enviandoEmail || eliminando}>
               WhatsApp
             </Button>
             <Button
@@ -406,11 +428,23 @@ export default function ModalCotizacion({ reserva, open, onClose, onGuardado }) 
               leftIcon={Mail}
               onClick={handleEmail}
               loading={enviandoEmail}
-              disabled={guardando || !reserva?.email}
+              disabled={guardando || eliminando || !reserva?.email}
               title={reserva?.email ? `Enviar a ${reserva.email}` : 'Sin email registrado'}
             >
               Email
             </Button>
+            {tieneCotizacion && (
+              <Button
+                variant="ghost"
+                leftIcon={Trash2}
+                onClick={handleEliminar}
+                loading={eliminando}
+                disabled={guardando || enviandoEmail}
+                className="text-red-400 hover:text-red-300"
+              >
+                Eliminar
+              </Button>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose} disabled={guardando || enviandoEmail}>Cancelar</Button>

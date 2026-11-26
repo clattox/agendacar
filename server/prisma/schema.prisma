@@ -35,8 +35,7 @@ model Tenant {
   tipoCuenta         String?
   numeroCuenta       String?
   cotizacionValidez  Int        @default(15) // días de validez de cotización
-  cotizacionDesde          Int        @default(1)  // número desde donde parte el correlativo
-  cotizacionUltimoNumero   Int        @default(0)  // máximo número asignado históricamente (nunca baja)
+  cotizacionDesde    Int        @default(1)  // número desde donde parte el correlativo
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   usuarios   Usuario[]
@@ -608,4 +607,12 @@ model PlanMantencionVehiculo {
   @@unique([vehiculoId, plantillaId])
   @@index([tenantId])
   @@index([vehiculoId])
+}
+
+model NumeroCotizacionLibre {
+  id       Int    @id @default(autoincrement())
+  tenantId Int
+  numero   Int
+  @@unique([tenantId, numero])
+  @@index([tenantId])
 }

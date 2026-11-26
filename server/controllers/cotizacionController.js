@@ -199,29 +199,33 @@ const upsertCotizacion = async (req, res) => {
       }
 
       // Asignar número correlativo si no tiene uno aún.
-      // Se usa MAX entre: el último número histórico del tenant (nunca baja aunque
-      // se eliminen cotizaciones), el MAX actual en la tabla, y el valor mínimo (desde).
-      // Esto evita reutilizar números de cotizaciones eliminadas manualmente.
+      // Primero intenta reutilizar un número libre (hueco de cotización eliminada).
+      // Si no hay huecos, usa MAX(numero)+1 para no retroceder.
       if (!numeroCorrelativo) {
-        const [maxResult, tenant] = await Promise.all([
-          tx.cotizacion.aggregate({
-            where: { tenantId },
-            _max: { numero: true }
-          }),
-          tx.tenant.findUnique({ where: { id: tenantId }, select: { cotizacionDesde: true, cotizacionUltimoNumero: true } })
-        ])
-        const desde = tenant?.cotizacionDesde ?? 1
-        const maxEnTabla = maxResult._max.numero ?? (desde - 1)
-        const ultimoHistorico = tenant?.cotizacionUltimoNumero ?? 0
-        // El nuevo número es el mayor entre: último histórico +1, max en tabla +1, y desde
-        numeroCorrelativo = Math.max(ultimoHistorico + 1, maxEnTabla + 1, desde)
-      }
+        // ¿Hay números libres (huecos de cotizaciones eliminadas)?
+        const hueco = await tx.numeroCotizacionLibre.findFirst({
+          where: { tenantId },
+          orderBy: { numero: 'asc' }
+        })
 
-      // Actualizar el último número histórico del tenant (solo sube, nunca baja)
-      await tx.tenant.update({
-        where: { id: tenantId },
-        data: { cotizacionUltimoNumero: numeroCorrelativo }
-      })
+        if (hueco) {
+          // Reutilizar el número libre más bajo
+          numeroCorrelativo = hueco.numero
+          await tx.numeroCotizacionLibre.delete({ where: { id: hueco.id } })
+        } else {
+          // Sin huecos: asignar el siguiente número
+          const [maxResult, tenant] = await Promise.all([
+            tx.cotizacion.aggregate({
+              where: { tenantId },
+              _max: { numero: true }
+            }),
+            tx.tenant.findUnique({ where: { id: tenantId }, select: { cotizacionDesde: true } })
+          ])
+          const desde = tenant?.cotizacionDesde ?? 1
+          const maxNumero = maxResult._max.numero ?? (desde - 1)
+          numeroCorrelativo = Math.max(maxNumero + 1, desde)
+        }
+      }
 
       // Crear nueva cotización
       return tx.cotizacion.create({
@@ -306,4 +310,42 @@ const enviarEmailCotizacion = async (req, res) => {
   }
 }
 
-module.exports = { getCotizacion, upsertCotizacion, enviarEmailCotizacion }
+/**
+ * DELETE /api/cotizaciones/:reservaId
+ * Elimina la cotización y deja su número como "libre" para ser reutilizado.
+ */
+const eliminarCotizacion = async (req, res) => {
+  const tenantId = req.usuario?.tenantId
+  if (!tenantId) return res.status(401).json({ error: 'Sin tenant' })
+
+  const reservaId = parseInt(req.params.reservaId, 10)
+  if (!reservaId) return res.status(400).json({ error: 'ID inválido' })
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const cotizacion = await tx.cotizacion.findFirst({
+        where: { reservaId, tenantId }
+      })
+      if (!cotizacion) throw Object.assign(new Error('Cotización no encontrada'), { status: 404 })
+
+      // Guardar número como libre para reutilizarlo en la próxima cotización
+      if (cotizacion.numero) {
+        await tx.numeroCotizacionLibre.upsert({
+          where: { tenantId_numero: { tenantId, numero: cotizacion.numero } },
+          create: { tenantId, numero: cotizacion.numero },
+          update: {}
+        })
+      }
+
+      await tx.itemCotizacion.deleteMany({ where: { cotizacionId: cotizacion.id } })
+      await tx.cotizacion.delete({ where: { id: cotizacion.id } })
+    })
+
+    res.json({ ok: true })
+  } catch (error) {
+    console.error('[cotizacionController] eliminarCotizacion:', error?.message)
+    res.status(error?.status || 500).json({ error: error?.message || 'Error al eliminar cotización' })
+  }
+}
+
+module.exports = { getCotizacion, upsertCotizacion, enviarEmailCotizacion, eliminarCotizacion }
