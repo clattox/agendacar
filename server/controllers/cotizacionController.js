@@ -199,20 +199,29 @@ const upsertCotizacion = async (req, res) => {
       }
 
       // Asignar número correlativo si no tiene uno aún.
-      // Se usa MAX(numero)+1 en vez de COUNT+desde para que las eliminaciones
-      // previas no provoquen colisiones de número.
+      // Se usa MAX entre: el último número histórico del tenant (nunca baja aunque
+      // se eliminen cotizaciones), el MAX actual en la tabla, y el valor mínimo (desde).
+      // Esto evita reutilizar números de cotizaciones eliminadas manualmente.
       if (!numeroCorrelativo) {
         const [maxResult, tenant] = await Promise.all([
           tx.cotizacion.aggregate({
             where: { tenantId },
             _max: { numero: true }
           }),
-          tx.tenant.findUnique({ where: { id: tenantId }, select: { cotizacionDesde: true } })
+          tx.tenant.findUnique({ where: { id: tenantId }, select: { cotizacionDesde: true, cotizacionUltimoNumero: true } })
         ])
         const desde = tenant?.cotizacionDesde ?? 1
-        const maxNumero = maxResult._max.numero ?? (desde - 1)
-        numeroCorrelativo = Math.max(maxNumero + 1, desde)
+        const maxEnTabla = maxResult._max.numero ?? (desde - 1)
+        const ultimoHistorico = tenant?.cotizacionUltimoNumero ?? 0
+        // El nuevo número es el mayor entre: último histórico +1, max en tabla +1, y desde
+        numeroCorrelativo = Math.max(ultimoHistorico + 1, maxEnTabla + 1, desde)
       }
+
+      // Actualizar el último número histórico del tenant (solo sube, nunca baja)
+      await tx.tenant.update({
+        where: { id: tenantId },
+        data: { cotizacionUltimoNumero: numeroCorrelativo }
+      })
 
       // Crear nueva cotización
       return tx.cotizacion.create({
